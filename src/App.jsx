@@ -386,7 +386,43 @@ export default function App() {
     closeSheet();
   };
 
-  const closeSheet = () => { setSheet(null); setSheetData(null); setSelectedTemplate(null); setAssignFilterCats([]); setAssignFilterRegions([]); setDuration(""); };
+  const [editTemplateData, setEditTemplateData] = useState(null);
+
+  const updateTemplate = async () => {
+    if (!editTemplateData?.title) return;
+    setSaving(true);
+    const { data, error } = await supabase.from("exercise_templates").update({
+      title: editTemplateData.title,
+      categories: editTemplateData.categories || [],
+      target_regions: editTemplateData.target_regions || [],
+      difficulty: editTemplateData.difficulty,
+      description: editTemplateData.description,
+      instructions: (editTemplateData.instructions || []).filter(Boolean),
+      image_url: editTemplateData.image_url || null,
+      video_url: editTemplateData.video_url || null,
+    }).eq("id", editTemplateData.id).select().single();
+    if (!error && data) setTemplates(prev => prev.map(t => t.id === data.id ? data : t));
+    setSaving(false);
+    closeSheet();
+  };
+
+  const deleteTemplate = async (tid) => {
+    setDeleting(tid);
+    await supabase.from("exercise_templates").delete().eq("id", tid);
+    setTemplates(prev => prev.filter(t => t.id !== tid));
+    setDeleting(null);
+    closeSheet();
+  };
+
+  const closeSheet = () => {
+    setSheet(null);
+    setSheetData(null);
+    setSelectedTemplate(null);
+    setAssignFilterCats([]);
+    setAssignFilterRegions([]);
+    setDuration("");
+    setEditTemplateData(null);
+  };
 
   const ownerExercises = ownerPatient ? exForPatient(ownerPatient.id) : [];
   const doneCount = ownerExercises.filter(e => isDone(e.id)).length;
@@ -602,6 +638,10 @@ export default function App() {
             <button className="btn" onClick={() => setSheet("addExercise")}
               style={{ background: DARK, color: "#E6F6F6", borderRadius: 11, padding: "10px 14px", fontSize: 13, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
               <Icon name="assign" size={15} color="#E6F6F6" /> {t.assignExercise}
+            </button>
+            <button className="btn" onClick={() => setSheet("templateLibrary")}
+              style={{ background: ACCENT + "30", color: DARK, borderRadius: 11, padding: "10px 14px", fontSize: 13, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, border: `1.5px solid ${ACCENT}`, display: "flex", alignItems: "center", gap: 6 }}>
+              <Icon name="edit" size={15} color={DARK} /> Übungen verwalten
             </button>
           </div>
 
@@ -948,6 +988,117 @@ export default function App() {
               <button className="btn" onClick={closeSheet} style={{ flex: 1, padding: "14px", borderRadius: 12, background: LIGHT, color: "#3D7070", fontFamily: "'DM Sans',sans-serif", fontWeight: 700 }}>{t.cancel}</button>
               <button className="btn" onClick={() => deletePatient(sheetData.id)} style={{ flex: 1, padding: "14px", borderRadius: 12, background: "#C0392B", color: "white", fontFamily: "'DM Sans',sans-serif", fontWeight: 700 }}>
                 {deleting ? "..." : t.delete}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ TEMPLATE LIBRARY ══ */}
+      {sheet === "templateLibrary" && (
+        <div className="overlay" onClick={closeSheet}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 19, fontWeight: 700 }}>Übungen verwalten</div>
+              <button className="btn" onClick={closeSheet} style={{ background: LIGHT, borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon name="close" size={14} color="#3D7070" />
+              </button>
+            </div>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#3D7070", marginBottom: 14 }}>
+              {templates.length} Übungsvorlagen gespeichert
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {templates.map(tmpl => (
+                <div key={tmpl.id} style={{ background: PALE, borderRadius: 12, padding: "12px 14px", display: "flex", gap: 10, alignItems: "center" }}>
+                  {tmpl.image_url
+                    ? <img src={tmpl.image_url} alt={tmpl.title} style={{ width: 44, height: 44, borderRadius: 9, objectFit: "contain", flexShrink: 0, background: LIGHT, padding: 2 }} />
+                    : <div style={{ width: 44, height: 44, borderRadius: 9, background: LIGHT, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="paw" size={20} color={ACCENT} /></div>}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 14, fontWeight: 600, color: "#102828", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tmpl.title}</div>
+                    <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "#3D7070", marginTop: 2 }}>
+                      {(tmpl.categories || []).join(", ") || "–"} · {tmpl.difficulty}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button className="icon-btn" onClick={() => { setEditTemplateData({ ...tmpl, instructions: tmpl.instructions?.length ? tmpl.instructions : ["","",""] }); setSheet("editTemplate"); }}
+                      style={{ background: BRAND + "20" }}>
+                      <Icon name="edit" size={15} color={MID} />
+                    </button>
+                    <button className="icon-btn" onClick={() => { setSheetData(tmpl); setSheet("confirmDeleteTmpl"); }}
+                      style={{ background: "#FFE8E8" }}>
+                      <Icon name="trash" size={15} color="#C0392B" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {templates.length === 0 && (
+                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: ACCENT, textAlign: "center", padding: "20px 0" }}>
+                  Noch keine Übungsvorlagen erstellt.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ SHEET: EDIT TEMPLATE ══ */}
+      {sheet === "editTemplate" && editTemplateData && (
+        <div className="overlay" onClick={closeSheet}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 19, fontWeight: 700 }}>Übung bearbeiten</div>
+              <button className="btn" onClick={() => setSheet("templateLibrary")} style={{ background: LIGHT, borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <Icon name="close" size={14} color="#3D7070" />
+              </button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div>{secLabel("Titel *")}<input value={editTemplateData.title} onChange={e => setEditTemplateData(p => ({ ...p, title: e.target.value }))} style={inputStyle} /></div>
+              <div>
+                {secLabel("Kategorie")}
+                <MultiSelect options={CATEGORIES} selected={editTemplateData.categories || []} onChange={v => setEditTemplateData(p => ({ ...p, categories: v }))} color={BRAND} />
+              </div>
+              <div>
+                {secLabel("Zielregion")}
+                <MultiSelect options={TARGET_REGIONS} selected={editTemplateData.target_regions || []} onChange={v => setEditTemplateData(p => ({ ...p, target_regions: v }))} color={MID} />
+              </div>
+              <div>
+                {secLabel("Schwierigkeit")}
+                <select value={editTemplateData.difficulty} onChange={e => setEditTemplateData(p => ({ ...p, difficulty: e.target.value }))} style={inputStyle}>
+                  {["Leicht","Mittel","Schwer"].map(d => <option key={d}>{d}</option>)}
+                </select>
+              </div>
+              <div>{secLabel("Beschreibung")}<textarea value={editTemplateData.description || ""} onChange={e => setEditTemplateData(p => ({ ...p, description: e.target.value }))} rows={3} style={{ ...inputStyle, resize: "vertical" }} /></div>
+              <div>
+                {secLabel("Schritte")}
+                {(editTemplateData.instructions || ["","",""]).map((s, i) => (
+                  <input key={i} value={s} onChange={e => setEditTemplateData(p => ({ ...p, instructions: (p.instructions || []).map((x, j) => j === i ? e.target.value : x) }))}
+                    placeholder={`Schritt ${i + 1}...`} style={{ ...inputStyle, marginBottom: 6 }} />
+                ))}
+              </div>
+              <div>{secLabel("Bild-URL")}<input value={editTemplateData.image_url || ""} onChange={e => setEditTemplateData(p => ({ ...p, image_url: e.target.value }))} placeholder="https://..." style={inputStyle} /></div>
+              <div>{secLabel("Video-URL")}<input value={editTemplateData.video_url || ""} onChange={e => setEditTemplateData(p => ({ ...p, video_url: e.target.value }))} placeholder="https://youtube.com/..." style={inputStyle} /></div>
+              <button className="btn" onClick={updateTemplate} disabled={saving || !editTemplateData.title}
+                style={{ width: "100%", padding: "15px", borderRadius: 13, background: editTemplateData.title ? BRAND : "#B8DFE0", color: editTemplateData.title ? "#102828" : "#7ECBCC", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 15, marginTop: 4 }}>
+                {saving ? "Wird gespeichert..." : "Änderungen speichern"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ CONFIRM DELETE TEMPLATE ══ */}
+      {sheet === "confirmDeleteTmpl" && sheetData && (
+        <div className="overlay" onClick={() => setSheet("templateLibrary")}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><Icon name="trash" size={40} color="#C0392B" /></div>
+            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 19, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>Übungsvorlage löschen?</div>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: "#3D7070", marginBottom: 22, lineHeight: 1.6, textAlign: "center" }}>
+              <strong>{sheetData.title}</strong> wird dauerhaft aus der Vorlagenbibliothek gelöscht. Bereits zugewiesene Übungen bei Patienten bleiben erhalten.
+            </div>
+            <div style={{ display: "flex", gap: 9 }}>
+              <button className="btn" onClick={() => setSheet("templateLibrary")} style={{ flex: 1, padding: "14px", borderRadius: 12, background: LIGHT, color: "#3D7070", fontFamily: "'DM Sans',sans-serif", fontWeight: 700 }}>Abbrechen</button>
+              <button className="btn" onClick={() => deleteTemplate(sheetData.id)} style={{ flex: 1, padding: "14px", borderRadius: 12, background: "#C0392B", color: "white", fontFamily: "'DM Sans',sans-serif", fontWeight: 700 }}>
+                {deleting ? "..." : "Löschen"}
               </button>
             </div>
           </div>
