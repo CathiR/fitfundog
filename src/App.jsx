@@ -229,9 +229,15 @@ export default function App() {
   const [filterRegions, setFilterRegions] = useState([]);
   const [assignFilterCats, setAssignFilterCats] = useState([]);
   const [assignFilterRegions, setAssignFilterRegions] = useState([]);
-  const [newAccountMode, setNewAccountMode] = useState("new"); // "new" | "existing" | "none"
+  const [newAccountMode, setNewAccountMode] = useState("new");
   const [selectedExistingUserId, setSelectedExistingUserId] = useState("");
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [patientSearch, setPatientSearch] = useState("");
+  const [assignPatientSearch, setAssignPatientSearch] = useState("");
+  const [userSearch, setUserSearch] = useState("");
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [mustChangePassword, setMustChangePassword] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -264,26 +270,51 @@ export default function App() {
       supabase.from("exercise_templates").select("*").order("title"),
       supabase.from("user_emails").select("id, email")
     ]);
-    setPatients(pd || []);
+    const patientList = pd || [];
+    setPatients(patientList);
     setExercises(ed || []);
     setDoneLogs(ld || []);
     setTemplates(td || []);
     setUserEmails(ue || []);
-    // Only set ownerPatient on first load or if current one no longer exists
+
+    // For owner: find their patient immediately by user_id
+    const currentUserId = (await supabase.auth.getUser()).data.user?.id;
     setOwnerPatient(prev => {
-      if (prev && pd?.find(p => p.id === prev.id)) return pd.find(p => p.id === prev.id);
-      return pd && pd.length > 0 ? pd[0] : null;
+      if (prev && patientList.find(p => p.id === prev.id)) return patientList.find(p => p.id === prev.id);
+      // Owner sees their own patient first
+      if (currentUserId && currentUserId !== ADMIN_ID) {
+        const myPatient = patientList.find(p => p.user_id === currentUserId);
+        if (myPatient) return myPatient;
+      }
+      return patientList.length > 0 ? patientList[0] : null;
     });
-    // Keep selectedPatient in sync
     setSelectedPatient(prev => {
       if (!prev) return null;
-      return pd?.find(p => p.id === prev.id) || null;
+      return patientList.find(p => p.id === prev.id) || null;
     });
+
+    // Check if owner needs to change password (email === password indicator)
+    if (currentUserId && currentUserId !== ADMIN_ID) {
+      const userEmail = ue?.find(u => u.id === currentUserId)?.email;
+      // We store a flag in user metadata when account is created with email-as-password
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.user_metadata?.must_change_password) setMustChangePassword(true);
+    }
+
     setLoading(false);
   }
 
+  const changePassword = async () => {
+    if (!newPassword || newPassword.length < 6) { alert("Passwort muss mindestens 6 Zeichen haben."); return; }
+    setSaving(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword, data: { must_change_password: false } });
+    if (error) { alert("Fehler: " + error.message); }
+    else { setMustChangePassword(false); setShowPasswordChange(false); setNewPassword(""); alert("Passwort erfolgreich geändert!"); }
+    setSaving(false);
+  };
+
   const handleLogout = async () => { sessionStorage.removeItem("_tfpw"); await supabase.auth.signOut(); };
-  const closeSheet = () => { setSheet(null); setSheetData(null); setSelectedTemplate(null); setAssignFilterCats([]); setAssignFilterRegions([]); setDuration(""); setEditTemplateData(null); setEditPatientData(null); setNewAccountMode("new"); setSelectedExistingUserId(""); setResetEmailSent(false); };
+  const closeSheet = () => { setSheet(null); setSheetData(null); setSelectedTemplate(null); setAssignFilterCats([]); setAssignFilterRegions([]); setDuration(""); setEditTemplateData(null); setEditPatientData(null); setNewAccountMode("new"); setSelectedExistingUserId(""); setResetEmailSent(false); setUserSearch(""); setNewPassword(""); setShowPasswordChange(false); };
 
   const exForPatient = (pid) => exercises.filter(e => e.patient_id === pid);
   const isDone = (eid) => doneLogs.some(l => l.exercise_id === eid);
@@ -312,6 +343,7 @@ export default function App() {
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: newPatient.ownerEmail,
         password: newPatient.ownerPassword,
+        options: { data: { must_change_password: newPatient.ownerPassword === newPatient.ownerEmail } }
       });
       if (signUpError) { alert("Account-Fehler: " + signUpError.message); setSaving(false); return; }
       userId = signUpData?.user?.id || null;
@@ -441,6 +473,21 @@ export default function App() {
     const rOk = assignFilterRegions.length === 0 || (t2.target_regions || []).some(r => assignFilterRegions.includes(r));
     return cOk && rOk;
   });
+  const filteredPatients = patients.filter(p =>
+    p.name.toLowerCase().includes(patientSearch.toLowerCase()) ||
+    p.owner.toLowerCase().includes(patientSearch.toLowerCase()) ||
+    p.breed?.toLowerCase().includes(patientSearch.toLowerCase())
+  );
+
+  const filteredAssignPatients = patients.filter(p =>
+    p.name.toLowerCase().includes(assignPatientSearch.toLowerCase()) ||
+    p.owner.toLowerCase().includes(assignPatientSearch.toLowerCase())
+  );
+
+  const filteredUsers = userEmails.filter(u =>
+    u.id !== ADMIN_ID && u.email.toLowerCase().includes(userSearch.toLowerCase())
+  );
+
   const patLabel = (p) => `${p.avatar || ""} ${p.name} - ${p.breed} - ${p.owner}`.trim();
 
   const inp = { width: "100%", padding: "11px 14px", borderRadius: 10, border: "1.5px solid #B8DFE0", fontSize: 16, fontFamily: "'DM Sans',sans-serif", outline: "none", background: "white", color: "#102828", WebkitTextFillColor: "#102828", boxSizing: "border-box" };
@@ -527,6 +574,22 @@ export default function App() {
       {/* ══ OWNER VIEW ══ */}
       {view === "owner" && (
         <div style={{ maxWidth: 480, margin: "0 auto", padding: "16px 14px 80px" }}>
+
+          {/* Must change password banner */}
+          {mustChangePassword && (
+            <div style={{ background: "#FFF8E1", border: "1.5px solid #FFB300", borderRadius: 12, padding: "14px 16px", marginBottom: 14 }}>
+              <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 14, fontWeight: 700, color: "#E65100", marginBottom: 6 }}>🔐 Bitte Passwort ändern</div>
+              <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#5D4037", marginBottom: 10 }}>Aus Sicherheitsgründen bitte ein eigenes Passwort vergeben.</div>
+              {!showPasswordChange ? (
+                <button className="btn" onClick={() => setShowPasswordChange(true)} style={{ background: "#FFB300", color: "#102828", borderRadius: 9, padding: "8px 14px", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 700 }}>Passwort jetzt ändern</button>
+              ) : (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Neues Passwort..." style={{ ...inp, flex: 1 }} />
+                  <button className="btn" onClick={changePassword} disabled={saving} style={{ background: BRAND, color: "#102828", borderRadius: 9, padding: "8px 14px", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{saving ? "..." : "Speichern"}</button>
+                </div>
+              )}
+            </div>
+          )}
           {patients.length > 1 && (
             <div style={{ marginBottom: 12 }}>
               <select value={ownerPatient?.id || ""} onChange={e => { setOwnerPatient(patients.find(p => p.id === e.target.value) || null); setFilterCats([]); setFilterRegions([]); }} style={{ ...inp, borderRadius: 12 }}>
@@ -604,25 +667,30 @@ export default function App() {
           {/* PATIENTEN TAB */}
           {practiceTab === "patients" && (
             <div style={{ padding: "16px 14px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
                 <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 18, fontWeight: 700, color: DARK }}>Patienten</div>
                 <button className="btn" onClick={() => { setNewPatient(EMPTY_PATIENT); setNewAccountMode("new"); setSheet("addPatient"); }} style={{ background: BRAND, color: "#102828", borderRadius: 10, padding: "9px 14px", fontSize: 12, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
                   <Icon name="plus" size={14} color="#102828" /> Neuer Patient
                 </button>
               </div>
+              {/* Search */}
+              <div style={{ position: "relative", marginBottom: 12 }}>
+                <input value={patientSearch} onChange={e => setPatientSearch(e.target.value)} placeholder="Patient oder Besitzer suchen..." style={{ ...inp, borderRadius: 12, paddingLeft: 36 }} />
+                <div style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)" }}><Icon name="filter" size={14} color="#3D7070" /></div>
+              </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {patients.map(p => {
+                {filteredPatients.map(p => {
                   const userEmail = getUserEmail(p.user_id);
                   return (
-                    <div key={p.id} className="card" style={{ padding: "14px 16px", display: "flex", gap: 12, alignItems: "center" }}>
-                      <div style={{ width: 44, height: 44, borderRadius: 12, background: LIGHT, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0, border: `1.5px solid ${ACCENT}40` }}>{p.avatar || "🐕"}</div>
+                    <div key={p.id} className="card" style={{ padding: "13px 15px", display: "flex", gap: 12, alignItems: "center" }}>
+                      <div style={{ width: 42, height: 42, borderRadius: 12, background: LIGHT, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{p.avatar || "🐕"}</div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 15, fontWeight: 700, color: "#102828" }}>{p.name}</div>
                         <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: "#3D7070", marginTop: 1 }}>{p.breed} · {p.owner}</div>
-                        <div style={{ display: "flex", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
-                          <span className="tag" style={{ background: BRAND + "20", color: MID }}>{p.condition}</span>
+                        <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "#5a5a5a", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.condition}</div>
+                        <div style={{ marginTop: 4 }}>
                           {userEmail
-                            ? <span className="tag" style={{ background: "#E8F5E9", color: "#2E7D32", display: "flex", alignItems: "center", gap: 3 }}><Icon name="mail" size={10} color="#2E7D32" />{userEmail}</span>
+                            ? <span className="tag" style={{ background: "#E8F5E9", color: "#2E7D32", display: "inline-flex", alignItems: "center", gap: 3 }}><Icon name="mail" size={10} color="#2E7D32" />{userEmail}</span>
                             : <span className="tag" style={{ background: "#FFF3E0", color: "#E65100" }}>Kein Login</span>}
                         </div>
                       </div>
@@ -633,7 +701,7 @@ export default function App() {
                     </div>
                   );
                 })}
-                {patients.length === 0 && <div className="card" style={{ padding: 24, textAlign: "center", color: "#3D7070", fontFamily: "'DM Sans',sans-serif", fontSize: 14 }}>Noch keine Patienten angelegt.</div>}
+                {filteredPatients.length === 0 && <div className="card" style={{ padding: 20, textAlign: "center", color: "#3D7070", fontFamily: "'DM Sans',sans-serif", fontSize: 14 }}>{patientSearch ? "Keine Patienten gefunden." : "Noch keine Patienten angelegt."}</div>}
               </div>
             </div>
           )}
@@ -673,38 +741,23 @@ export default function App() {
           {/* ZUWEISEN TAB */}
           {practiceTab === "assign" && (
             <div style={{ padding: "16px 14px" }}>
-              <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 18, fontWeight: 700, color: DARK, marginBottom: 14 }}>Übung zuweisen</div>
+              <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 18, fontWeight: 700, color: DARK, marginBottom: 12 }}>Übung zuweisen</div>
               <div style={{ marginBottom: 14 }}>
-                <SL text="Patient auswählen" />
+                <SL text="Patient suchen & auswählen" />
+                <div style={{ position: "relative", marginBottom: 8 }}>
+                  <input value={assignPatientSearch} onChange={e => setAssignPatientSearch(e.target.value)} placeholder="Name oder Besitzer..." style={{ ...inp, borderRadius: 12, paddingLeft: 36 }} />
+                  <div style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)" }}><Icon name="filter" size={14} color="#3D7070" /></div>
+                </div>
                 <select value={selectedPatient?.id || ""} onChange={e => setSelectedPatient(patients.find(p => p.id === e.target.value) || null)} style={{ ...inp, borderRadius: 12 }}>
                   <option value="">{t.selectPatient}</option>
-                  {patients.map(p => <option key={p.id} value={p.id}>{patLabel(p)}</option>)}
+                  {filteredAssignPatients.map(p => <option key={p.id} value={p.id}>{patLabel(p)}</option>)}
                 </select>
               </div>
 
               {selectedPatient && (<>
-                <button className="btn" onClick={() => setSheet("addExercise")} style={{ width: "100%", background: DARK, color: "#E6F6F6", borderRadius: 12, padding: "12px", fontSize: 13, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16 }}>
+                <button className="btn" onClick={() => setSheet("addExercise")} style={{ width: "100%", background: DARK, color: "#E6F6F6", borderRadius: 12, padding: "12px", fontSize: 13, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 14 }}>
                   <Icon name="assign" size={16} color="#E6F6F6" /> Übung zuweisen
                 </button>
-
-                {/* Progress summary */}
-                {exForPatient(selectedPatient.id).length > 0 && (() => {
-                  const patExs = exForPatient(selectedPatient.id);
-                  const donePat = patExs.filter(e => isDone(e.id)).length;
-                  const totalPat = patExs.length;
-                  return (
-                    <div style={{ background: `linear-gradient(135deg, ${DARK}, ${BRAND})`, borderRadius: 12, padding: "12px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "#B8E8E8", letterSpacing: ".5px", textTransform: "uppercase", marginBottom: 2 }}>Heutiger Fortschritt</div>
-                        <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 20, fontWeight: 700, color: "white" }}>{donePat}/{totalPat} erledigt</div>
-                      </div>
-                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700, color: "white" }}>{Math.round((donePat/totalPat)*100)}%</div>
-                      </div>
-                    </div>
-                  );
-                })()}
-
                 <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 700, color: "#3D7070", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 10 }}>{t.homeExercises(exForPatient(selectedPatient.id).length)}</div>
                 {exForPatient(selectedPatient.id).length === 0 && <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: ACCENT, textAlign: "center", padding: "12px 0" }}>{t.noExercisesYet}</div>}
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -866,9 +919,13 @@ export default function App() {
                 {newAccountMode === "existing" && (
                   <div>
                     <SL text="Bestehenden User auswählen" />
+                    <div style={{ position: "relative", marginBottom: 7 }}>
+                      <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="User suchen..." style={{ ...inp, paddingLeft: 32 }} />
+                      <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }}><Icon name="filter" size={13} color="#3D7070" /></div>
+                    </div>
                     <select value={selectedExistingUserId} onChange={e => setSelectedExistingUserId(e.target.value)} style={inp}>
                       <option value="">User auswählen...</option>
-                      {userEmails.filter(u => u.id !== ADMIN_ID).map(u => <option key={u.id} value={u.id}>{u.email}</option>)}
+                      {filteredUsers.map(u => <option key={u.id} value={u.id}>{u.email}</option>)}
                     </select>
                   </div>
                 )}
@@ -889,9 +946,13 @@ export default function App() {
           <div className="sheet" onClick={e => e.stopPropagation()}>
             <SheetHeader title="Patient bearbeiten" onClose={closeSheet} />
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {[["Name *","name"],["Rasse","breed"],["Alter","age"],["Besitzer","owner"],["Diagnose","condition"]].map(([label, key]) => (
+              {[["Name *","name"],["Rasse","breed"],["Alter","age"],["Besitzer","owner"]].map(([label, key]) => (
                 <div key={key}><SL text={label} /><input value={editPatientData[key] || ""} onChange={e => setEditPatientData(p => ({ ...p, [key]: e.target.value }))} style={inp} /></div>
               ))}
+              <div>
+                <SL text="Diagnose" />
+                <textarea value={editPatientData.condition || ""} onChange={e => setEditPatientData(p => ({ ...p, condition: e.target.value }))} rows={4} style={{ ...inp, resize: "vertical", lineHeight: 1.5 }} />
+              </div>
               <div><SL text="Emoji" /><input value={editPatientData.avatar || ""} onChange={e => setEditPatientData(p => ({ ...p, avatar: e.target.value }))} style={{ ...inp, width: 60, textAlign: "center" }} /></div>
 
               {/* Login info */}
@@ -909,12 +970,16 @@ export default function App() {
                       </button>}
                   <div style={{ marginTop: 10 }}>
                     <SL text="Anderen User verknüpfen (optional)" />
+                    <div style={{ position: "relative", marginBottom: 7 }}>
+                      <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="User suchen..." style={{ ...inp, paddingLeft: 32 }} />
+                      <div style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }}><Icon name="filter" size={13} color="#3D7070" /></div>
+                    </div>
                     <select
                       value={editPatientData._newUserId !== undefined ? (editPatientData._newUserId || "") : (editPatientData.user_id || "")}
                       onChange={e => setEditPatientData(p => ({ ...p, _newUserId: e.target.value || null }))}
                       style={inp}>
                       <option value="">Kein Login</option>
-                      {userEmails.filter(u => u.id !== ADMIN_ID).map(u => <option key={u.id} value={u.id}>{u.email}</option>)}
+                      {filteredUsers.map(u => <option key={u.id} value={u.id}>{u.email}</option>)}
                     </select>
                   </div>
                 </>) : (<>
