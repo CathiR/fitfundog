@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 
 document.title = "Fit Fun Dog";
@@ -236,12 +236,24 @@ export default function App() {
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => { setSession(session); setAuthLoading(false); });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => {
+      setSession(s);
+    });
     return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => { if (session) loadAll(); }, [session]);
+  const hasLoadedRef = useRef(false);
+  useEffect(() => {
+    if (session?.user?.id && !hasLoadedRef.current) {
+      hasLoadedRef.current = true;
+      loadAll();
+    }
+    if (!session) hasLoadedRef.current = false;
+  }, [session?.user?.id]);
 
   async function loadAll() {
     setLoading(true);
@@ -257,7 +269,16 @@ export default function App() {
     setDoneLogs(ld || []);
     setTemplates(td || []);
     setUserEmails(ue || []);
-    if (pd && pd.length > 0) setOwnerPatient(pd[0]);
+    // Only set ownerPatient on first load or if current one no longer exists
+    setOwnerPatient(prev => {
+      if (prev && pd?.find(p => p.id === prev.id)) return pd.find(p => p.id === prev.id);
+      return pd && pd.length > 0 ? pd[0] : null;
+    });
+    // Keep selectedPatient in sync
+    setSelectedPatient(prev => {
+      if (!prev) return null;
+      return pd?.find(p => p.id === prev.id) || null;
+    });
     setLoading(false);
   }
 
@@ -294,14 +315,15 @@ export default function App() {
       });
       if (signUpError) { alert("Account-Fehler: " + signUpError.message); setSaving(false); return; }
       userId = signUpData?.user?.id || null;
-      // Restore admin session
+
+      // Restore admin session immediately
       const storedPw = sessionStorage.getItem("_tfpw");
-      if (storedPw) await supabase.auth.signInWithPassword({ email: THERAPIST_EMAIL, password: storedPw });
-      // Reload user emails
-      const { data: ue } = await supabase.from("user_emails").select("id, email");
-      setUserEmails(ue || []);
+      if (storedPw) {
+        await supabase.auth.signInWithPassword({ email: THERAPIST_EMAIL, password: storedPw });
+      }
     }
 
+    // Insert patient using admin client (session should be restored)
     const { data, error } = await supabase.from("patients").insert({
       name: newPatient.name, breed: newPatient.breed, age: newPatient.age,
       owner: newPatient.owner, condition: newPatient.condition, avatar: newPatient.avatar,
@@ -309,7 +331,10 @@ export default function App() {
     }).select().single();
 
     if (error) { alert("Fehler: " + error.message); setSaving(false); return; }
-    if (data) setPatients(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+
+    // Reload everything fresh to get consistent state
+    await loadAll();
+
     setSaving(false);
     setNewPatient(EMPTY_PATIENT);
     closeSheet();
