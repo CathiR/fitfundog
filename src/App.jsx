@@ -686,20 +686,48 @@ export default function App() {
                 <button className="btn" onClick={() => setSheet("addExercise")} style={{ width: "100%", background: DARK, color: "#E6F6F6", borderRadius: 12, padding: "12px", fontSize: 13, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16 }}>
                   <Icon name="assign" size={16} color="#E6F6F6" /> Übung zuweisen
                 </button>
+
+                {/* Progress summary */}
+                {exForPatient(selectedPatient.id).length > 0 && (() => {
+                  const patExs = exForPatient(selectedPatient.id);
+                  const donePat = patExs.filter(e => isDone(e.id)).length;
+                  const totalPat = patExs.length;
+                  return (
+                    <div style={{ background: `linear-gradient(135deg, ${DARK}, ${BRAND})`, borderRadius: 12, padding: "12px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "#B8E8E8", letterSpacing: ".5px", textTransform: "uppercase", marginBottom: 2 }}>Heutiger Fortschritt</div>
+                        <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 20, fontWeight: 700, color: "white" }}>{donePat}/{totalPat} erledigt</div>
+                      </div>
+                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, fontWeight: 700, color: "white" }}>{Math.round((donePat/totalPat)*100)}%</div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 700, color: "#3D7070", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 10 }}>{t.homeExercises(exForPatient(selectedPatient.id).length)}</div>
                 {exForPatient(selectedPatient.id).length === 0 && <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: ACCENT, textAlign: "center", padding: "12px 0" }}>{t.noExercisesYet}</div>}
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {exForPatient(selectedPatient.id).map(ex => (
-                    <div key={ex.id} className="card" style={{ padding: "11px 13px", display: "flex", gap: 10, alignItems: "center" }}>
-                      {ex.image_url ? <img src={ex.image_url} alt={ex.title} style={{ width: 38, height: 38, borderRadius: 8, objectFit: "contain", flexShrink: 0, background: LIGHT, padding: 2, cursor: "pointer" }} onClick={() => setSelectedExercise(ex)} />
-                        : <div style={{ width: 38, height: 38, borderRadius: 8, background: LIGHT, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" }} onClick={() => setSelectedExercise(ex)}><Icon name="paw" size={17} color={ACCENT} /></div>}
-                      <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => setSelectedExercise(ex)}>
-                        <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 13, fontWeight: 600, color: "#102828", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ex.title}</div>
-                        <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "#3D7070", marginTop: 1 }}>⏱ {ex.duration}</div>
+                  {exForPatient(selectedPatient.id).map(ex => {
+                    const done = isDone(ex.id);
+                    return (
+                      <div key={ex.id} className="card" style={{ padding: "11px 13px", display: "flex", gap: 10, alignItems: "center", borderLeft: `4px solid ${done ? BRAND : "#E0E0E0"}`, opacity: done ? 0.75 : 1 }}>
+                        {ex.image_url
+                          ? <img src={ex.image_url} alt={ex.title} style={{ width: 38, height: 38, borderRadius: 8, objectFit: "contain", flexShrink: 0, background: LIGHT, padding: 2, cursor: "pointer" }} onClick={() => setSelectedExercise(ex)} />
+                          : <div style={{ width: 38, height: 38, borderRadius: 8, background: done ? BRAND + "20" : LIGHT, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" }} onClick={() => setSelectedExercise(ex)}><Icon name="paw" size={17} color={done ? BRAND : ACCENT} /></div>}
+                        <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => setSelectedExercise(ex)}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                            {done && <div style={{ width: 16, height: 16, borderRadius: "50%", background: BRAND, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="check" size={10} color="white" /></div>}
+                            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 13, fontWeight: 600, color: done ? "#3D7070" : "#102828", textDecoration: done ? "line-through" : "none", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ex.title}</div>
+                          </div>
+                          <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: done ? BRAND : "#3D7070" }}>
+                            {done ? "✓ Heute erledigt" : `⏱ ${ex.duration}`}
+                          </div>
+                        </div>
+                        <button className="iBtn" onClick={() => { setSheetData(ex); setSheet("confirmDeleteEx"); }} style={{ background: "#FFE8E8" }}><Icon name="trash" size={14} color="#C0392B" /></button>
                       </div>
-                      <button className="iBtn" onClick={() => { setSheetData(ex); setSheet("confirmDeleteEx"); }} style={{ background: "#FFE8E8" }}><Icon name="trash" size={14} color="#C0392B" /></button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>)}
               {!selectedPatient && <div className="card" style={{ padding: 24, textAlign: "center", color: "#3D7070", fontFamily: "'DM Sans',sans-serif", fontSize: 14 }}>Bitte zuerst einen Patienten auswählen.</div>}
