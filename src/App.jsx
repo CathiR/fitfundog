@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "./supabase";
 
 document.title = "Fit Fun Dog";
@@ -15,9 +15,12 @@ const LIGHT = "#E6F6F6", PALE = "#F3FBFB", ACCENT = "#8FD4D5";
 const LOGO_URL = "https://tkgwdmntglzfeulpgfpw.supabase.co/storage/v1/object/public/exercise-images/Logo%20Fit%20Fun%20Dog-Vektor%20ws.png";
 const CATEGORIES = ["Regeneration", "Balance", "Kräftigung", "Koordination", "Mobilisation"];
 const TARGET_REGIONS = ["Ganzer Körper", "Hinterhand", "Vorderhand", "Rumpf", "Vorderpfoten", "Rücken"];
-const EMPTY_PATIENT = { name: "", breed: "", age: "", owner: "", condition: "", avatar: "🐕", ownerEmail: "", ownerPassword: "" };
+const EMPTY_PATIENT = { name: "", breed: "", age: "", owner: "", condition: "", avatar: "🐕" };
 const EMPTY_TEMPLATE = { title: "", categories: [], target_regions: [], difficulty: "Leicht", description: "", instructions: ["", "", ""], image_url: "", video_url: "" };
 const difficultyColor = { "Leicht": BRAND, "Mittel": MID, "Schwer": "#C0392B" };
+
+// ── Auto-logout on tab close ──
+window.addEventListener("beforeunload", () => { supabase.auth.signOut(); });
 
 const Icon = ({ name, size = 20, color = BRAND }) => {
   const s = { width: size, height: size };
@@ -35,7 +38,6 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
     clock: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
     lang: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
     chevdown: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>,
-    patient: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
     paw: <svg {...s} viewBox="0 0 24 24" fill={color}><circle cx="5.5" cy="6.5" r="2"/><circle cx="12" cy="4.5" r="2"/><circle cx="18.5" cy="6.5" r="2"/><circle cx="3.5" cy="12.5" r="1.5"/><path d="M12 8c-3.5 0-7 3-7 6.5 0 2.5 2 4.5 4.5 4.5h5c2.5 0 4.5-2 4.5-4.5C19 11 15.5 8 12 8z"/></svg>,
     tip: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.3A7 7 0 0 1 12 2z"/></svg>,
     rest: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22C6.5 22 2 17.5 2 12S6.5 2 12 2s10 4.5 10 10-4.5 10-10 10z"/><path d="M12 6v6l4 2"/></svg>,
@@ -43,6 +45,8 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
     target: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
     logout: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
     user: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+    mail: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
+    link: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
   };
   return icons[name] || null;
 };
@@ -95,7 +99,7 @@ const PAUSE = {
   ]
 };
 
-// ── Filter Dropdown ──
+// ── Shared UI components ──
 const FilterDropdown = ({ label, icon, options, selected, onChange, color = BRAND }) => {
   const [open, setOpen] = useState(false);
   const count = selected.length;
@@ -126,7 +130,6 @@ const FilterDropdown = ({ label, icon, options, selected, onChange, color = BRAN
   );
 };
 
-// ── MultiSelect chips (forms only) ──
 const MultiSelect = ({ options, selected, onChange, color = BRAND }) => (
   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
     {options.map(opt => {
@@ -136,12 +139,29 @@ const MultiSelect = ({ options, selected, onChange, color = BRAND }) => (
   </div>
 );
 
+const InfoCard = ({ icon, title, text, items }) => (
+  <div style={{ background: "white", borderRadius: 16, boxShadow: "0 2px 16px rgba(95,184,185,0.12)", padding: "18px 20px", textAlign: "left" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+      <div style={{ width: 34, height: 34, borderRadius: 9, background: BRAND + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name={icon} size={18} color={BRAND} /></div>
+      <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 15, fontWeight: 700, color: "#102828" }}>{title}</div>
+    </div>
+    {text && <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#3D6060", lineHeight: 1.65 }}>{text}</div>}
+    {items && <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>{items.map((item, j) => (
+      <div key={j} style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: BRAND, flexShrink: 0, marginTop: 4 }} />
+        <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#3D6060", lineHeight: 1.55, flex: 1 }}>{item}</span>
+      </div>
+    ))}</div>}
+  </div>
+);
+
 // ── Login Screen ──
 const LoginScreen = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const inp = { width: "100%", padding: "13px 14px", borderRadius: 10, border: "1.5px solid #B8DFE0", fontSize: 16, fontFamily: "'DM Sans',sans-serif", outline: "none", color: "#102828", background: "white", WebkitTextFillColor: "#102828", boxSizing: "border-box" };
 
   const handleLogin = async () => {
     if (!email || !password) { setError("Bitte Email und Passwort eingeben."); return; }
@@ -151,8 +171,6 @@ const LoginScreen = () => {
     else if (email === THERAPIST_EMAIL) sessionStorage.setItem("_tfpw", password);
     setLoading(false);
   };
-
-  const inp = { width: "100%", padding: "13px 14px", borderRadius: 10, border: "1.5px solid #B8DFE0", fontSize: 16, fontFamily: "'DM Sans',sans-serif", outline: "none", color: "#102828", background: "white", boxSizing: "border-box" };
 
   return (
     <div style={{ minHeight: "100vh", background: `linear-gradient(160deg, ${DARK} 0%, #2A7A7B 60%, ${BRAND} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -164,14 +182,8 @@ const LoginScreen = () => {
         <div style={{ background: "white", borderRadius: 22, padding: "28px 24px", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
           <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, fontWeight: 700, color: DARK, marginBottom: 4 }}>Willkommen zurück</div>
           <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#3D7070", marginBottom: 22 }}>Bitte melde dich an um fortzufahren.</div>
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 700, color: "#3D7070", letterSpacing: ".7px", textTransform: "uppercase", marginBottom: 7 }}>Email</div>
-            <input type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handleLogin()} placeholder="deine@email.de" style={inp} />
-          </div>
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 700, color: "#3D7070", letterSpacing: ".7px", textTransform: "uppercase", marginBottom: 7 }}>Passwort</div>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handleLogin()} placeholder="••••••••" style={inp} />
-          </div>
+          <div style={{ marginBottom: 14 }}><div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 700, color: "#3D7070", letterSpacing: ".7px", textTransform: "uppercase", marginBottom: 7 }}>Email</div><input type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === "Enter" && handleLogin()} placeholder="deine@email.de" style={inp} /></div>
+          <div style={{ marginBottom: 20 }}><div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 700, color: "#3D7070", letterSpacing: ".7px", textTransform: "uppercase", marginBottom: 7 }}>Passwort</div><input type="password" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === "Enter" && handleLogin()} placeholder="••••••••" style={inp} /></div>
           {error && <div style={{ background: "#FFE8E8", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#C0392B" }}>{error}</div>}
           <button onClick={handleLogin} disabled={loading} style={{ width: "100%", padding: "14px", borderRadius: 12, background: loading ? "#B8DFE0" : BRAND, color: "#102828", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 15, border: "none", cursor: "pointer" }}>
             {loading ? "Wird angemeldet..." : "Anmelden"}
@@ -191,12 +203,14 @@ export default function App() {
   const isAdmin = session?.user?.id === ADMIN_ID;
 
   const [view, setView] = useState("owner");
+  const [practiceTab, setPracticeTab] = useState("patients"); // "patients" | "exercises" | "assign"
   const [infoTab, setInfoTab] = useState("tips");
   const [patients, setPatients] = useState([]);
   const [ownerPatient, setOwnerPatient] = useState(null);
   const [exercises, setExercises] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [doneLogs, setDoneLogs] = useState([]);
+  const [userEmails, setUserEmails] = useState([]); // [{id, email}]
   const [loading, setLoading] = useState(true);
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -215,6 +229,9 @@ export default function App() {
   const [filterRegions, setFilterRegions] = useState([]);
   const [assignFilterCats, setAssignFilterCats] = useState([]);
   const [assignFilterRegions, setAssignFilterRegions] = useState([]);
+  const [newAccountMode, setNewAccountMode] = useState("new"); // "new" | "existing" | "none"
+  const [selectedExistingUserId, setSelectedExistingUserId] = useState("");
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -228,24 +245,29 @@ export default function App() {
 
   async function loadAll() {
     setLoading(true);
-    const [{ data: pd }, { data: ed }, { data: ld }, { data: td }] = await Promise.all([
+    const [{ data: pd }, { data: ed }, { data: ld }, { data: td }, { data: ue }] = await Promise.all([
       supabase.from("patients").select("*").order("name"),
       supabase.from("exercises").select("*").order("created_at"),
       supabase.from("exercise_logs").select("*").eq("done_date", today),
-      supabase.from("exercise_templates").select("*").order("title")
+      supabase.from("exercise_templates").select("*").order("title"),
+      supabase.from("user_emails").select("id, email")
     ]);
     setPatients(pd || []);
     setExercises(ed || []);
     setDoneLogs(ld || []);
     setTemplates(td || []);
+    setUserEmails(ue || []);
     if (pd && pd.length > 0) setOwnerPatient(pd[0]);
     setLoading(false);
   }
 
   const handleLogout = async () => { sessionStorage.removeItem("_tfpw"); await supabase.auth.signOut(); };
+  const closeSheet = () => { setSheet(null); setSheetData(null); setSelectedTemplate(null); setAssignFilterCats([]); setAssignFilterRegions([]); setDuration(""); setEditTemplateData(null); setEditPatientData(null); setNewAccountMode("new"); setSelectedExistingUserId(""); setResetEmailSent(false); };
 
   const exForPatient = (pid) => exercises.filter(e => e.patient_id === pid);
   const isDone = (eid) => doneLogs.some(l => l.exercise_id === eid);
+
+  const getUserEmail = (uid) => userEmails.find(u => u.id === uid)?.email || null;
 
   const toggleDone = async (eid) => {
     if (isDone(eid)) {
@@ -257,25 +279,27 @@ export default function App() {
     }
   };
 
-  const closeSheet = () => { setSheet(null); setSheetData(null); setSelectedTemplate(null); setAssignFilterCats([]); setAssignFilterRegions([]); setDuration(""); setEditTemplateData(null); setEditPatientData(null); };
-
-  // ── Add patient + create owner account ──
+  // ── Add patient ──
   const addPatient = async () => {
     if (!newPatient.name) return;
     setSaving(true);
     let userId = null;
 
-    if (newPatient.ownerEmail && newPatient.ownerPassword) {
+    if (newAccountMode === "existing") {
+      userId = selectedExistingUserId || null;
+    } else if (newAccountMode === "new" && newPatient.ownerEmail && newPatient.ownerPassword) {
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: newPatient.ownerEmail,
         password: newPatient.ownerPassword,
       });
       if (signUpError) { alert("Account-Fehler: " + signUpError.message); setSaving(false); return; }
       userId = signUpData?.user?.id || null;
-
-      // Restore admin session after signUp switches it
+      // Restore admin session
       const storedPw = sessionStorage.getItem("_tfpw");
       if (storedPw) await supabase.auth.signInWithPassword({ email: THERAPIST_EMAIL, password: storedPw });
+      // Reload user emails
+      const { data: ue } = await supabase.from("user_emails").select("id, email");
+      setUserEmails(ue || []);
     }
 
     const { data, error } = await supabase.from("patients").insert({
@@ -294,15 +318,24 @@ export default function App() {
   const updatePatient = async () => {
     if (!editPatientData?.name) return;
     setSaving(true);
-    const { id, ownerEmail, ownerPassword, ...fields } = editPatientData;
+    const { id, _newUserId, ownerEmail, ownerPassword, ...fields } = editPatientData;
+    // If _newUserId was set, use it; otherwise keep existing user_id
+    if (_newUserId !== undefined) fields.user_id = _newUserId || null;
     const { data, error } = await supabase.from("patients").update(fields).eq("id", id).select().single();
-    if (!error && data) {
+    if (error) { alert("Fehler: " + error.message); setSaving(false); return; }
+    if (data) {
       setPatients(prev => prev.map(p => p.id === data.id ? data : p).sort((a, b) => a.name.localeCompare(b.name)));
       if (ownerPatient?.id === data.id) setOwnerPatient(data);
       if (selectedPatient?.id === data.id) setSelectedPatient(data);
     }
     setSaving(false);
     closeSheet();
+  };
+
+  const sendPasswordReset = async (email) => {
+    if (!email) return;
+    await supabase.auth.resetPasswordForEmail(email);
+    setResetEmailSent(true);
   };
 
   const deletePatient = async (pid) => {
@@ -385,26 +418,8 @@ export default function App() {
   });
   const patLabel = (p) => `${p.avatar || ""} ${p.name} - ${p.breed} - ${p.owner}`.trim();
 
-  // Shared styles
-  const inp = { width: "100%", padding: "11px 14px", borderRadius: 10, border: "1.5px solid #B8DFE0", fontSize: 16, fontFamily: "'DM Sans',sans-serif", outline: "none", background: "white", color: "#102828", boxSizing: "border-box", WebkitTextFillColor: "#102828" };
+  const inp = { width: "100%", padding: "11px 14px", borderRadius: 10, border: "1.5px solid #B8DFE0", fontSize: 16, fontFamily: "'DM Sans',sans-serif", outline: "none", background: "white", color: "#102828", WebkitTextFillColor: "#102828", boxSizing: "border-box" };
   const SL = ({ text }) => <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 700, color: "#3D7070", letterSpacing: ".7px", textTransform: "uppercase", marginBottom: 7 }}>{text}</div>;
-
-  const InfoCard = ({ icon, title, text, items }) => (
-    <div style={{ background: "white", borderRadius: 18, boxShadow: "0 2px 16px rgba(95,184,185,0.12)", padding: "18px 20px", textAlign: "left" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-        <div style={{ width: 34, height: 34, borderRadius: 9, background: BRAND + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name={icon} size={18} color={BRAND} /></div>
-        <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 15, fontWeight: 700, color: "#102828" }}>{title}</div>
-      </div>
-      {text && <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#3D6060", lineHeight: 1.65 }}>{text}</div>}
-      {items && <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>{items.map((item, j) => (
-        <div key={j} style={{ display: "flex", gap: 9, alignItems: "flex-start" }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: BRAND, flexShrink: 0, marginTop: 4 }} />
-          <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#3D6060", lineHeight: 1.55, flex: 1 }}>{item}</span>
-        </div>
-      ))}</div>}
-    </div>
-  );
-
   const SheetHeader = ({ title, onClose }) => (
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
       <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 19, fontWeight: 700, color: "#102828" }}>{title}</div>
@@ -412,34 +427,9 @@ export default function App() {
     </div>
   );
 
-  const ConfirmSheet = ({ title, msg, onConfirm, onCancel, confirmLabel }) => (
-    <div className="overlay" onClick={onCancel}>
-      <div className="sheet" onClick={e => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><Icon name="trash" size={40} color="#C0392B" /></div>
-        <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 19, fontWeight: 700, marginBottom: 8, textAlign: "center", color: "#102828" }}>{title}</div>
-        <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: "#3D7070", marginBottom: 22, lineHeight: 1.6, textAlign: "center" }}>{msg}</div>
-        <div style={{ display: "flex", gap: 9 }}>
-          <button onClick={onCancel} style={{ flex: 1, padding: "14px", borderRadius: 12, background: LIGHT, color: "#3D7070", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, border: "none", cursor: "pointer" }}>{t.cancel}</button>
-          <button onClick={onConfirm} style={{ flex: 1, padding: "14px", borderRadius: 12, background: "#C0392B", color: "white", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, border: "none", cursor: "pointer" }}>{deleting ? "..." : confirmLabel}</button>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (authLoading) return (
-    <div style={{ minHeight: "100vh", background: `linear-gradient(160deg, ${DARK} 0%, #2A7A7B 60%, ${BRAND} 100%)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <img src={LOGO_URL} alt="Fit Fun Dog" style={{ height: 60, objectFit: "contain" }} />
-    </div>
-  );
-
+  if (authLoading) return <div style={{ minHeight: "100vh", background: `linear-gradient(160deg, ${DARK}, ${BRAND})`, display: "flex", alignItems: "center", justifyContent: "center" }}><img src={LOGO_URL} alt="" style={{ height: 60, objectFit: "contain" }} /></div>;
   if (!session) return <LoginScreen />;
-
-  if (loading) return (
-    <div style={{ minHeight: "100vh", background: LIGHT, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}>
-      <Icon name="paw" size={48} color={BRAND} />
-      <div style={{ fontFamily: "'DM Sans',sans-serif", color: "#3D7070", fontSize: 15 }}>Wird geladen...</div>
-    </div>
-  );
+  if (loading) return <div style={{ minHeight: "100vh", background: LIGHT, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 12 }}><Icon name="paw" size={48} color={BRAND} /><div style={{ fontFamily: "'DM Sans',sans-serif", color: "#3D7070" }}>Wird geladen...</div></div>;
 
   return (
     <div style={{ fontFamily: "Georgia,serif", minHeight: "100vh", background: LIGHT, color: "#102828" }} onClick={() => setLangOpen(false)}>
@@ -449,24 +439,25 @@ export default function App() {
         body { -webkit-text-size-adjust: 100%; }
         .btn { cursor: pointer; border: none; transition: all 0.18s; background: none; }
         .btn:hover { opacity: .85; }
-        .card { background: white; border-radius: 18px; box-shadow: 0 2px 16px rgba(95,184,185,0.12); text-align: left; }
+        .card { background: white; border-radius: 16px; box-shadow: 0 2px 16px rgba(95,184,185,0.10); text-align: left; }
         .ex-card { transition: all 0.18s; cursor: pointer; }
-        .ex-card:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(95,184,185,0.20); }
+        .ex-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(95,184,185,0.18); }
         .tag { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; font-family: 'DM Sans',sans-serif; }
-        input, textarea, select { font-family: 'DM Sans',sans-serif; outline: none; -webkit-text-fill-color: #102828; color: #102828; font-size: 16px; }
-        input:focus, textarea:focus, select:focus { border-color: ${BRAND} !important; box-shadow: 0 0 0 3px rgba(95,184,185,0.15); }
+        input,textarea,select { font-family: 'DM Sans',sans-serif; outline: none; -webkit-text-fill-color: #102828; color: #102828; font-size: 16px; }
+        input:focus,textarea:focus,select:focus { border-color: ${BRAND} !important; box-shadow: 0 0 0 3px rgba(95,184,185,0.15); }
         .overlay { position: fixed; inset: 0; background: rgba(16,40,40,0.55); z-index: 100; display: flex; align-items: flex-end; justify-content: center; }
         .sheet { background: white; border-radius: 24px 24px 0 0; width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; padding: 24px 20px 40px; }
         .pbar { height: 8px; background: rgba(255,255,255,0.2); border-radius: 99px; overflow: hidden; }
         .pfill { height: 100%; border-radius: 99px; background: linear-gradient(90deg,#8FD4D5,#ffffff88); transition: width .6s ease; }
         .nav-tab { padding: 9px 0; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'DM Sans',sans-serif; border: none; transition: all .18s; flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .ptab { padding: 8px 14px; border-radius: 9px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'DM Sans',sans-serif; border: none; transition: all .15s; display: flex; align-items: center; gap: 6px; }
         select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%233D7070' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px !important; }
-        .tmpl-row { padding: 10px 12px; border-radius: 11px; cursor: pointer; border: 2px solid transparent; display: flex; align-items: center; gap: 10px; transition: all .15s; }
+        .tmpl-row { padding: 10px 12px; border-radius: 10px; cursor: pointer; border: 2px solid transparent; display: flex; align-items: center; gap: 10px; transition: all .15s; }
         .tmpl-row:hover { background: ${LIGHT}; }
         .tmpl-row.sel { border-color: ${BRAND}; background: ${LIGHT}; }
-        .iBtn { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; flex-shrink: 0; }
-        .scroll-x { overflow-x: auto; scrollbar-width: none; }
-        .scroll-x::-webkit-scrollbar { display: none; }
+        .iBtn { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; flex-shrink: 0; transition: all .15s; }
+        .iBtn:hover { opacity: .8; }
+        .mode-btn { flex: 1; padding: 10px 8px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'DM Sans',sans-serif; border: 2px solid; transition: all .15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
       `}</style>
 
       {/* ── HEADER ── */}
@@ -474,10 +465,10 @@ export default function App() {
         <div style={{ maxWidth: 480, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px 10px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <img src={LOGO_URL} alt="Fit Fun Dog" style={{ height: 38, objectFit: "contain" }} />
+              <img src={LOGO_URL} alt="Fit Fun Dog" style={{ height: 36, objectFit: "contain" }} />
               <div>
                 <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 15, fontWeight: 700, color: "#E6F6F6", lineHeight: 1.1 }}>Fit Fun Dog</div>
-                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 9, color: ACCENT, letterSpacing: "0.5px" }}>Tierphysiotherapie & Osteopathie</div>
+                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 9, color: ACCENT, letterSpacing: "0.3px" }}>Tierphysiotherapie & Osteopathie</div>
               </div>
             </div>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
@@ -540,21 +531,18 @@ export default function App() {
               </div>
               <div className="pbar" style={{ marginTop: 14 }}><div className="pfill" style={{ width: `${progress}%` }} /></div>
             </div>
-
             <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
               <FilterDropdown label={t.filterCategory} icon="filter" options={CATEGORIES} selected={filterCats} onChange={setFilterCats} color={BRAND} />
               <FilterDropdown label={t.filterRegion} icon="target" options={TARGET_REGIONS} selected={filterRegions} onChange={setFilterRegions} color={MID} />
             </div>
-
             {filteredOwnerExs.length === 0 && <div className="card" style={{ padding: 20, textAlign: "center", color: "#3D7070", fontFamily: "'DM Sans',sans-serif", fontSize: 14 }}>{t.noExercises}</div>}
-
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {filteredOwnerExs.map(ex => {
                 const done = isDone(ex.id);
                 return (
                   <div key={ex.id} className="card ex-card" onClick={() => setSelectedExercise(ex)} style={{ padding: "14px", display: "flex", gap: 12, alignItems: "center", opacity: done ? 0.62 : 1 }}>
-                    {ex.image_url ? <img src={ex.image_url} alt={ex.title} style={{ width: 52, height: 52, borderRadius: 12, objectFit: "contain", flexShrink: 0, background: LIGHT, padding: 2 }} />
-                      : <div style={{ width: 52, height: 52, borderRadius: 12, background: BRAND + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="paw" size={24} color={BRAND} /></div>}
+                    {ex.image_url ? <img src={ex.image_url} alt={ex.title} style={{ width: 50, height: 50, borderRadius: 12, objectFit: "contain", flexShrink: 0, background: LIGHT, padding: 2 }} />
+                      : <div style={{ width: 50, height: 50, borderRadius: 12, background: BRAND + "18", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="paw" size={22} color={BRAND} /></div>}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                         <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 14, fontWeight: 600, lineHeight: 1.3, textDecoration: done ? "line-through" : "none", color: done ? ACCENT : "#102828" }}>{ex.title}</div>
@@ -576,84 +564,122 @@ export default function App() {
         </div>
       )}
 
-      {/* ══ THERAPIST VIEW ══ */}
+      {/* ══ THERAPIST / PRACTICE VIEW ══ */}
       {view === "therapist" && isAdmin && (
-        <div style={{ maxWidth: 480, margin: "0 auto", padding: "16px 14px 80px" }}>
-
-          {/* Patienten verwalten */}
-          <div className="card" style={{ padding: 16, marginBottom: 14 }}>
-            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 16, fontWeight: 700, marginBottom: 12, color: DARK }}>Patienten verwalten</div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-              <button className="btn" onClick={() => { setNewPatient(EMPTY_PATIENT); setSheet("addPatient"); }} style={{ flex: 1, background: BRAND, color: "#102828", borderRadius: 10, padding: "10px 8px", fontSize: 12, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                <Icon name="plus" size={14} color="#102828" /> Neuer Patient
+        <div style={{ maxWidth: 480, margin: "0 auto", padding: "0 0 80px" }}>
+          {/* Sub-tabs */}
+          <div style={{ display: "flex", gap: 0, background: "white", borderBottom: `2px solid ${LIGHT}`, padding: "0 14px" }}>
+            {[["patients","user","Patienten"],["exercises","assign","Übungen"],["assign","assign","Zuweisen"]].map(([tab, ic, lb]) => (
+              <button key={tab} className="btn" onClick={() => setPracticeTab(tab)} style={{ flex: 1, padding: "13px 8px", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 700, color: practiceTab === tab ? BRAND : "#3D7070", borderBottom: practiceTab === tab ? `2px solid ${BRAND}` : "2px solid transparent", marginBottom: -2, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
+                <Icon name={tab === "patients" ? "user" : tab === "exercises" ? "tip" : "assign"} size={14} color={practiceTab === tab ? BRAND : "#3D7070"} />{lb}
               </button>
-            </div>
-            <select value={selectedPatient?.id || ""} onChange={e => setSelectedPatient(patients.find(p => p.id === e.target.value) || null)} style={{ ...inp, borderRadius: 10, marginBottom: selectedPatient ? 12 : 0 }}>
-              <option value="">{t.selectPatient}</option>
-              {patients.map(p => <option key={p.id} value={p.id}>{patLabel(p)}</option>)}
-            </select>
-
-            {selectedPatient && (
-              <div style={{ background: PALE, borderRadius: 12, padding: "12px 14px" }}>
-                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                  <div style={{ fontSize: 26, flexShrink: 0 }}>{selectedPatient.avatar || "🐕"}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 15, fontWeight: 700 }}>{selectedPatient.name}</div>
-                    <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: "#3D7070" }}>{selectedPatient.breed} · {selectedPatient.age} · {selectedPatient.owner}</div>
-                    <span className="tag" style={{ background: BRAND + "20", color: MID, marginTop: 4, display: "inline-block" }}>{selectedPatient.condition}</span>
-                  </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button className="iBtn" onClick={() => { setEditPatientData({ ...selectedPatient }); setSheet("editPatient"); }} style={{ background: BRAND + "20" }}><Icon name="edit" size={15} color={MID} /></button>
-                    <button className="iBtn" onClick={() => { setSheetData(selectedPatient); setSheet("confirmDeletePt"); }} style={{ background: "#FFE8E8" }}><Icon name="trash" size={15} color="#C0392B" /></button>
-                  </div>
-                </div>
-              </div>
-            )}
+            ))}
           </div>
 
-          {/* Übungen verwalten */}
-          <div className="card" style={{ padding: 16, marginBottom: 14 }}>
-            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 16, fontWeight: 700, marginBottom: 12, color: DARK }}>Übungen verwalten</div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 0 }}>
-              <button className="btn" onClick={() => { setNewTemplate(EMPTY_TEMPLATE); setSheet("addTemplate"); }} style={{ flex: 1, background: "white", color: DARK, borderRadius: 10, padding: "10px 8px", fontSize: 12, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, border: `1.5px solid ${BRAND}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                <Icon name="plus" size={14} color={DARK} /> Neue Übung
-              </button>
-              <button className="btn" onClick={() => setSheet("templateLibrary")} style={{ flex: 1, background: ACCENT + "25", color: DARK, borderRadius: 10, padding: "10px 8px", fontSize: 12, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, border: `1.5px solid ${ACCENT}`, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                <Icon name="edit" size={14} color={DARK} /> Übungen bearbeiten
-              </button>
-            </div>
-          </div>
-
-          {/* Übung zuweisen */}
-          <div className="card" style={{ padding: 16 }}>
-            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 16, fontWeight: 700, marginBottom: 12, color: DARK }}>Übungen zuweisen</div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
-              <button className="btn" onClick={() => setSheet("addExercise")} style={{ flex: 1, background: DARK, color: "#E6F6F6", borderRadius: 10, padding: "10px 8px", fontSize: 12, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                <Icon name="assign" size={14} color="#E6F6F6" /> Übung zuweisen
-              </button>
-            </div>
-
-            {selectedPatient && (<>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 700, color: "#3D7070", textTransform: "uppercase", letterSpacing: ".5px" }}>{t.homeExercises(exForPatient(selectedPatient.id).length)}</div>
+          {/* PATIENTEN TAB */}
+          {practiceTab === "patients" && (
+            <div style={{ padding: "16px 14px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 18, fontWeight: 700, color: DARK }}>Patienten</div>
+                <button className="btn" onClick={() => { setNewPatient(EMPTY_PATIENT); setNewAccountMode("new"); setSheet("addPatient"); }} style={{ background: BRAND, color: "#102828", borderRadius: 10, padding: "9px 14px", fontSize: 12, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+                  <Icon name="plus" size={14} color="#102828" /> Neuer Patient
+                </button>
               </div>
-              {exForPatient(selectedPatient.id).length === 0 && <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: ACCENT, textAlign: "center", padding: "12px 0" }}>{t.noExercisesYet}</div>}
-              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                {exForPatient(selectedPatient.id).map(ex => (
-                  <div key={ex.id} style={{ background: PALE, borderRadius: 10, padding: "10px 12px", display: "flex", gap: 10, alignItems: "center" }}>
-                    {ex.image_url ? <img src={ex.image_url} alt={ex.title} style={{ width: 38, height: 38, borderRadius: 8, objectFit: "contain", flexShrink: 0, background: LIGHT, padding: 2, cursor: "pointer" }} onClick={() => setSelectedExercise(ex)} />
-                      : <div style={{ width: 38, height: 38, borderRadius: 8, background: LIGHT, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" }} onClick={() => setSelectedExercise(ex)}><Icon name="paw" size={18} color={ACCENT} /></div>}
-                    <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => setSelectedExercise(ex)}>
-                      <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "#102828" }}>{ex.title}</div>
-                      <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "#3D7070", marginTop: 1 }}>⏱ {ex.duration}</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {patients.map(p => {
+                  const userEmail = getUserEmail(p.user_id);
+                  return (
+                    <div key={p.id} className="card" style={{ padding: "14px 16px", display: "flex", gap: 12, alignItems: "center" }}>
+                      <div style={{ width: 44, height: 44, borderRadius: 12, background: LIGHT, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, flexShrink: 0, border: `1.5px solid ${ACCENT}40` }}>{p.avatar || "🐕"}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 15, fontWeight: 700, color: "#102828" }}>{p.name}</div>
+                        <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: "#3D7070", marginTop: 1 }}>{p.breed} · {p.owner}</div>
+                        <div style={{ display: "flex", gap: 5, marginTop: 5, flexWrap: "wrap" }}>
+                          <span className="tag" style={{ background: BRAND + "20", color: MID }}>{p.condition}</span>
+                          {userEmail
+                            ? <span className="tag" style={{ background: "#E8F5E9", color: "#2E7D32", display: "flex", alignItems: "center", gap: 3 }}><Icon name="mail" size={10} color="#2E7D32" />{userEmail}</span>
+                            : <span className="tag" style={{ background: "#FFF3E0", color: "#E65100" }}>Kein Login</span>}
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 5 }}>
+                        <button className="iBtn" onClick={() => { setEditPatientData({ ...p }); setSheet("editPatient"); }} style={{ background: BRAND + "20" }}><Icon name="edit" size={14} color={MID} /></button>
+                        <button className="iBtn" onClick={() => { setSheetData(p); setSheet("confirmDeletePt"); }} style={{ background: "#FFE8E8" }}><Icon name="trash" size={14} color="#C0392B" /></button>
+                      </div>
                     </div>
-                    <button className="iBtn" onClick={() => { setSheetData(ex); setSheet("confirmDeleteEx"); }} style={{ background: "#FFE8E8" }}><Icon name="trash" size={15} color="#C0392B" /></button>
+                  );
+                })}
+                {patients.length === 0 && <div className="card" style={{ padding: 24, textAlign: "center", color: "#3D7070", fontFamily: "'DM Sans',sans-serif", fontSize: 14 }}>Noch keine Patienten angelegt.</div>}
+              </div>
+            </div>
+          )}
+
+          {/* ÜBUNGEN TAB */}
+          {practiceTab === "exercises" && (
+            <div style={{ padding: "16px 14px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 18, fontWeight: 700, color: DARK }}>Übungsvorlagen</div>
+                <button className="btn" onClick={() => { setNewTemplate(EMPTY_TEMPLATE); setSheet("addTemplate"); }} style={{ background: BRAND, color: "#102828", borderRadius: 10, padding: "9px 14px", fontSize: 12, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+                  <Icon name="plus" size={14} color="#102828" /> Neue Übung
+                </button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {templates.map(tmpl => (
+                  <div key={tmpl.id} className="card" style={{ padding: "12px 14px", display: "flex", gap: 10, alignItems: "center" }}>
+                    {tmpl.image_url ? <img src={tmpl.image_url} alt={tmpl.title} style={{ width: 42, height: 42, borderRadius: 9, objectFit: "contain", flexShrink: 0, background: LIGHT, padding: 2 }} />
+                      : <div style={{ width: 42, height: 42, borderRadius: 9, background: LIGHT, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="paw" size={18} color={ACCENT} /></div>}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 14, fontWeight: 600, color: "#102828", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tmpl.title}</div>
+                      <div style={{ display: "flex", gap: 5, marginTop: 4, flexWrap: "wrap" }}>
+                        {(tmpl.categories || []).map(c => <span key={c} className="tag" style={{ background: BRAND + "18", color: BRAND }}>{c}</span>)}
+                        <span className="tag" style={{ background: (difficultyColor[tmpl.difficulty] || BRAND) + "18", color: difficultyColor[tmpl.difficulty] || BRAND }}>{tmpl.difficulty}</span>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 5 }}>
+                      <button className="iBtn" onClick={() => { setEditTemplateData({ ...tmpl, instructions: tmpl.instructions?.length ? tmpl.instructions : ["","",""] }); setSheet("editTemplate"); }} style={{ background: BRAND + "20" }}><Icon name="edit" size={14} color={MID} /></button>
+                      <button className="iBtn" onClick={() => { setSheetData(tmpl); setSheet("confirmDeleteTmpl"); }} style={{ background: "#FFE8E8" }}><Icon name="trash" size={14} color="#C0392B" /></button>
+                    </div>
                   </div>
                 ))}
+                {templates.length === 0 && <div className="card" style={{ padding: 24, textAlign: "center", color: "#3D7070", fontFamily: "'DM Sans',sans-serif", fontSize: 14 }}>Noch keine Übungsvorlagen erstellt.</div>}
               </div>
-            </>)}
-            {!selectedPatient && <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#3D7070", textAlign: "center", padding: "8px 0" }}>Zuerst oben einen Patienten auswählen.</div>}
-          </div>
+            </div>
+          )}
+
+          {/* ZUWEISEN TAB */}
+          {practiceTab === "assign" && (
+            <div style={{ padding: "16px 14px" }}>
+              <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 18, fontWeight: 700, color: DARK, marginBottom: 14 }}>Übung zuweisen</div>
+              <div style={{ marginBottom: 14 }}>
+                <SL text="Patient auswählen" />
+                <select value={selectedPatient?.id || ""} onChange={e => setSelectedPatient(patients.find(p => p.id === e.target.value) || null)} style={{ ...inp, borderRadius: 12 }}>
+                  <option value="">{t.selectPatient}</option>
+                  {patients.map(p => <option key={p.id} value={p.id}>{patLabel(p)}</option>)}
+                </select>
+              </div>
+
+              {selectedPatient && (<>
+                <button className="btn" onClick={() => setSheet("addExercise")} style={{ width: "100%", background: DARK, color: "#E6F6F6", borderRadius: 12, padding: "12px", fontSize: 13, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16 }}>
+                  <Icon name="assign" size={16} color="#E6F6F6" /> Übung zuweisen
+                </button>
+                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, fontWeight: 700, color: "#3D7070", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: 10 }}>{t.homeExercises(exForPatient(selectedPatient.id).length)}</div>
+                {exForPatient(selectedPatient.id).length === 0 && <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: ACCENT, textAlign: "center", padding: "12px 0" }}>{t.noExercisesYet}</div>}
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {exForPatient(selectedPatient.id).map(ex => (
+                    <div key={ex.id} className="card" style={{ padding: "11px 13px", display: "flex", gap: 10, alignItems: "center" }}>
+                      {ex.image_url ? <img src={ex.image_url} alt={ex.title} style={{ width: 38, height: 38, borderRadius: 8, objectFit: "contain", flexShrink: 0, background: LIGHT, padding: 2, cursor: "pointer" }} onClick={() => setSelectedExercise(ex)} />
+                        : <div style={{ width: 38, height: 38, borderRadius: 8, background: LIGHT, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, cursor: "pointer" }} onClick={() => setSelectedExercise(ex)}><Icon name="paw" size={17} color={ACCENT} /></div>}
+                      <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => setSelectedExercise(ex)}>
+                        <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 13, fontWeight: 600, color: "#102828", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ex.title}</div>
+                        <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "#3D7070", marginTop: 1 }}>⏱ {ex.duration}</div>
+                      </div>
+                      <button className="iBtn" onClick={() => { setSheetData(ex); setSheet("confirmDeleteEx"); }} style={{ background: "#FFE8E8" }}><Icon name="trash" size={14} color="#C0392B" /></button>
+                    </div>
+                  ))}
+                </div>
+              </>)}
+              {!selectedPatient && <div className="card" style={{ padding: 24, textAlign: "center", color: "#3D7070", fontFamily: "'DM Sans',sans-serif", fontSize: 14 }}>Bitte zuerst einen Patienten auswählen.</div>}
+            </div>
+          )}
         </div>
       )}
 
@@ -768,18 +794,35 @@ export default function App() {
             <SheetHeader title="Neuer Patient" onClose={closeSheet} />
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[["Name des Hundes *","name","Bello"],["Rasse","breed","Labrador Retriever"],["Alter","age","7 Jahre"],["Besitzer","owner","Familie Müller"],["Diagnose","condition","Hüftdysplasie"]].map(([label, key, ph]) => (
-                <div key={key}><SL text={label} /><input value={newPatient[key]} onChange={e => setNewPatient(p => ({ ...p, [key]: e.target.value }))} placeholder={ph} style={inp} /></div>
+                <div key={key}><SL text={label} /><input value={newPatient[key] || ""} onChange={e => setNewPatient(p => ({ ...p, [key]: e.target.value }))} placeholder={ph} style={inp} /></div>
               ))}
-              <div><SL text="Emoji" /><input value={newPatient.avatar} onChange={e => setNewPatient(p => ({ ...p, avatar: e.target.value }))} placeholder="🐕" style={{ ...inp, width: 60, textAlign: "center" }} /></div>
-              <div style={{ background: LIGHT, borderRadius: 12, padding: "14px 16px", marginTop: 4 }}>
-                <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 14, fontWeight: 700, color: DARK, marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
-                  <Icon name="user" size={16} color={DARK} /> Login-Konto für Besitzer
+              <div><SL text="Emoji" /><input value={newPatient.avatar || ""} onChange={e => setNewPatient(p => ({ ...p, avatar: e.target.value }))} placeholder="🐕" style={{ ...inp, width: 60, textAlign: "center" }} /></div>
+
+              {/* Account section */}
+              <div style={{ background: LIGHT, borderRadius: 12, padding: "14px" }}>
+                <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 14, fontWeight: 700, color: DARK, marginBottom: 12 }}>Login-Konto</div>
+                <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                  {[["new","Neues Konto"],["existing","Bestehendes Konto"],["none","Kein Login"]].map(([mode, label]) => (
+                    <button key={mode} className="mode-btn" onClick={() => setNewAccountMode(mode)} style={{ borderColor: newAccountMode === mode ? BRAND : "#B8DFE0", background: newAccountMode === mode ? BRAND : "white", color: newAccountMode === mode ? "#102828" : "#3D7070", fontSize: 11 }}>{label}</button>
+                  ))}
                 </div>
-                <div style={{ marginBottom: 10 }}><SL text="Email des Besitzers" /><input value={newPatient.ownerEmail || ""} onChange={e => setNewPatient(p => ({ ...p, ownerEmail: e.target.value }))} placeholder="besitzer@email.de" type="email" style={inp} /></div>
-                <div><SL text="Passwort (mind. 6 Zeichen)" /><input value={newPatient.ownerPassword || ""} onChange={e => setNewPatient(p => ({ ...p, ownerPassword: e.target.value }))} placeholder="••••••••" type="password" style={inp} /></div>
-                <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "#3D7070", marginTop: 8, lineHeight: 1.5 }}>Der Besitzer sieht nach dem Login nur seinen eigenen Hund.</div>
+                {newAccountMode === "new" && (<>
+                  <div style={{ marginBottom: 10 }}><SL text="Email" /><input value={newPatient.ownerEmail || ""} onChange={e => setNewPatient(p => ({ ...p, ownerEmail: e.target.value }))} placeholder="besitzer@email.de" type="email" style={inp} /></div>
+                  <div><SL text="Passwort (mind. 6 Zeichen)" /><input value={newPatient.ownerPassword || ""} onChange={e => setNewPatient(p => ({ ...p, ownerPassword: e.target.value }))} placeholder="••••••••" type="password" style={inp} /></div>
+                </>)}
+                {newAccountMode === "existing" && (
+                  <div>
+                    <SL text="Bestehenden User auswählen" />
+                    <select value={selectedExistingUserId} onChange={e => setSelectedExistingUserId(e.target.value)} style={inp}>
+                      <option value="">User auswählen...</option>
+                      {userEmails.filter(u => u.id !== ADMIN_ID).map(u => <option key={u.id} value={u.id}>{u.email}</option>)}
+                    </select>
+                  </div>
+                )}
+                {newAccountMode === "none" && <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: "#3D7070" }}>Dieser Patient bekommt keinen App-Zugang.</div>}
               </div>
-              <button className="btn" onClick={addPatient} disabled={saving || !newPatient.name} style={{ width: "100%", padding: "14px", borderRadius: 12, background: newPatient.name ? BRAND : "#B8DFE0", color: newPatient.name ? "#102828" : "#7ECBCC", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 15, marginTop: 4 }}>
+
+              <button className="btn" onClick={addPatient} disabled={saving || !newPatient.name} style={{ width: "100%", padding: "14px", borderRadius: 12, background: newPatient.name ? BRAND : "#B8DFE0", color: newPatient.name ? "#102828" : "#7ECBCC", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 15 }}>
                 {saving ? t.saving : "Patient anlegen"}
               </button>
             </div>
@@ -793,11 +836,45 @@ export default function App() {
           <div className="sheet" onClick={e => e.stopPropagation()}>
             <SheetHeader title="Patient bearbeiten" onClose={closeSheet} />
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {[["Name des Hundes *","name"],["Rasse","breed"],["Alter","age"],["Besitzer","owner"],["Diagnose","condition"]].map(([label, key]) => (
+              {[["Name *","name"],["Rasse","breed"],["Alter","age"],["Besitzer","owner"],["Diagnose","condition"]].map(([label, key]) => (
                 <div key={key}><SL text={label} /><input value={editPatientData[key] || ""} onChange={e => setEditPatientData(p => ({ ...p, [key]: e.target.value }))} style={inp} /></div>
               ))}
               <div><SL text="Emoji" /><input value={editPatientData.avatar || ""} onChange={e => setEditPatientData(p => ({ ...p, avatar: e.target.value }))} style={{ ...inp, width: 60, textAlign: "center" }} /></div>
-              <button className="btn" onClick={updatePatient} disabled={saving || !editPatientData.name} style={{ width: "100%", padding: "14px", borderRadius: 12, background: editPatientData.name ? BRAND : "#B8DFE0", color: editPatientData.name ? "#102828" : "#7ECBCC", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 15, marginTop: 4 }}>
+
+              {/* Login info */}
+              <div style={{ background: LIGHT, borderRadius: 12, padding: "14px" }}>
+                <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 14, fontWeight: 700, color: DARK, marginBottom: 10 }}>Login-Konto</div>
+                {editPatientData.user_id && getUserEmail(editPatientData.user_id) ? (<>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, background: "white", borderRadius: 10, padding: "10px 12px" }}>
+                    <Icon name="mail" size={16} color={BRAND} />
+                    <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#102828", flex: 1 }}>{getUserEmail(editPatientData.user_id)}</span>
+                  </div>
+                  {resetEmailSent
+                    ? <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: "#2E7D32", background: "#E8F5E9", borderRadius: 8, padding: "8px 12px" }}>✓ Passwort-Reset Email wurde gesendet!</div>
+                    : <button className="btn" onClick={() => sendPasswordReset(getUserEmail(editPatientData.user_id))} style={{ background: "white", border: `1.5px solid ${BRAND}`, borderRadius: 9, padding: "8px 12px", fontFamily: "'DM Sans',sans-serif", fontSize: 12, fontWeight: 600, color: BRAND, display: "flex", alignItems: "center", gap: 6 }}>
+                        <Icon name="mail" size={13} color={BRAND} /> Passwort-Reset Email senden
+                      </button>}
+                  <div style={{ marginTop: 10 }}>
+                    <SL text="Anderen User verknüpfen (optional)" />
+                    <select
+                      value={editPatientData._newUserId !== undefined ? (editPatientData._newUserId || "") : (editPatientData.user_id || "")}
+                      onChange={e => setEditPatientData(p => ({ ...p, _newUserId: e.target.value || null }))}
+                      style={inp}>
+                      <option value="">Kein Login</option>
+                      {userEmails.filter(u => u.id !== ADMIN_ID).map(u => <option key={u.id} value={u.id}>{u.email}</option>)}
+                    </select>
+                  </div>
+                </>) : (<>
+                  <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 12, color: "#3D7070", marginBottom: 10 }}>Kein Login-Konto verknüpft.</div>
+                  <SL text="User verknüpfen" />
+                  <select value={editPatientData._newUserId ?? ""} onChange={e => setEditPatientData(p => ({ ...p, _newUserId: e.target.value || null }))} style={inp}>
+                    <option value="">User auswählen...</option>
+                    {userEmails.filter(u => u.id !== ADMIN_ID).map(u => <option key={u.id} value={u.id}>{u.email}</option>)}
+                  </select>
+                </>)}
+              </div>
+
+              <button className="btn" onClick={updatePatient} disabled={saving || !editPatientData.name} style={{ width: "100%", padding: "14px", borderRadius: 12, background: editPatientData.name ? BRAND : "#B8DFE0", color: editPatientData.name ? "#102828" : "#7ECBCC", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 15 }}>
                 {saving ? t.saving : "Änderungen speichern"}
               </button>
             </div>
@@ -819,36 +896,9 @@ export default function App() {
               <div><SL text="Schritte" />{newTemplate.instructions.map((s, i) => <input key={i} value={s} onChange={e => setNewTemplate(p => ({ ...p, instructions: p.instructions.map((x, j) => j === i ? e.target.value : x) }))} placeholder={`Schritt ${i + 1}...`} style={{ ...inp, marginBottom: 6 }} />)}</div>
               <div><SL text="Bild-URL" /><input value={newTemplate.image_url} onChange={e => setNewTemplate(p => ({ ...p, image_url: e.target.value }))} placeholder="https://..." style={inp} /></div>
               <div><SL text="Video-URL (optional)" /><input value={newTemplate.video_url} onChange={e => setNewTemplate(p => ({ ...p, video_url: e.target.value }))} placeholder="https://youtube.com/..." style={inp} /></div>
-              <button className="btn" onClick={addTemplate} disabled={saving || !newTemplate.title} style={{ width: "100%", padding: "14px", borderRadius: 12, background: newTemplate.title ? BRAND : "#B8DFE0", color: newTemplate.title ? "#102828" : "#7ECBCC", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 15, marginTop: 4 }}>
+              <button className="btn" onClick={addTemplate} disabled={saving || !newTemplate.title} style={{ width: "100%", padding: "14px", borderRadius: 12, background: newTemplate.title ? BRAND : "#B8DFE0", color: newTemplate.title ? "#102828" : "#7ECBCC", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 15 }}>
                 {saving ? t.saving : "Übung speichern"}
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ══ SHEET: TEMPLATE LIBRARY ══ */}
-      {sheet === "templateLibrary" && (
-        <div className="overlay" onClick={closeSheet}>
-          <div className="sheet" onClick={e => e.stopPropagation()}>
-            <SheetHeader title="Übungen bearbeiten" onClose={closeSheet} />
-            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: "#3D7070", marginBottom: 12 }}>{templates.length} Übungsvorlagen</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {templates.map(tmpl => (
-                <div key={tmpl.id} style={{ background: PALE, borderRadius: 11, padding: "11px 13px", display: "flex", gap: 10, alignItems: "center" }}>
-                  {tmpl.image_url ? <img src={tmpl.image_url} alt={tmpl.title} style={{ width: 40, height: 40, borderRadius: 8, objectFit: "contain", flexShrink: 0, background: LIGHT, padding: 2 }} />
-                    : <div style={{ width: 40, height: 40, borderRadius: 8, background: LIGHT, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon name="paw" size={18} color={ACCENT} /></div>}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 13, fontWeight: 600, color: "#102828", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{tmpl.title}</div>
-                    <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 11, color: "#3D7070", marginTop: 1 }}>{(tmpl.categories || []).join(", ") || "–"} · {tmpl.difficulty}</div>
-                  </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button className="iBtn" onClick={() => { setEditTemplateData({ ...tmpl, instructions: tmpl.instructions?.length ? tmpl.instructions : ["","",""] }); setSheet("editTemplate"); }} style={{ background: BRAND + "20" }}><Icon name="edit" size={14} color={MID} /></button>
-                    <button className="iBtn" onClick={() => { setSheetData(tmpl); setSheet("confirmDeleteTmpl"); }} style={{ background: "#FFE8E8" }}><Icon name="trash" size={14} color="#C0392B" /></button>
-                  </div>
-                </div>
-              ))}
-              {templates.length === 0 && <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 13, color: ACCENT, textAlign: "center", padding: "20px 0" }}>Noch keine Übungsvorlagen erstellt.</div>}
             </div>
           </div>
         </div>
@@ -858,7 +908,7 @@ export default function App() {
       {sheet === "editTemplate" && editTemplateData && (
         <div className="overlay" onClick={closeSheet}>
           <div className="sheet" onClick={e => e.stopPropagation()}>
-            <SheetHeader title="Übung bearbeiten" onClose={() => setSheet("templateLibrary")} />
+            <SheetHeader title="Übung bearbeiten" onClose={closeSheet} />
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div><SL text="Titel *" /><input value={editTemplateData.title} onChange={e => setEditTemplateData(p => ({ ...p, title: e.target.value }))} style={inp} /></div>
               <div><SL text="Kategorie" /><MultiSelect options={CATEGORIES} selected={editTemplateData.categories || []} onChange={v => setEditTemplateData(p => ({ ...p, categories: v }))} color={BRAND} /></div>
@@ -868,7 +918,7 @@ export default function App() {
               <div><SL text="Schritte" />{(editTemplateData.instructions || ["","",""]).map((s, i) => <input key={i} value={s} onChange={e => setEditTemplateData(p => ({ ...p, instructions: (p.instructions || []).map((x, j) => j === i ? e.target.value : x) }))} placeholder={`Schritt ${i + 1}...`} style={{ ...inp, marginBottom: 6 }} />)}</div>
               <div><SL text="Bild-URL" /><input value={editTemplateData.image_url || ""} onChange={e => setEditTemplateData(p => ({ ...p, image_url: e.target.value }))} placeholder="https://..." style={inp} /></div>
               <div><SL text="Video-URL" /><input value={editTemplateData.video_url || ""} onChange={e => setEditTemplateData(p => ({ ...p, video_url: e.target.value }))} placeholder="https://youtube.com/..." style={inp} /></div>
-              <button className="btn" onClick={updateTemplate} disabled={saving || !editTemplateData.title} style={{ width: "100%", padding: "14px", borderRadius: 12, background: editTemplateData.title ? BRAND : "#B8DFE0", color: editTemplateData.title ? "#102828" : "#7ECBCC", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 15, marginTop: 4 }}>
+              <button className="btn" onClick={updateTemplate} disabled={saving || !editTemplateData.title} style={{ width: "100%", padding: "14px", borderRadius: 12, background: editTemplateData.title ? BRAND : "#B8DFE0", color: editTemplateData.title ? "#102828" : "#7ECBCC", fontFamily: "'DM Sans',sans-serif", fontWeight: 700, fontSize: 15 }}>
                 {saving ? t.saving : "Änderungen speichern"}
               </button>
             </div>
@@ -877,9 +927,45 @@ export default function App() {
       )}
 
       {/* ══ CONFIRM SHEETS ══ */}
-      {sheet === "confirmDeleteEx" && sheetData && <ConfirmSheet title="Übung entfernen?" msg={<>Übung <strong>{sheetData.title}</strong> wird dauerhaft entfernt.</>} onConfirm={() => deleteExercise(sheetData.id)} onCancel={closeSheet} confirmLabel={t.remove} />}
-      {sheet === "confirmDeletePt" && sheetData && <ConfirmSheet title="Patient löschen?" msg={<><strong>{sheetData.name}</strong> und alle zugewiesenen Übungen werden dauerhaft gelöscht.</>} onConfirm={() => deletePatient(sheetData.id)} onCancel={closeSheet} confirmLabel={t.delete} />}
-      {sheet === "confirmDeleteTmpl" && sheetData && <ConfirmSheet title="Übungsvorlage löschen?" msg={<><strong>{sheetData.title}</strong> wird dauerhaft aus der Bibliothek gelöscht. Bereits zugewiesene Übungen bleiben erhalten.</>} onConfirm={() => deleteTemplate(sheetData.id)} onCancel={() => setSheet("templateLibrary")} confirmLabel={t.delete} />}
+      {sheet === "confirmDeleteEx" && sheetData && (
+        <div className="overlay" onClick={closeSheet}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><Icon name="trash" size={40} color="#C0392B" /></div>
+            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 19, fontWeight: 700, marginBottom: 8, textAlign: "center", color: "#102828" }}>Übung entfernen?</div>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: "#3D7070", marginBottom: 22, textAlign: "center" }}><strong>{sheetData.title}</strong> wird dauerhaft entfernt.</div>
+            <div style={{ display: "flex", gap: 9 }}>
+              <button className="btn" onClick={closeSheet} style={{ flex: 1, padding: "14px", borderRadius: 12, background: LIGHT, color: "#3D7070", fontFamily: "'DM Sans',sans-serif", fontWeight: 700 }}>{t.cancel}</button>
+              <button className="btn" onClick={() => deleteExercise(sheetData.id)} style={{ flex: 1, padding: "14px", borderRadius: 12, background: "#C0392B", color: "white", fontFamily: "'DM Sans',sans-serif", fontWeight: 700 }}>{deleting ? "..." : t.remove}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {sheet === "confirmDeletePt" && sheetData && (
+        <div className="overlay" onClick={closeSheet}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><Icon name="trash" size={40} color="#C0392B" /></div>
+            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 19, fontWeight: 700, marginBottom: 8, textAlign: "center", color: "#102828" }}>Patient löschen?</div>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: "#3D7070", marginBottom: 22, textAlign: "center" }}><strong>{sheetData.name}</strong> und alle Übungen werden dauerhaft gelöscht.</div>
+            <div style={{ display: "flex", gap: 9 }}>
+              <button className="btn" onClick={closeSheet} style={{ flex: 1, padding: "14px", borderRadius: 12, background: LIGHT, color: "#3D7070", fontFamily: "'DM Sans',sans-serif", fontWeight: 700 }}>{t.cancel}</button>
+              <button className="btn" onClick={() => deletePatient(sheetData.id)} style={{ flex: 1, padding: "14px", borderRadius: 12, background: "#C0392B", color: "white", fontFamily: "'DM Sans',sans-serif", fontWeight: 700 }}>{deleting ? "..." : t.delete}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {sheet === "confirmDeleteTmpl" && sheetData && (
+        <div className="overlay" onClick={closeSheet}>
+          <div className="sheet" onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}><Icon name="trash" size={40} color="#C0392B" /></div>
+            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 19, fontWeight: 700, marginBottom: 8, textAlign: "center", color: "#102828" }}>Übungsvorlage löschen?</div>
+            <div style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: "#3D7070", marginBottom: 22, textAlign: "center" }}><strong>{sheetData.title}</strong> wird aus der Bibliothek gelöscht. Bereits zugewiesene Übungen bleiben erhalten.</div>
+            <div style={{ display: "flex", gap: 9 }}>
+              <button className="btn" onClick={closeSheet} style={{ flex: 1, padding: "14px", borderRadius: 12, background: LIGHT, color: "#3D7070", fontFamily: "'DM Sans',sans-serif", fontWeight: 700 }}>{t.cancel}</button>
+              <button className="btn" onClick={() => deleteTemplate(sheetData.id)} style={{ flex: 1, padding: "14px", borderRadius: 12, background: "#C0392B", color: "white", fontFamily: "'DM Sans',sans-serif", fontWeight: 700 }}>{deleting ? "..." : t.delete}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
