@@ -200,6 +200,7 @@ export default function App() {
   const [pushEnabled,setPushEnabled]=useState(false);
   const [pushTime,setPushTime]=useState("09:00");
   const [pushLoading,setPushLoading]=useState(false);
+  const [calendarOpen,setCalendarOpen]=useState(false);
 
   const today=new Date().toISOString().split("T")[0];
   // Week boundaries (Monday–Sunday)
@@ -653,12 +654,11 @@ export default function App() {
             </div>
             <div style={{display:"flex",gap:6,alignItems:"center"}}>
               <div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
-                <button className="btn" onClick={()=>setLangOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:5,background:"#2A6364",borderRadius:9,padding:"7px 10px",color:ACCENT,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600}}>
-                  <Icon name="lang" size={14} color={ACCENT}/>{t.langLabel}
-                  <div style={{width:20,height:20,borderRadius:5,background:ACCENT+"30",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="chevdown" size={11} color={ACCENT}/></div>
+                <button className="btn" onClick={()=>setLangOpen(o=>!o)} style={{display:"flex",alignItems:"center",background:"#2A6364",borderRadius:9,padding:"7px 9px"}}>
+                  <Icon name="lang" size={15} color={ACCENT}/>
                 </button>
-                {langOpen&&<div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:"white",borderRadius:12,boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:130,zIndex:50}}>
-                  {[["de","DE · Deutsch"],["en","EN · English"],["es","ES · Español"]].map(([l,label])=>(
+                {langOpen&&<div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:"white",borderRadius:12,boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:140,zIndex:50}}>
+                  {[["de","🇩🇪 Deutsch"],["en","🇬🇧 English"],["es","🇪🇸 Español"]].map(([l,label])=>(
                     <button key={l} className="btn" onClick={()=>{setLang(l);setLangOpen(false);}} style={{width:"100%",padding:"11px 16px",textAlign:"left",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:l===lang?700:400,color:l===lang?BRAND:"#102828",background:l===lang?LIGHT:"white",display:"block"}}>{label}</button>
                   ))}
                 </div>}
@@ -669,7 +669,7 @@ export default function App() {
             </div>
           </div>
           <div style={{display:"flex",background:"#2A6364"}}>
-            {[["owner","home",t.navOwner],...(isAdmin?[["therapist","practice",t.navTherapist]]:[["profile","profile",t.navProfile]]),["info","info",t.navInfo]].map(([v,ic,lb])=>(
+            {[["owner","home",isAdmin?"Vorschau":t.navOwner],...(isAdmin?[["therapist","practice",t.navTherapist]]:[["profile","profile",t.navProfile]]),["info","info",t.navInfo]].map(([v,ic,lb])=>(
               <button key={v} className="nav-tab" onClick={()=>setView(v)} style={{background:view===v?"white":"transparent",color:view===v?DARK:ACCENT,borderRadius:view===v?"10px 10px 0 0":0,marginTop:view===v?3:0}}>
                 <Icon name={ic} size={14} color={view===v?DARK:ACCENT}/>{lb}
               </button>
@@ -681,18 +681,20 @@ export default function App() {
       {/* OWNER VIEW */}
       {view==="owner"&&(
         <div style={{maxWidth:480,margin:"0 auto",padding:"16px 14px 80px"}}>
+          {isAdmin&&(
+            <div style={{background:BRAND+"18",border:`1.5px solid ${BRAND}`,borderRadius:12,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+              <Icon name="info" size={15} color={BRAND}/>
+              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:MID}}>Vorschau — so sehen Ihre Kunden die App</span>
+            </div>
+          )}
           {mustChangePassword&&(
             <div style={{background:"#FFF8E1",border:"1.5px solid #FFB300",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#E65100",marginBottom:6,display:"flex",alignItems:"center",gap:8}}><Icon name="lock" size={16} color="#E65100"/>Bitte Passwort ändern</div>
               <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#5D4037",marginBottom:10}}>Aus Sicherheitsgründen bitte ein eigenes Passwort vergeben.</div>
-              {!showPasswordChange?(
-                <button className="btn" onClick={()=>setShowPasswordChange(true)} style={{background:"#FFB300",color:"#102828",borderRadius:9,padding:"8px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700}}>Passwort jetzt ändern</button>
-              ):(
-                <div style={{display:"flex",gap:8}}>
-                  <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Neues Passwort..." style={{...inp,flex:1}}/>
-                  <button className="btn" onClick={changePassword} disabled={saving} style={{background:BRAND,color:"#102828",borderRadius:9,padding:"8px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,flexShrink:0}}>{saving?"...":"Speichern"}</button>
-                </div>
-              )}
+              <div style={{display:"flex",gap:8}}>
+                <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Neues Passwort..." style={{...inp,flex:1}}/>
+                <button className="btn" onClick={changePassword} disabled={saving||!newPassword} style={{background:newPassword?BRAND:"#B8DFE0",color:"#102828",borderRadius:9,padding:"8px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,flexShrink:0}}>{saving?"...":"Speichern"}</button>
+              </div>
             </div>
           )}
 
@@ -739,13 +741,18 @@ export default function App() {
                 </div>
               </div>
               <div className="pbar" style={{marginTop:14}}><div className="pfill" style={{width:`${progress}%`}}/></div>
-              <div style={{marginTop:14}}>
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"#B8E8E8",letterSpacing:"0.8px",textTransform:"uppercase",marginBottom:6}}>Letzte 28 Tage</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3}}>
-                  {calendarDays.map(({dateStr,isToday,done})=>(
-                    <div key={dateStr} style={{height:10,borderRadius:3,background:done?"rgba(255,255,255,0.85)":isToday?"rgba(255,255,255,0.25)":"rgba(255,255,255,0.1)",outline:isToday?"1.5px solid rgba(255,255,255,0.6)":"none",outlineOffset:1}}/>
-                  ))}
-                </div>
+              <div style={{marginTop:12}}>
+                <button className="btn" onClick={()=>setCalendarOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:5,padding:0}}>
+                  <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"#B8E8E8",letterSpacing:"0.8px",textTransform:"uppercase"}}>Letzte 28 Tage</span>
+                  <Icon name="chevdown" size={11} color="#B8E8E8" style={{transform:calendarOpen?"rotate(180deg)":"none",transition:"transform .2s"}}/>
+                </button>
+                {calendarOpen&&(
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3,marginTop:6}}>
+                    {calendarDays.map(({dateStr,isToday,done})=>(
+                      <div key={dateStr} style={{height:10,borderRadius:3,background:done?"rgba(255,255,255,0.85)":isToday?"rgba(255,255,255,0.25)":"rgba(255,255,255,0.1)",outline:isToday?"1.5px solid rgba(255,255,255,0.6)":"none",outlineOffset:1}}/>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1078,45 +1085,42 @@ export default function App() {
         <div className="overlay" onClick={closeSheet}>
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={t.assignBtn} onClose={closeSheet}/>
-            <div style={{display:"flex",flexDirection:"column",gap:14}}>
-              <div><SL text={t.step1}/>
-                <CustomSelect value={selectedPatient?.id||""} onChange={e=>setSelectedPatient(patients.find(p=>p.id===e.target.value)||null)}>
-                  <option value="">{t.selectPatient}</option>
-                  {patients.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
-                </CustomSelect>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <div style={{flex:1}}><SL text={t.step1}/>
+                  <CustomSelect value={selectedPatient?.id||""} onChange={e=>setSelectedPatient(patients.find(p=>p.id===e.target.value)||null)}>
+                    <option value="">{t.selectPatient}</option>
+                    {patients.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
+                  </CustomSelect>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <div style={{flex:1}}><SL text={t.step3}/><input value={duration} onChange={e=>setDuration(e.target.value)} placeholder={t.freqPh} style={inp}/></div>
+                <div style={{flex:"0 0 auto"}}>
+                  <SL text={t.step4}/>
+                  <div style={{display:"flex",alignItems:"center",gap:6,height:46}}>
+                    <button className="btn" onClick={()=>setRepeatCount(Math.max(1,repeatCount-1))} style={{width:32,height:32,borderRadius:8,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:DARK}}>−</button>
+                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:DARK,minWidth:28,textAlign:"center"}}>{repeatCount}x</span>
+                    <button className="btn" onClick={()=>setRepeatCount(Math.min(7,repeatCount+1))} style={{width:32,height:32,borderRadius:8,background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:"#102828"}}>+</button>
+                  </div>
+                </div>
               </div>
               <div>
                 <SL text={t.step2}/>
-                <div style={{display:"flex",gap:8,marginBottom:10}}>
+                <div style={{display:"flex",gap:8,marginBottom:8}}>
                   <FilterDropdown label={t.filterCategory} icon="filter" options={CATEGORIES} selected={assignFilterCats} onChange={setAssignFilterCats} color={BRAND}/>
                   <FilterDropdown label={t.filterRegion} icon="target" options={TARGET_REGIONS} selected={assignFilterRegions} onChange={setAssignFilterRegions} color={MID}/>
                 </div>
-                <div style={{display:"flex",flexDirection:"column",gap:5,maxHeight:200,overflowY:"auto",border:`1px solid ${LIGHT}`,borderRadius:11,padding:6}}>
+                <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:300,overflowY:"auto",border:`1px solid ${LIGHT}`,borderRadius:11,padding:5}}>
                   {filteredTemplates.map(tmpl=>(
                     <div key={tmpl.id} className={"tmpl-row"+(selectedTemplate?.id===tmpl.id?" sel":"")} onClick={()=>setSelectedTemplate(selectedTemplate?.id===tmpl.id?null:tmpl)}>
-                      {tmpl.image_url?<img src={tmpl.image_url} alt={tmpl.title} style={{width:36,height:36,borderRadius:7,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2}}/>
-                        :<div style={{width:36,height:36,borderRadius:7,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={16} color={ACCENT}/></div>}
-                      <div style={{flex:1}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:"#102828"}}>{tmpl.title}</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{(tmpl.categories||[]).join(", ")} · {tmpl.difficulty}</div></div>
+                      {tmpl.image_url?<img src={tmpl.image_url} alt={tmpl.title} style={{width:32,height:32,borderRadius:6,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2}}/>
+                        :<div style={{width:32,height:32,borderRadius:6,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={14} color={ACCENT}/></div>}
+                      <div style={{flex:1,fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:"#102828"}}>{tmpl.title}</div>
                       {selectedTemplate?.id===tmpl.id&&<Icon name="check" size={15} color={BRAND}/>}
                     </div>
                   ))}
                   {filteredTemplates.length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:ACCENT,textAlign:"center",padding:"12px 0"}}>{t.noCategoryEx}</div>}
-                </div>
-              </div>
-              <div><SL text={t.step3}/><input value={duration} onChange={e=>setDuration(e.target.value)} placeholder={t.freqPh} style={inp}/></div>
-              <div>
-                <SL text={t.step4}/>
-                <div style={{display:"flex",alignItems:"center",gap:12}}>
-                  <button className="btn" onClick={()=>setRepeatCount(Math.max(1,repeatCount-1))} style={{width:36,height:36,borderRadius:9,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:700,color:DARK}}>−</button>
-                  <div style={{flex:1,textAlign:"center",fontFamily:"'Playfair Display',serif",fontSize:28,fontWeight:700,color:DARK}}>{repeatCount}x</div>
-                  <button className="btn" onClick={()=>setRepeatCount(Math.min(7,repeatCount+1))} style={{width:36,height:36,borderRadius:9,background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:700,color:"#102828"}}>+</button>
-                </div>
-                <div style={{display:"flex",justifyContent:"center",gap:6,marginTop:8}}>
-                  {Array.from({length:repeatCount}).map((_,i)=>(
-                    <div key={i} style={{width:24,height:24,borderRadius:7,background:BRAND+"20",border:`2px solid ${BRAND}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                      <Icon name="check" size={12} color={BRAND}/>
-                    </div>
-                  ))}
                 </div>
               </div>
               <button className="btn" onClick={addExercise} disabled={saving} style={{width:"100%",padding:"14px",borderRadius:12,background:selectedTemplate&&selectedPatient&&duration?BRAND:"#B8DFE0",color:selectedTemplate&&selectedPatient&&duration?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
