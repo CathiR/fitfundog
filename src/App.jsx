@@ -176,11 +176,75 @@ const LoginScreen = () => {
   );
 };
 
+const PasswordResetScreen = ({ onDone }) => {
+  const [password, setPassword] = useState("");
+  const [password2, setPassword2] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const inp = { width:"100%", padding:"13px 14px", borderRadius:10, border:"1.5px solid #B8DFE0", fontSize:16, fontFamily:"'DM Sans',sans-serif", outline:"none", color:"#102828", background:"white", WebkitTextFillColor:"#102828", boxSizing:"border-box" };
+
+  const handleReset = async () => {
+    if (!password || password.length < 6) { setError("Passwort muss mindestens 6 Zeichen haben."); return; }
+    if (password !== password2) { setError("Passwörter stimmen nicht überein."); return; }
+    setLoading(true); setError("");
+    const { error: err } = await supabase.auth.updateUser({ password, data: { must_change_password: false } });
+    if (err) { setError("Fehler: " + err.message); setLoading(false); return; }
+    await supabase.auth.signOut();
+    setSuccess(true);
+    setLoading(false);
+    setTimeout(() => onDone(), 2000);
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", background:`linear-gradient(160deg,${DARK} 0%,#2A7A7B 60%,${BRAND} 100%)`, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+      <div style={{ width:"100%", maxWidth:360 }}>
+        <div style={{ textAlign:"center", marginBottom:32 }}>
+          <img src={LOGO_URL} alt="Fit Fun Dog" style={{ height:65, objectFit:"contain", marginBottom:10 }}/>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:ACCENT, letterSpacing:"1.5px", textTransform:"uppercase" }}>Tierphysiotherapie & Osteopathie</div>
+        </div>
+        <div style={{ background:"white", borderRadius:22, padding:"28px 24px", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
+          {success ? (
+            <div style={{ textAlign:"center", padding:"12px 0" }}>
+              <div style={{ width:56, height:56, borderRadius:"50%", background:BRAND+"20", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>
+                <Icon name="check" size={28} color={BRAND}/>
+              </div>
+              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:DARK, marginBottom:8 }}>Passwort gesetzt!</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#3D7070" }}>Du wirst zum Login weitergeleitet...</div>
+            </div>
+          ) : (
+            <>
+              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:DARK, marginBottom:4 }}>Neues Passwort</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#3D7070", marginBottom:22 }}>Bitte wähle ein neues Passwort für deinen Account.</div>
+              <div style={{ marginBottom:14 }}>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:"#3D7070", letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Neues Passwort</div>
+                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mindestens 6 Zeichen" style={inp}/>
+              </div>
+              <div style={{ marginBottom:20 }}>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:"#3D7070", letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Passwort wiederholen</div>
+                <input type="password" value={password2} onChange={e=>setPassword2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleReset()} placeholder="••••••••" style={inp}/>
+              </div>
+              {error && <div style={{ background:"#FFE8E8", borderRadius:10, padding:"10px 14px", marginBottom:16, fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#C0392B" }}>{error}</div>}
+              <button onClick={handleReset} disabled={loading} style={{ width:"100%", padding:"14px", borderRadius:12, background:loading?"#B8DFE0":BRAND, color:"#102828", fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:15, border:"none", cursor:"pointer" }}>
+                {loading ? "Wird gespeichert..." : "Passwort speichern"}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [lang,setLang]=useState("de");
   const t=T[lang];
   const [session,setSession]=useState(null);
   const [authLoading,setAuthLoading]=useState(true);
+  const [isRecoveryMode,setIsRecoveryMode]=useState(()=>{
+    const hash=window.location.hash;
+    return hash.includes("type=recovery");
+  });
   const isAdmin=session?.user?.id===ADMIN_ID;
 
   const [view,setView]=useState("owner");
@@ -256,13 +320,20 @@ export default function App() {
       if(s) loadAll(s.user.id);
     });
     const{data:{subscription}}=supabase.auth.onAuthStateChange((event,s)=>{
+      if(event==="PASSWORD_RECOVERY"){
+        setIsRecoveryMode(true);
+        setAuthLoading(false);
+        return;
+      }
       if(event==="SIGNED_OUT"){
         // Clear all state on logout
+        setIsRecoveryMode(false);
         setSession(null);
         setPatients([]);setExercises([]);setDoneLogs([]);setHistoryLogs([]);setFeedbacks([]);setTemplates([]);
         setOwnerPatient(null);setSelectedPatient(null);
         setLoading(true);
       } else if(event==="SIGNED_IN"&&s){
+        setIsRecoveryMode(false);
         setSession(s);
         loadAll(s.user.id);
         checkPushStatus();
@@ -610,6 +681,7 @@ export default function App() {
   const SheetHeader=({title,onClose})=>(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:"#102828"}}>{title}</div><button onClick={onClose} style={{background:LIGHT,borderRadius:"50%",width:32,height:32,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="close" size={14} color="#3D7070"/></button></div>);
 
   if(authLoading)return <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${DARK},${BRAND})`,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={LOGO_URL} alt="" style={{height:60,objectFit:"contain"}}/></div>;
+  if(isRecoveryMode)return <PasswordResetScreen onDone={()=>{setIsRecoveryMode(false);window.location.hash="";}} />;
   if(!session)return <LoginScreen/>;
   if(loading)return <div style={{minHeight:"100vh",background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}><Icon name="paw" size={48} color={BRAND}/><div style={{fontFamily:"'DM Sans',sans-serif",color:"#3D7070"}}>Wird geladen...</div></div>;
 
