@@ -9,6 +9,7 @@ document.head.appendChild(fav);
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
 const ADMIN_ID = "1bed901d-005a-496e-bf8e-5d55804e6f72";
+const VAPID_PUBLIC_KEY = "BPOAPZ3DeTf-FL_rmbeEufuh-bhAEH-zrUR-TPTsRVfNCotxh_jJ-7A5AHu9pWNyM24HxX_E5Ls1dy4Mt82b1F4";
 const THERAPIST_EMAIL = "fitfundog@freenet.de";
 const BRAND = "#5fb8b9", DARK = "#1E4A4B", MID = "#3D8E8F";
 const LIGHT = "#E6F6F6", PALE = "#F3FBFB", ACCENT = "#8FD4D5";
@@ -85,9 +86,9 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
 };
 
 const T = {
-  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Besitzer", navTherapist:"Praxis", navInfo:"Info", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Häufigkeit (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Häufigkeit", step4:"4. Wiederholungen pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt." },
-  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Owner", navTherapist:"Practice", navInfo:"Info", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Frequency (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Frequency", step4:"4. Repetitions per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress." },
-  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Dueño", navTherapist:"Clínica", navInfo:"Info", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Frecuencia (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Frecuencia", step4:"4. Repeticiones por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento." }
+  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt." },
+  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress." },
+  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento." }
 };
 
 const TIPS = {
@@ -186,6 +187,20 @@ export default function App() {
   const [exercises,setExercises]=useState([]);
   const [templates,setTemplates]=useState([]);
   const [doneLogs,setDoneLogs]=useState([]);
+  const [historyLogs,setHistoryLogs]=useState([]);
+  const [feedbacks,setFeedbacks]=useState([]);
+  const [feedbackSheet,setFeedbackSheet]=useState(null);
+  const [feedbackPain,setFeedbackPain]=useState(0);
+  const [feedbackComment,setFeedbackComment]=useState("");
+  const [viewFeedbackEx,setViewFeedbackEx]=useState(null);
+  const [pushEnabled,setPushEnabled]=useState(false);
+  const [pushTime,setPushTime]=useState("09:00");
+  const [pushLoading,setPushLoading]=useState(false);
+
+  const today=new Date().toISOString().split("T")[0];
+  // Week boundaries (Monday–Sunday)
+  const getWeekStart=()=>{const d=new Date();const day=d.getDay();const diff=day===0?-6:1-day;d.setDate(d.getDate()+diff);return d.toISOString().split("T")[0];};
+  const weekStart=getWeekStart();
   const [userEmails,setUserEmails]=useState([]);
   const [loading,setLoading]=useState(true);
   const [selectedExercise,setSelectedExercise]=useState(null);
@@ -216,8 +231,6 @@ export default function App() {
   const [showPasswordChange,setShowPasswordChange]=useState(false);
   const [newPassword,setNewPassword]=useState("");
 
-  const today=new Date().toISOString().split("T")[0];
-
   // ── Handle Android back button – close sheet/exercise instead of app ──
   useEffect(()=>{
     const handleBack=(e)=>{
@@ -241,12 +254,13 @@ export default function App() {
       if(event==="SIGNED_OUT"){
         // Clear all state on logout
         setSession(null);
-        setPatients([]);setExercises([]);setDoneLogs([]);setTemplates([]);
+        setPatients([]);setExercises([]);setDoneLogs([]);setHistoryLogs([]);setFeedbacks([]);setTemplates([]);
         setOwnerPatient(null);setSelectedPatient(null);
         setLoading(true);
       } else if(event==="SIGNED_IN"&&s){
         setSession(s);
         loadAll(s.user.id);
+        checkPushStatus();
       }
     });
     return()=>subscription.unsubscribe();
@@ -256,17 +270,21 @@ export default function App() {
     setLoading(true);
     const uid=userId;
     try{
-      const [{data:pd},{data:ed},{data:ld},{data:td},{data:ue}]=await Promise.all([
+      const [{data:pd},{data:ed},{data:ld},{data:td},{data:ue},{data:hl},{data:fb}]=await Promise.all([
         supabase.from("patients").select("*").order("name"),
         supabase.from("exercises").select("*").order("created_at"),
-        supabase.from("exercise_logs").select("*").eq("done_date",today),
+        supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
         supabase.from("exercise_templates").select("*").order("title"),
-        supabase.from("user_emails").select("id,email")
+        supabase.from("user_emails").select("id,email"),
+        supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-27);return d.toISOString().split("T")[0];})()),
+        supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false})
       ]);
       const pl=pd||[];
       setPatients(pl);
       setExercises(ed||[]);
       setDoneLogs(ld||[]);
+      setHistoryLogs(hl||[]);
+      setFeedbacks(fb||[]);
       setTemplates(td||[]);
       setUserEmails(ue||[]);
 
@@ -305,20 +323,20 @@ export default function App() {
 
   const exForPatient=(pid)=>exercises.filter(e=>e.patient_id===pid);
 
-  // ── Repeat count logic ──
-  const getDoneCountToday=(eid)=>doneLogs.filter(l=>l.exercise_id===eid).length;
-  const isFullyDone=(ex)=>getDoneCountToday(ex.id)>=(ex.repeat_count||1);
+  // ── Weekly repeat logic ──
+  const getDoneCountThisWeek=(eid)=>doneLogs.filter(l=>l.exercise_id===eid).length;
+  const isFullyDone=(ex)=>getDoneCountThisWeek(ex.id)>=(ex.repeat_count||1);
 
   const toggleRepeat=async(eid,repeatCount)=>{
-    const currentCount=getDoneCountToday(eid);
+    const currentCount=getDoneCountThisWeek(eid);
     const maxCount=repeatCount||1;
     if(currentCount<maxCount){
-      // Add one more log
+      // Add one log for today
       const{data}=await supabase.from("exercise_logs").insert({exercise_id:eid,done_date:today,done:true}).select().single();
       if(data)setDoneLogs(prev=>[...prev,data]);
     } else {
-      // Remove all logs for today
-      await supabase.from("exercise_logs").delete().eq("exercise_id",eid).eq("done_date",today);
+      // Remove all logs for this week (reset)
+      await supabase.from("exercise_logs").delete().eq("exercise_id",eid).gte("done_date",weekStart).lte("done_date",today);
       setDoneLogs(prev=>prev.filter(l=>l.exercise_id!==eid));
     }
   };
@@ -330,6 +348,64 @@ export default function App() {
     if(error)alert("Fehler: "+error.message);
     else{setMustChangePassword(false);setShowPasswordChange(false);setNewPassword("");}
     setSaving(false);
+  };
+
+  // ── Push notifications ──
+  function urlBase64ToUint8Array(base64String){
+    const padding="=".repeat((4-base64String.length%4)%4);
+    const base64=(base64String+padding).replace(/-/g,"+").replace(/_/g,"/");
+    const raw=atob(base64);
+    return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+  }
+
+  const checkPushStatus=async()=>{
+    if(!("serviceWorker" in navigator)||!("PushManager" in window))return;
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    if(sub){
+      setPushEnabled(true);
+      // Load saved time
+      const{data}=await supabase.from("push_subscriptions").select("reminder_time").eq("endpoint",sub.endpoint).maybeSingle();
+      if(data?.reminder_time)setPushTime(data.reminder_time.substring(0,5));
+    }
+  };
+
+  const enablePush=async()=>{
+    if(!("serviceWorker" in navigator)||!("PushManager" in window)){alert("Dein Browser unterstützt keine Push-Benachrichtigungen.");return;}
+    setPushLoading(true);
+    try{
+      const permission=await Notification.requestPermission();
+      if(permission!=="granted"){setPushLoading(false);return;}
+      const reg=await navigator.serviceWorker.ready;
+      const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
+      const{endpoint,keys}=sub.toJSON();
+      await supabase.from("push_subscriptions").upsert({
+        user_id:session.user.id,endpoint,p256dh:keys.p256dh,auth:keys.auth,
+        reminder_time:pushTime,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone
+      },{onConflict:"user_id,endpoint"});
+      setPushEnabled(true);
+    }catch(e){console.error(e);}
+    setPushLoading(false);
+  };
+
+  const disablePush=async()=>{
+    setPushLoading(true);
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    if(sub){
+      await supabase.from("push_subscriptions").delete().eq("endpoint",sub.endpoint);
+      await sub.unsubscribe();
+    }
+    setPushEnabled(false);
+    setPushLoading(false);
+  };
+
+  const updatePushTime=async(time)=>{
+    setPushTime(time);
+    if(!pushEnabled)return;
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    if(sub)await supabase.from("push_subscriptions").update({reminder_time:time}).eq("endpoint",sub.endpoint);
   };
 
   const addPatient=async()=>{
@@ -441,11 +517,62 @@ export default function App() {
     setDeleting(null);closeSheet();
   };
 
+  const saveFeedback=async()=>{
+    if(!feedbackSheet||feedbackPain===0)return;
+    setSaving(true);
+    const existing=getLatestFeedback(feedbackSheet.id);
+    let data,error;
+    if(existing){
+      ({data,error}=await supabase.from("exercise_feedback").update({
+        pain_level:feedbackPain,comment:feedbackComment.trim()||null
+      }).eq("id",existing.id).select().single());
+      if(!error&&data)setFeedbacks(prev=>prev.map(f=>f.id===data.id?data:f));
+    } else {
+      ({data,error}=await supabase.from("exercise_feedback").insert({
+        exercise_id:feedbackSheet.id,patient_id:feedbackSheet.patient_id,
+        pain_level:feedbackPain,comment:feedbackComment.trim()||null
+      }).select().single());
+      if(!error&&data)setFeedbacks(prev=>[data,...prev]);
+    }
+    setSaving(false);
+    setFeedbackSheet(null);setFeedbackPain(0);setFeedbackComment("");
+  };
+
+  const getLatestFeedback=(eid)=>feedbacks.find(f=>f.exercise_id===eid)||null;
+
+  const PAIN_LABELS=["","Kein Schmerz","Leicht","Mittel","Stark","Sehr stark"];
+  const PAIN_COLORS=["","#2E7D32","#8BC34A","#FF9800","#F44336","#B71C1C"];
   const ownerExs=ownerPatient?exForPatient(ownerPatient.id):[];
   const doneCount=ownerExs.filter(e=>isFullyDone(e)).length;
   const totalCount=ownerExs.length;
   const progress=totalCount>0?(doneCount/totalCount)*100:0;
   const allDone=totalCount>0&&doneCount===totalCount;
+
+  // ── Streak & calendar logic ──
+  const ownerExIds=ownerExs.map(e=>e.id);
+  const activeDates=new Set(
+    historyLogs.filter(l=>ownerExIds.includes(l.exercise_id)).map(l=>l.done_date)
+  );
+  if(doneCount>0)activeDates.add(today);
+  const calcStreak=()=>{
+    let streak=0;
+    const d=new Date();
+    for(let i=0;i<28;i++){
+      const dateStr=d.toISOString().split("T")[0];
+      if(activeDates.has(dateStr)){streak++;}
+      else if(i===0&&doneCount===0){break;}
+      else if(i>0){break;}
+      d.setDate(d.getDate()-1);
+    }
+    return streak;
+  };
+  const streak=calcStreak();
+  const calendarDays=Array.from({length:28},(_,i)=>{
+    const d=new Date();
+    d.setDate(d.getDate()-(27-i));
+    const dateStr=d.toISOString().split("T")[0];
+    return{dateStr,isToday:dateStr===today,done:activeDates.has(dateStr)};
+  });
 
   const filteredOwnerExs=ownerExs.filter(ex=>{
     const cOk=filterCats.length===0||(ex.categories||[]).some(c=>filterCats.includes(c));
@@ -565,10 +692,32 @@ export default function App() {
             </div>
           )}
 
+          {/* Push notification banner */}
+          {!isAdmin&&(
+            <div style={{background:pushEnabled?"#E8F5E9":"#E6F6F6",border:`1.5px solid ${pushEnabled?"#81C784":"#B8DFE0"}`,borderRadius:12,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:pushEnabled?"#2E7D32":DARK,marginBottom:pushEnabled?6:0}}>
+                  {pushEnabled?"🔔 Erinnerungen aktiv":"🔔 Erinnerungen aktivieren"}
+                </div>
+                {pushEnabled&&(
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>Täglich um</span>
+                    <input type="time" value={pushTime} onChange={e=>updatePushTime(e.target.value)}
+                      style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:DARK,border:`1px solid #B8DFE0`,borderRadius:6,padding:"3px 6px",outline:"none"}}/>
+                  </div>
+                )}
+              </div>
+              <button className="btn" onClick={pushEnabled?disablePush:enablePush} disabled={pushLoading}
+                style={{background:pushEnabled?"#FFE8E8":BRAND,color:pushEnabled?"#C0392B":"#102828",borderRadius:9,padding:"7px 12px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,flexShrink:0}}>
+                {pushLoading?"...":(pushEnabled?"Deaktivieren":"Aktivieren")}
+              </button>
+            </div>
+          )}
+
           {/* Owner name greeting */}
           {ownerPatient&&(
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK,marginBottom:12}}>
-              Hallo, {ownerPatient.owner}! 👋
+              Hallo, {ownerPatient.owner}!
             </div>
           )}
 
@@ -594,6 +743,12 @@ export default function App() {
                   <div style={{fontSize:13,color:allDone?"white":"#B8E8E8",fontFamily:"'DM Sans',sans-serif",marginTop:5,fontWeight:allDone?700:400}}>
                     {allDone?`🎉 ${t.allDone(ownerPatient.name)}`:t.exercisesDone}
                   </div>
+                  {streak>0&&(
+                    <div style={{display:"inline-flex",alignItems:"center",gap:5,marginTop:8,background:"rgba(255,255,255,0.15)",borderRadius:20,padding:"4px 10px"}}>
+                      <span style={{fontSize:13}}>🔥</span>
+                      <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:"white"}}>{streak} {streak===1?"Tag":"Tage"} in Folge</span>
+                    </div>
+                  )}
                 </div>
                 <div style={{textAlign:"center"}}>
                   <div style={{fontSize:48,lineHeight:1}}>{ownerPatient.avatar||"🐕"}</div>
@@ -601,6 +756,14 @@ export default function App() {
                 </div>
               </div>
               <div className="pbar" style={{marginTop:14}}><div className="pfill" style={{width:`${progress}%`}}/></div>
+              <div style={{marginTop:14}}>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"#B8E8E8",letterSpacing:"0.8px",textTransform:"uppercase",marginBottom:6}}>Letzte 28 Tage</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3}}>
+                  {calendarDays.map(({dateStr,isToday,done})=>(
+                    <div key={dateStr} style={{height:10,borderRadius:3,background:done?"rgba(255,255,255,0.85)":isToday?"rgba(255,255,255,0.25)":"rgba(255,255,255,0.1)",outline:isToday?"1.5px solid rgba(255,255,255,0.6)":"none",outlineOffset:1}}/>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div style={{display:"flex",gap:8,marginBottom:12}}>
@@ -613,7 +776,7 @@ export default function App() {
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {filteredOwnerExs.map(ex=>{
                 const rc=ex.repeat_count||1;
-                const doneNow=getDoneCountToday(ex.id);
+                const doneNow=getDoneCountThisWeek(ex.id);
                 const fullyDone=doneNow>=rc;
                 return(
                   <div key={ex.id} className="card ex-card" onClick={()=>setSelectedExercise(ex)} style={{padding:"14px",opacity:fullyDone?0.65:1}}>
@@ -641,7 +804,15 @@ export default function App() {
                               );
                             })}
                           </div>
-                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{doneNow}/{rc}</span>
+                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{doneNow}/{rc}× diese Woche</span>
+                        </div>
+                        {/* Feedback button + latest feedback indicator */}
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginTop:7}} onClick={e=>e.stopPropagation()}>
+                          <button className="btn" onClick={e=>{e.stopPropagation();const fb=getLatestFeedback(ex.id);setFeedbackSheet(ex);setFeedbackPain(fb?.pain_level||0);setFeedbackComment(fb?.comment||"");}}
+                            style={{display:"flex",alignItems:"center",gap:4,background:LIGHT,borderRadius:8,padding:"4px 10px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color:"#3D7070",border:`1px solid #B8DFE0`}}>
+                            <Icon name="info" size={12} color="#3D7070"/> Befund melden
+                          </button>
+                          {(()=>{const fb=getLatestFeedback(ex.id);return fb?(<span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:PAIN_COLORS[fb.pain_level],fontWeight:600}}>● {PAIN_LABELS[fb.pain_level]}</span>):null;})()}
                         </div>
                       </div>
                     </div>
@@ -751,7 +922,7 @@ export default function App() {
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   {exForPatient(selectedPatient.id).map(ex=>{
                     const rc=ex.repeat_count||1;
-                    const doneNow=getDoneCountToday(ex.id);
+                    const doneNow=getDoneCountThisWeek(ex.id);
                     const fullyDone=doneNow>=rc;
                     return(
                       <div key={ex.id} className="card" style={{padding:"11px 13px",display:"flex",gap:10,alignItems:"center",borderLeft:`4px solid ${fullyDone?BRAND:"#E0E0E0"}`,opacity:fullyDone?0.75:1}}>
@@ -765,6 +936,14 @@ export default function App() {
                             ))}
                             <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{doneNow}/{rc} · {ex.duration}</span>
                           </div>
+                          {(()=>{const fb=getLatestFeedback(ex.id);return fb?(
+                            <div style={{marginTop:5,display:"flex",alignItems:"center",gap:6}}>
+                              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>● {PAIN_LABELS[fb.pain_level]}</span>
+                              <button className="btn" onClick={e=>{e.stopPropagation();setViewFeedbackEx(ex);}} style={{display:"flex",alignItems:"center",gap:3,background:LIGHT,borderRadius:6,padding:"2px 8px",fontFamily:"'DM Sans',sans-serif",fontSize:10,fontWeight:600,color:"#3D7070",border:`1px solid #B8DFE0`}}>
+                                <Icon name="info" size={10} color="#3D7070"/> anzeigen
+                              </button>
+                            </div>
+                          ):null;})()}
                         </div>
                         <button className="iBtn" onClick={()=>{setSheetData(ex);setSheet("confirmDeleteEx");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                       </div>
@@ -838,7 +1017,7 @@ export default function App() {
             )}
             {view==="owner"&&(()=>{
               const rc=selectedExercise.repeat_count||1;
-              const doneNow=getDoneCountToday(selectedExercise.id);
+              const doneNow=getDoneCountThisWeek(selectedExercise.id);
               const fullyDone=doneNow>=rc;
               return(
                 <div>
@@ -1060,6 +1239,65 @@ export default function App() {
       {sheet==="confirmDeleteEx"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übung entfernen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft entfernt.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteExercise(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.remove}</button></div></div></div>)}
       {sheet==="confirmDeletePt"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Patient löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.name}</strong> und alle Übungen werden dauerhaft gelöscht.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deletePatient(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
       {sheet==="confirmDeleteTmpl"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übungsvorlage löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird aus der Bibliothek gelöscht. Bereits zugewiesene Übungen bleiben erhalten.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
+
+      {/* SHEET: VIEW FEEDBACK (Therapist) */}
+      {viewFeedbackEx&&(
+        <div className="overlay" onClick={()=>setViewFeedbackEx(null)}>
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title="Feedback vom Besitzer" onClose={()=>setViewFeedbackEx(null)}/>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:16}}>{viewFeedbackEx.title}</div>
+            {(()=>{
+              const exFeedbacks=feedbacks.filter(f=>f.exercise_id===viewFeedbackEx.id);
+              if(exFeedbacks.length===0)return <div style={{textAlign:"center",padding:"24px 0",color:ACCENT,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch kein Feedback vorhanden.</div>;
+              return(
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  {exFeedbacks.map((fb,i)=>(
+                    <div key={fb.id} style={{background:PALE,borderRadius:12,padding:"14px 16px",borderLeft:`4px solid ${PAIN_COLORS[fb.pain_level]}`}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:fb.comment?8:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>{fb.pain_level}</span>
+                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>{PAIN_LABELS[fb.pain_level]}</span>
+                        </div>
+                        <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{new Date(fb.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}</span>
+                      </div>
+                      {fb.comment&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:DARK,lineHeight:1.6}}>„{fb.comment}"</div>}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* SHEET: FEEDBACK */}
+      {feedbackSheet&&(
+        <div className="overlay" onClick={()=>{setFeedbackSheet(null);setFeedbackPain(0);setFeedbackComment("");}}>
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title="Befund melden" onClose={()=>{setFeedbackSheet(null);setFeedbackPain(0);setFeedbackComment("");}}/>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:16}}>{feedbackSheet.title}</div>
+            <div style={{marginBottom:18}}>
+              <SL text="Schmerzlevel"/>
+              <div style={{display:"flex",gap:8,marginTop:4}}>
+                {[1,2,3,4,5].map(n=>(
+                  <button key={n} className="btn" onClick={()=>setFeedbackPain(n)} style={{flex:1,padding:"12px 0",borderRadius:10,border:`2px solid ${feedbackPain===n?PAIN_COLORS[n]:"#B8DFE0"}`,background:feedbackPain===n?PAIN_COLORS[n]+"18":"white",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:feedbackPain===n?PAIN_COLORS[n]:DARK}}>{n}</span>
+                    <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,fontWeight:600,color:feedbackPain===n?PAIN_COLORS[n]:"#3D7070",textAlign:"center",lineHeight:1.2}}>{PAIN_LABELS[n]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{marginBottom:18}}>
+              <SL text="Kommentar (optional)"/>
+              <textarea value={feedbackComment} onChange={e=>setFeedbackComment(e.target.value)} rows={3} placeholder="z.B. Hund hat gezittert, Übung abgebrochen..." style={{...inp,resize:"vertical"}}/>
+            </div>
+            <button className="btn" onClick={saveFeedback} disabled={saving||feedbackPain===0} style={{width:"100%",padding:"14px",borderRadius:12,background:feedbackPain>0?BRAND:"#B8DFE0",color:feedbackPain>0?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+              {saving?"Wird gespeichert...":"Befund speichern"}
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
