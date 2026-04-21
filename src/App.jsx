@@ -81,14 +81,18 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
     mail: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
     lock: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
     repeat: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
+    bell: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+    belloff: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>,
+    profile: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+    star: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
   };
   return icons[name] || null;
 };
 
 const T = {
-  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt." },
-  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress." },
-  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento." }
+  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt." },
+  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress." },
+  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento." }
 };
 
 const TIPS = {
@@ -654,7 +658,7 @@ export default function App() {
                   <div style={{width:20,height:20,borderRadius:5,background:ACCENT+"30",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="chevdown" size={11} color={ACCENT}/></div>
                 </button>
                 {langOpen&&<div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:"white",borderRadius:12,boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:130,zIndex:50}}>
-                  {[["de","🇩🇪 Deutsch"],["en","🇬🇧 English"],["es","🇪🇸 Español"]].map(([l,label])=>(
+                  {[["de","DE · Deutsch"],["en","EN · English"],["es","ES · Español"]].map(([l,label])=>(
                     <button key={l} className="btn" onClick={()=>{setLang(l);setLangOpen(false);}} style={{width:"100%",padding:"11px 16px",textAlign:"left",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:l===lang?700:400,color:l===lang?BRAND:"#102828",background:l===lang?LIGHT:"white",display:"block"}}>{label}</button>
                   ))}
                 </div>}
@@ -665,7 +669,7 @@ export default function App() {
             </div>
           </div>
           <div style={{display:"flex",background:"#2A6364"}}>
-            {[["owner","home",t.navOwner],...(isAdmin?[["therapist","practice",t.navTherapist]]:[]),["info","info",t.navInfo]].map(([v,ic,lb])=>(
+            {[["owner","home",t.navOwner],...(isAdmin?[["therapist","practice",t.navTherapist]]:[["profile","profile",t.navProfile]]),["info","info",t.navInfo]].map(([v,ic,lb])=>(
               <button key={v} className="nav-tab" onClick={()=>setView(v)} style={{background:view===v?"white":"transparent",color:view===v?DARK:ACCENT,borderRadius:view===v?"10px 10px 0 0":0,marginTop:view===v?3:0}}>
                 <Icon name={ic} size={14} color={view===v?DARK:ACCENT}/>{lb}
               </button>
@@ -689,28 +693,6 @@ export default function App() {
                   <button className="btn" onClick={changePassword} disabled={saving} style={{background:BRAND,color:"#102828",borderRadius:9,padding:"8px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,flexShrink:0}}>{saving?"...":"Speichern"}</button>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Push notification banner */}
-          {!isAdmin&&(
-            <div style={{background:pushEnabled?"#E8F5E9":"#E6F6F6",border:`1.5px solid ${pushEnabled?"#81C784":"#B8DFE0"}`,borderRadius:12,padding:"12px 16px",marginBottom:14,display:"flex",alignItems:"center",gap:10}}>
-              <div style={{flex:1}}>
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:pushEnabled?"#2E7D32":DARK,marginBottom:pushEnabled?6:0}}>
-                  {pushEnabled?"🔔 Erinnerungen aktiv":"🔔 Erinnerungen aktivieren"}
-                </div>
-                {pushEnabled&&(
-                  <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>Täglich um</span>
-                    <input type="time" value={pushTime} onChange={e=>updatePushTime(e.target.value)}
-                      style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:DARK,border:`1px solid #B8DFE0`,borderRadius:6,padding:"3px 6px",outline:"none"}}/>
-                  </div>
-                )}
-              </div>
-              <button className="btn" onClick={pushEnabled?disablePush:enablePush} disabled={pushLoading}
-                style={{background:pushEnabled?"#FFE8E8":BRAND,color:pushEnabled?"#C0392B":"#102828",borderRadius:9,padding:"7px 12px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,flexShrink:0}}>
-                {pushLoading?"...":(pushEnabled?"Deaktivieren":"Aktivieren")}
-              </button>
             </div>
           )}
 
@@ -740,12 +722,13 @@ export default function App() {
                 <div>
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#B8E8E8",letterSpacing:"1px",textTransform:"uppercase",marginBottom:3}}>{t.progress}</div>
                   <div style={{fontFamily:"'Playfair Display',serif",fontSize:36,fontWeight:700,lineHeight:1}}>{doneCount}/{totalCount}</div>
-                  <div style={{fontSize:13,color:allDone?"white":"#B8E8E8",fontFamily:"'DM Sans',sans-serif",marginTop:5,fontWeight:allDone?700:400}}>
-                    {allDone?`🎉 ${t.allDone(ownerPatient.name)}`:t.exercisesDone}
+                  <div style={{fontSize:13,color:allDone?"white":"#B8E8E8",fontFamily:"'DM Sans',sans-serif",marginTop:5,fontWeight:allDone?700:400,display:"flex",alignItems:"center",gap:5}}>
+                    {allDone&&<Icon name="check" size={14} color="white"/>}
+                    {allDone?t.allDone(ownerPatient.name):t.exercisesDone}
                   </div>
                   {streak>0&&(
                     <div style={{display:"inline-flex",alignItems:"center",gap:5,marginTop:8,background:"rgba(255,255,255,0.15)",borderRadius:20,padding:"4px 10px"}}>
-                      <span style={{fontSize:13}}>🔥</span>
+                      <Icon name="star" size={13} color="white"/>
                       <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:"white"}}>{streak} {streak===1?"Tag":"Tage"} in Folge</span>
                     </div>
                   )}
@@ -821,6 +804,54 @@ export default function App() {
               })}
             </div>
           </>)}
+        </div>
+      )}
+
+      {/* PROFILE VIEW */}
+      {view==="profile"&&!isAdmin&&(
+        <div style={{maxWidth:480,margin:"0 auto",padding:"16px 14px 80px"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK,marginBottom:4}}>{t.navProfile}</div>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:20}}>
+            {ownerPatient?.owner||""}
+          </div>
+
+          {/* Push notifications card */}
+          <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <div style={{width:40,height:40,borderRadius:12,background:pushEnabled?BRAND+"18":LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <Icon name={pushEnabled?"bell":"belloff"} size={20} color={pushEnabled?BRAND:"#3D7070"}/>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK}}>Erinnerungen</div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginTop:1}}>
+                  {pushEnabled?"Täglich aktiv — nur bei offenen Übungen":"Erinnert dich täglich an deine Übungen"}
+                </div>
+              </div>
+            </div>
+
+            {pushEnabled&&(
+              <div style={{background:LIGHT,borderRadius:12,padding:"14px 16px",marginBottom:14}}>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:10}}>Erinnerungszeit</div>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flex:1,background:"white",borderRadius:10,border:`1.5px solid ${BRAND}`,padding:"10px 14px"}}>
+                    <Icon name="clock" size={16} color={BRAND}/>
+                    <input type="time" value={pushTime} onChange={e=>updatePushTime(e.target.value)}
+                      style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,fontWeight:600,color:DARK,border:"none",outline:"none",background:"transparent",WebkitTextFillColor:DARK,flex:1}}/>
+                  </div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070"}}>Uhr</div>
+                </div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:ACCENT,marginTop:8}}>
+                  Die Erinnerung wird nur gesendet wenn noch Übungen offen sind.
+                </div>
+              </div>
+            )}
+
+            <button className="btn" onClick={pushEnabled?disablePush:enablePush} disabled={pushLoading}
+              style={{width:"100%",padding:"13px",borderRadius:12,background:pushEnabled?"#FFE8E8":BRAND,color:pushEnabled?"#C0392B":"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+              <Icon name={pushEnabled?"belloff":"bell"} size={16} color={pushEnabled?"#C0392B":"#102828"}/>
+              {pushLoading?"...":(pushEnabled?"Erinnerungen deaktivieren":"Erinnerungen aktivieren")}
+            </button>
+          </div>
         </div>
       )}
 
