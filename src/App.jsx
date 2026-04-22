@@ -351,7 +351,7 @@ export default function App() {
         supabase.from("exercises").select("*").order("created_at"),
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
         supabase.from("exercise_templates").select("*").order("title"),
-        supabase.from("user_emails").select("id,email"),
+        supabase.rpc("get_user_emails"),
         supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-27);return d.toISOString().split("T")[0];})()),
         supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false})
       ]);
