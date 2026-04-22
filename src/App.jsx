@@ -84,6 +84,7 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
     bell: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
     belloff: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>,
     profile: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+    print: <svg {...s} viewBox='0 0 24 24' fill='none' stroke={color} strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'><polyline points='6 9 6 2 18 2 18 9'/><path d='M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2'/><rect x='6' y='14' width='12' height='8'/></svg>,
     star: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
   };
   return icons[name] || null;
@@ -382,6 +383,105 @@ export default function App() {
     }catch(e){console.error("loadAll error",e);}
     setLoading(false);
   }
+
+  const printExercisePlan = (patient) => {
+    const patExercises = exercises.filter(e => e.patient_id === patient.id);
+    const date = new Date().toLocaleDateString("de-DE", {day:"2-digit",month:"long",year:"numeric"});
+    const html = `<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<title>Übungsplan ${patient.name}</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "DM Sans", sans-serif; color: #102828; background: white; padding: 32px 40px; }
+  .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #5fb8b9; padding-bottom: 18px; margin-bottom: 24px; }
+  .logo { height: 52px; object-fit: contain; }
+  .praxis { text-align: right; }
+  .praxis-name { font-family: "Playfair Display", serif; font-size: 15px; font-weight: 700; color: #1E4A4B; }
+  .praxis-sub { font-size: 11px; color: #3D8E8F; margin-top: 2px; letter-spacing: 0.5px; }
+  .patient-box { background: #F3FBFB; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; align-items: center; gap: 16px; border-left: 4px solid #5fb8b9; }
+  .patient-avatar { font-size: 36px; line-height: 1; }
+  .patient-name { font-family: "Playfair Display", serif; font-size: 20px; font-weight: 700; color: #1E4A4B; }
+  .patient-meta { font-size: 12px; color: #3D7070; margin-top: 3px; }
+  .patient-date { margin-left: auto; font-size: 11px; color: #3D8E8F; text-align: right; }
+  .section-title { font-family: "Playfair Display", serif; font-size: 13px; font-weight: 700; color: #3D8E8F; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+  .exercise { display: flex; gap: 16px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #E6F6F6; page-break-inside: avoid; }
+  .exercise:last-child { border-bottom: none; }
+  .ex-img { width: 90px; height: 90px; border-radius: 10px; object-fit: contain; background: #E6F6F6; flex-shrink: 0; padding: 4px; }
+  .ex-img-placeholder { width: 90px; height: 90px; border-radius: 10px; background: #E6F6F6; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+  .ex-content { flex: 1; }
+  .ex-title { font-family: "Playfair Display", serif; font-size: 15px; font-weight: 700; color: #102828; margin-bottom: 4px; }
+  .ex-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .tag { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: #E6F6F6; color: #3D8E8F; }
+  .tag-freq { background: #1E4A4B; color: white; }
+  .ex-desc { font-size: 12px; color: #3D6060; line-height: 1.55; margin-bottom: 8px; }
+  .steps-title { font-size: 10px; font-weight: 700; color: #3D8E8F; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px; }
+  .step { display: flex; gap: 8px; margin-bottom: 4px; align-items: flex-start; }
+  .step-num { width: 18px; height: 18px; border-radius: 50%; background: #5fb8b9; color: white; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { font-size: 12px; color: #102828; line-height: 1.5; }
+  .footer { margin-top: 32px; padding-top: 14px; border-top: 1px solid #E6F6F6; display: flex; justify-content: space-between; align-items: center; }
+  .footer-left { font-size: 10px; color: #3D8E8F; }
+  .footer-right { font-size: 10px; color: #B8DFE0; }
+  @media print { body { padding: 20px 24px; } @page { margin: 1cm; } }
+</style>
+</head>
+<body>
+<div class="header">
+  <img class="logo" src="https://tkgwdmntglzfeulpgfpw.supabase.co/storage/v1/object/public/exercise-images/Logo%20Fit%20Fun%20Dog-Vektor%20ws.png" onerror="this.style.display='none'"/>
+  <div class="praxis">
+    <div class="praxis-name">Fit Fun Dog</div>
+    <div class="praxis-sub">Tierphysiotherapie & Osteopathie</div>
+  </div>
+</div>
+<div class="patient-box">
+  <div class="patient-avatar">${patient.avatar||"🐕"}</div>
+  <div>
+    <div class="patient-name">${patient.name}</div>
+    <div class="patient-meta">${[patient.breed, patient.age ? patient.age+" Jahre" : "", patient.owner].filter(Boolean).join(" · ")}</div>
+    ${patient.condition ? `<div class="patient-meta" style="margin-top:4px;color:#5fb8b9">${patient.condition}</div>` : ""}
+  </div>
+  <div class="patient-date">
+    <div style="font-weight:700;color:#1E4A4B">Übungsplan</div>
+    <div style="margin-top:2px">${date}</div>
+    <div style="margin-top:2px">${patExercises.length} Übung${patExercises.length!==1?"en":""}</div>
+  </div>
+</div>
+<div class="section-title">Heimübungen</div>
+${patExercises.map((ex,i) => `
+<div class="exercise">
+  ${ex.image_url
+    ? `<img class="ex-img" src="${ex.image_url}" alt="${ex.title}"/>`
+    : `<div class="ex-img-placeholder">🐾</div>`}
+  <div class="ex-content">
+    <div class="ex-title">${ex.title}</div>
+    <div class="ex-tags">
+      ${(ex.categories||[]).map(c=>`<span class="tag">${c}</span>`).join("")}
+      ${ex.difficulty ? `<span class="tag">${ex.difficulty}</span>` : ""}
+      ${ex.repeat_count ? `<span class="tag tag-freq">${ex.repeat_count}× pro Woche</span>` : ""}
+      ${ex.duration ? `<span class="tag">${ex.duration}</span>` : ""}
+    </div>
+    ${ex.description ? `<div class="ex-desc">${ex.description}</div>` : ""}
+    ${ex.instructions && ex.instructions.filter(Boolean).length > 0 ? `
+    <div class="steps-title">Schritt für Schritt</div>
+    ${ex.instructions.filter(Boolean).map((step,j) => `
+    <div class="step">
+      <div class="step-num">${j+1}</div>
+      <div class="step-text">${step}</div>
+    </div>`).join("")}` : ""}
+  </div>
+</div>`).join("")}
+<div class="footer">
+  <div class="footer-left">Erstellt mit Fit Fun Dog · fitfundog@freenet.de</div>
+  <div class="footer-right">Bitte führe die Übungen nur nach Anweisung der Therapeutin durch.</div>
+</div>
+</body></html>`;
+    const win = window.open("", "_blank", "width=800,height=900");
+    win.document.write(html);
+    win.document.close();
+    win.onload = () => { win.focus(); win.print(); };
+  };
 
   const handleLogout=async()=>{
     sessionStorage.removeItem("_tfpw");
@@ -1001,6 +1101,7 @@ export default function App() {
                         </div>
                       </div>
                       <div style={{display:"flex",gap:5}}>
+                        <button className="iBtn" title="Übungsplan drucken" onClick={()=>printExercisePlan(p)} style={{background:"#E8F5E9"}}><Icon name="print" size={14} color="#2E7D32"/></button>
                         <button className="iBtn" onClick={()=>{setEditPatientData({...p});setSheet("editPatient");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
                         <button className="iBtn" onClick={()=>{setSheetData(p);setSheet("confirmDeletePt");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                       </div>
