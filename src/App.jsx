@@ -1,22 +1,15 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase";
 
 document.title = "Fit Fun Dog";
 document.querySelectorAll("link[rel*='icon']").forEach(el => el.remove());
 const fav = document.createElement("link");
-fav.rel = "icon"; fav.type = "image/png";
-fav.href = "/favicon.png?v=3";
+fav.rel = "icon"; fav.type = "image/png"; fav.href = "/favicon.png?v=4";
 document.head.appendChild(fav);
-
-// Register PWA service worker
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
-}
-
-// Auto-logout on tab close
-window.addEventListener("beforeunload", () => supabase.auth.signOut());
+if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
 const ADMIN_ID = "1bed901d-005a-496e-bf8e-5d55804e6f72";
+const VAPID_PUBLIC_KEY = "BPOAPZ3DeTf-FL_rmbeEufuh-bhAEH-zrUR-TPTsRVfNCotxh_jJ-7A5AHu9pWNyM24HxX_E5Ls1dy4Mt82b1F4";
 const THERAPIST_EMAIL = "fitfundog@freenet.de";
 const BRAND = "#5fb8b9", DARK = "#1E4A4B", MID = "#3D8E8F";
 const LIGHT = "#E6F6F6", PALE = "#F3FBFB", ACCENT = "#8FD4D5";
@@ -26,6 +19,41 @@ const TARGET_REGIONS = ["Ganzer Körper", "Hinterhand", "Vorderhand", "Rumpf", "
 const EMPTY_PATIENT = { name: "", breed: "", age: "", owner: "", condition: "", avatar: "🐕", ownerEmail: "", ownerPassword: "" };
 const EMPTY_TEMPLATE = { title: "", categories: [], target_regions: [], difficulty: "Leicht", description: "", instructions: ["","",""], image_url: "", video_url: "" };
 const difficultyColor = { "Leicht": BRAND, "Mittel": MID, "Schwer": "#C0392B" };
+
+// ── SearchInput OUTSIDE App to prevent focus loss on re-render ──
+const SearchInput = ({ value, onChange, placeholder }) => (
+  <div style={{ position: "relative", marginBottom: 10 }}>
+    <input
+      value={value}
+      onChange={e => onChange(e.target.value)}
+      placeholder={placeholder || "Suchen..."}
+      style={{ width: "100%", padding: "11px 14px 11px 36px", borderRadius: 12, border: "1.5px solid #B8DFE0", fontSize: 16, fontFamily: "'DM Sans',sans-serif", outline: "none", background: "white", color: "#102828", WebkitTextFillColor: "#102828", boxSizing: "border-box" }}
+    />
+    <svg style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3D7070" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+  </div>
+);
+
+// ── Custom Select with visible arrow ──
+const CustomSelect = ({ value, onChange, children, style = {} }) => (
+  <div style={{ position: "relative" }}>
+    <select
+      value={value}
+      onChange={onChange}
+      style={{
+        width: "100%", padding: "12px 40px 12px 14px", borderRadius: 12,
+        border: `1.5px solid #B8DFE0`, fontSize: 15, fontFamily: "'DM Sans',sans-serif",
+        outline: "none", background: "white", color: "#102828",
+        WebkitTextFillColor: "#102828", appearance: "none", cursor: "pointer",
+        boxSizing: "border-box", ...style
+      }}
+    >
+      {children}
+    </select>
+    <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", width: 28, height: 28, borderRadius: 8, background: BRAND + "20", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={BRAND} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+  </div>
+);
 
 const Icon = ({ name, size = 20, color = BRAND }) => {
   const s = { width: size, height: size };
@@ -52,26 +80,31 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
     user: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
     mail: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>,
     lock: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+    repeat: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
+    bell: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+    belloff: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>,
+    profile: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+    star: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
   };
   return icons[name] || null;
 };
 
 const T = {
-  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Besitzer", navTherapist:"Praxis", navInfo:"Info", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", markDone:"Heute erledigt!", markUndone:"Als unerledigt markieren", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Häufigkeit", freqPh:"z.B. 2x täglich, 5 Min.", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Häufigkeit", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt." },
-  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Owner", navTherapist:"Practice", navInfo:"Info", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", markDone:"Done today!", markUndone:"Mark as not done", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Frequency", freqPh:"e.g. 2x daily, 5 min.", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Frequency", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress." },
-  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Dueño", navTherapist:"Clínica", navInfo:"Info", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", markDone:"¡Hecho hoy!", markUndone:"Marcar como no hecho", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Frecuencia", freqPh:"ej. 2x al día, 5 min.", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Frecuencia", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento." }
+  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt." },
+  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress." },
+  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento." }
 };
 
 const TIPS = {
   de:[{icon:"tip",title:"Qualität vor Tempo",text:"Langsame Bewegungen sind viel anstrengender und effektiver für den Muskelaufbau als schnelles Hin- und Herspringen."},{icon:"close",title:"Abbruch-Signal",text:"Sofort aufhören, wenn der Hund anfängt zu zittern, stark zu hecheln oder die Übung schlampig ausführt. Das sind Zeichen für Muskelermüdung."},{icon:"target",title:"Belohnung",text:"Das Futter sollte punktgenau gegeben werden, wenn der Hund die gewünschte Position erreicht hat – nicht nur als Lockmittel."}],
-  en:[{icon:"tip",title:"Quality over Speed",text:"Slow movements are much more demanding and effective for muscle building than fast repetitions."},{icon:"close",title:"Stop Signal",text:"Stop immediately if the dog starts trembling, panting heavily, or performing the exercise sloppily."},{icon:"target",title:"Reward",text:"Treats should be given precisely when the dog reaches the desired position – not just as a lure."}],
-  es:[{icon:"tip",title:"Calidad sobre Velocidad",text:"Los movimientos lentos son más exigentes y efectivos para el desarrollo muscular."},{icon:"close",title:"Señal de Parada",text:"Detener inmediatamente si el perro tiembla, jadea mucho o realiza el ejercicio descuidadamente."},{icon:"target",title:"Recompensa",text:"El alimento debe darse con precisión cuando el perro alcanza la posición deseada."}]
+  en:[{icon:"tip",title:"Quality over Speed",text:"Slow movements are much more demanding and effective for muscle building."},{icon:"close",title:"Stop Signal",text:"Stop immediately if the dog starts trembling, panting heavily, or performing the exercise sloppily."},{icon:"target",title:"Reward",text:"Treats should be given precisely when the dog reaches the desired position."}],
+  es:[{icon:"tip",title:"Calidad sobre Velocidad",text:"Los movimientos lentos son más exigentes y efectivos para el desarrollo muscular."},{icon:"close",title:"Señal de Parada",text:"Detener inmediatamente si el perro tiembla o realiza el ejercicio descuidadamente."},{icon:"target",title:"Recompensa",text:"El alimento debe darse con precisión cuando el perro alcanza la posición deseada."}]
 };
 
 const PAUSE = {
-  de:[{icon:"rest",title:"Warum Pausen so wichtig sind",text:"Pausen sind aktiver Teil des Muskelaufbaus. Das Prinzip der Superkompensation besagt: der Körper hebt nach einer Belastung das Leistungsniveau über das ursprüngliche Maß hinaus – aber nur bei ausreichender Pause."},{icon:"clock",title:"Pausendauer",items:["Kleine Muskelgruppen: ca. 24 Stunden Regeneration","Große Muskelgruppen / intensive Kraftübungen: 48–96 Stunden","Niemals dieselbe Muskelgruppe an zwei aufeinanderfolgenden Tagen trainieren"]},{icon:"info",title:"Anzeichen für Übermüdung",items:["Zittern der Muskulatur","Hecheln oder Schmatzen (Stressanzeichen)","Unkonzentriertheit oder langsamer werdende Reaktionen","Unsaubere Ausführung – z.B. Pfoten schleifen, Ausweichbewegungen"]},{icon:"rest",title:"Pausen zwischen den Sätzen",text:"Kurze Zwischenpausen helfen die Konzentrationsfähigkeit hochzuhalten – Übungen sind oft auch mental sehr anstrengend."},{icon:"assign",title:"Trainingsrhythmus",items:["Tag 1: Training","Tag 2: Pause (lockere Bewegung / Gassi)","Tag 3: Training","Bei intensivem Aufbau: 2 Pausentage zwischen den Einheiten"]}],
-  en:[{icon:"rest",title:"Why Rest Matters",text:"Rest is an active part of muscle building. After exertion, the body raises performance above its original level – but only with sufficient rest."},{icon:"clock",title:"Rest Duration",items:["Small muscle groups: approx. 24 hours recovery","Large muscle groups / intense exercises: 48–96 hours","Never train the same muscle group on two consecutive days"]},{icon:"info",title:"Signs of Fatigue",items:["Muscle trembling","Panting or lip smacking (stress signals)","Loss of focus or slowing reactions","Sloppy execution – e.g. dragging paws, compensatory movements"]},{icon:"rest",title:"Rest Between Sets",text:"Short breaks between sets help maintain concentration – exercises are often mentally demanding too."},{icon:"assign",title:"Training Rhythm",items:["Day 1: Training","Day 2: Rest (light walk only)","Day 3: Training","For intensive training: 2 rest days between sessions"]}],
-  es:[{icon:"rest",title:"Por qué el Descanso es Importante",text:"El descanso es parte activa del desarrollo muscular."},{icon:"clock",title:"Duración del Descanso",items:["Grupos musculares pequeños: aprox. 24 horas","Grupos musculares grandes: 48–96 horas","Nunca entrenar el mismo grupo dos días consecutivos"]},{icon:"info",title:"Señales de Fatiga",items:["Temblor muscular","Jadeo o chasquido de labios","Pérdida de concentración","Ejecución descuidada"]},{icon:"rest",title:"Descanso Entre Series",text:"Pausas cortas entre series ayudan a mantener la concentración."},{icon:"assign",title:"Ritmo de Entrenamiento",items:["Día 1: Entrenamiento","Día 2: Descanso","Día 3: Entrenamiento"]}]
+  de:[{icon:"rest",title:"Warum Pausen so wichtig sind",text:"Pausen sind aktiver Teil des Muskelaufbaus. Das Prinzip der Superkompensation besagt: der Körper hebt nach einer Belastung das Leistungsniveau über das ursprüngliche Maß hinaus – aber nur bei ausreichender Pause."},{icon:"clock",title:"Pausendauer",items:["Kleine Muskelgruppen: ca. 24 Stunden Regeneration","Große Muskelgruppen / intensive Kraftübungen: 48–96 Stunden","Niemals dieselbe Muskelgruppe an zwei aufeinanderfolgenden Tagen trainieren"]},{icon:"info",title:"Anzeichen für Übermüdung",items:["Zittern der Muskulatur","Hecheln oder Schmatzen (Stressanzeichen)","Unkonzentriertheit oder langsamer werdende Reaktionen","Unsaubere Ausführung – z.B. Pfoten schleifen, Ausweichbewegungen"]},{icon:"rest",title:"Pausen zwischen den Sätzen",text:"Kurze Zwischenpausen helfen die Konzentrationsfähigkeit hochzuhalten."},{icon:"assign",title:"Trainingsrhythmus",items:["Tag 1: Training","Tag 2: Pause (lockere Bewegung / Gassi)","Tag 3: Training","Bei intensivem Aufbau: 2 Pausentage zwischen den Einheiten"]}],
+  en:[{icon:"rest",title:"Why Rest Matters",text:"Rest is an active part of muscle building. After exertion, the body raises performance above its original level – but only with sufficient rest."},{icon:"clock",title:"Rest Duration",items:["Small muscle groups: approx. 24 hours recovery","Large muscle groups: 48–96 hours","Never train the same muscle group on two consecutive days"]},{icon:"info",title:"Signs of Fatigue",items:["Muscle trembling","Panting or lip smacking","Loss of focus","Sloppy execution"]},{icon:"rest",title:"Rest Between Sets",text:"Short breaks between sets help maintain concentration."},{icon:"assign",title:"Training Rhythm",items:["Day 1: Training","Day 2: Rest","Day 3: Training"]}],
+  es:[{icon:"rest",title:"Por qué el Descanso es Importante",text:"El descanso es parte activa del desarrollo muscular."},{icon:"clock",title:"Duración del Descanso",items:["Grupos pequeños: 24 horas","Grupos grandes: 48–96 horas","Nunca entrenar el mismo grupo dos días consecutivos"]},{icon:"info",title:"Señales de Fatiga",items:["Temblor muscular","Jadeo o chasquido","Pérdida de concentración","Ejecución descuidada"]},{icon:"rest",title:"Descanso Entre Series",text:"Pausas cortas ayudan a mantener la concentración."},{icon:"assign",title:"Ritmo de Entrenamiento",items:["Día 1: Entrenamiento","Día 2: Descanso","Día 3: Entrenamiento"]}]
 };
 
 const FilterDropdown = ({ label, icon, options, selected, onChange, color = BRAND }) => {
@@ -80,11 +113,12 @@ const FilterDropdown = ({ label, icon, options, selected, onChange, color = BRAN
   return (
     <div style={{ position:"relative", flex:1 }} onClick={e=>e.stopPropagation()}>
       <button onClick={()=>setOpen(o=>!o)} style={{ width:"100%", padding:"9px 12px", borderRadius:10, border:`1.5px solid ${count>0?color:"#B8DFE0"}`, background:count>0?color+"15":"white", display:"flex", alignItems:"center", gap:6, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:count>0?color:"#3D7070" }}>
-        <Icon name={icon} size={13} color={count>0?color:"#3D7070"}/><span style={{flex:1,textAlign:"left"}}>{count>0?`${label} (${count})`:label}</span><Icon name="chevdown" size={13} color={count>0?color:"#3D7070"}/>
+        <Icon name={icon} size={13} color={count>0?color:"#3D7070"}/><span style={{flex:1,textAlign:"left"}}>{count>0?`${label} (${count})`:label}</span>
+        <div style={{ width:22,height:22,borderRadius:6,background:count>0?color+"30":LIGHT,display:"flex",alignItems:"center",justifyContent:"center" }}><Icon name="chevdown" size={12} color={count>0?color:"#3D7070"}/></div>
       </button>
       {open&&(<div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"white", borderRadius:12, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:30, overflow:"hidden", border:`1px solid ${LIGHT}` }}>
         {selected.length>0&&<button onClick={()=>{onChange([]);setOpen(false);}} style={{ width:"100%", padding:"9px 14px", textAlign:"left", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:"#C0392B", background:"#FFF5F5", cursor:"pointer", border:"none", borderBottom:`1px solid ${LIGHT}` }}>Auswahl aufheben</button>}
-        {options.map(opt=>{const active=selected.includes(opt);return(<button key={opt} onClick={()=>onChange(active?selected.filter(s=>s!==opt):[...selected,opt])} style={{ width:"100%", padding:"10px 14px", textAlign:"left", fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:active?600:400, color:active?color:"#102828", background:active?color+"10":"white", cursor:"pointer", border:"none", borderBottom:`1px solid ${LIGHT}`, display:"flex", alignItems:"center", gap:8 }}><div style={{ width:16, height:16, borderRadius:4, border:`2px solid ${active?color:"#B8DFE0"}`, background:active?color:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{active&&<Icon name="check" size={10} color="white"/>}</div>{opt}</button>);})}
+        {options.map(opt=>{const active=selected.includes(opt);return(<button key={opt} onClick={()=>onChange(active?selected.filter(s=>s!==opt):[...selected,opt])} style={{ width:"100%", padding:"10px 14px", textAlign:"left", fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:active?600:400, color:active?color:"#102828", background:active?color+"10":"white", cursor:"pointer", border:"none", borderBottom:`1px solid ${LIGHT}`, display:"flex", alignItems:"center", gap:8 }}><div style={{ width:16,height:16,borderRadius:4,border:`2px solid ${active?color:"#B8DFE0"}`,background:active?color:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>{active&&<Icon name="check" size={10} color="white"/>}</div>{opt}</button>);})}
       </div>)}
     </div>
   );
@@ -99,28 +133,69 @@ const MultiSelect = ({ options, selected, onChange, color = BRAND }) => (
 const InfoCard = ({ icon, title, text, items }) => (
   <div style={{ background:"white", borderRadius:16, boxShadow:"0 2px 16px rgba(95,184,185,0.12)", padding:"18px 20px", textAlign:"left" }}>
     <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
-      <div style={{ width:34, height:34, borderRadius:9, background:BRAND+"18", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Icon name={icon} size={18} color={BRAND}/></div>
+      <div style={{ width:34,height:34,borderRadius:9,background:BRAND+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}><Icon name={icon} size={18} color={BRAND}/></div>
       <div style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:700, color:"#102828" }}>{title}</div>
     </div>
     {text&&<div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#3D6060", lineHeight:1.65 }}>{text}</div>}
-    {items&&<div style={{ display:"flex", flexDirection:"column", gap:7 }}>{items.map((item,j)=><div key={j} style={{ display:"flex", gap:9, alignItems:"flex-start" }}><div style={{ width:8, height:8, borderRadius:"50%", background:BRAND, flexShrink:0, marginTop:4 }}/><span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#3D6060", lineHeight:1.55, flex:1 }}>{item}</span></div>)}</div>}
+    {items&&<div style={{ display:"flex", flexDirection:"column", gap:7 }}>{items.map((item,j)=><div key={j} style={{ display:"flex", gap:9, alignItems:"flex-start" }}><div style={{ width:8,height:8,borderRadius:"50%",background:BRAND,flexShrink:0,marginTop:4 }}/><span style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#3D6060", lineHeight:1.55, flex:1 }}>{item}</span></div>)}</div>}
   </div>
 );
 
 const LoginScreen = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const inp = { width:"100%", padding:"13px 14px", borderRadius:10, border:"1.5px solid #B8DFE0", fontSize:16, fontFamily:"'DM Sans',sans-serif", outline:"none", color:"#102828", background:"white", WebkitTextFillColor:"#102828", boxSizing:"border-box" };
-  const handleLogin = async () => {
-    if (!email||!password){setError("Bitte Email und Passwort eingeben.");return;}
+  const [email,setEmail]=useState("");
+  const [password,setPassword]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [error,setError]=useState("");
+  const inp={width:"100%",padding:"13px 14px",borderRadius:10,border:"1.5px solid #B8DFE0",fontSize:16,fontFamily:"'DM Sans',sans-serif",outline:"none",color:"#102828",background:"white",WebkitTextFillColor:"#102828",boxSizing:"border-box"};
+  const handleLogin=async()=>{
+    if(!email||!password){setError("Bitte Email und Passwort eingeben.");return;}
     setLoading(true);setError("");
-    const {error:err}=await supabase.auth.signInWithPassword({email,password});
+    const{error:err}=await supabase.auth.signInWithPassword({email,password});
     if(err)setError("Login fehlgeschlagen. Bitte Email und Passwort prüfen.");
     else if(email===THERAPIST_EMAIL)sessionStorage.setItem("_tfpw",password);
     setLoading(false);
   };
+  return(
+    <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${DARK} 0%,#2A7A7B 60%,${BRAND} 100%)`,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+      <div style={{width:"100%",maxWidth:360}}>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <img src={LOGO_URL} alt="Fit Fun Dog" style={{height:65,objectFit:"contain",marginBottom:10}}/>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:ACCENT,letterSpacing:"1.5px",textTransform:"uppercase"}}>Tierphysiotherapie & Osteopathie</div>
+        </div>
+        <div style={{background:"white",borderRadius:22,padding:"28px 24px",boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:DARK,marginBottom:4}}>Willkommen zurück</div>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:22}}>Bitte melde dich an um fortzufahren.</div>
+          <div style={{marginBottom:14}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>Email</div><input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="deine@email.de" style={inp}/></div>
+          <div style={{marginBottom:20}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>Passwort</div><input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="••••••••" style={inp}/></div>
+          {error&&<div style={{background:"#FFE8E8",borderRadius:10,padding:"10px 14px",marginBottom:16,fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#C0392B"}}>{error}</div>}
+          <button onClick={handleLogin} disabled={loading} style={{width:"100%",padding:"14px",borderRadius:12,background:loading?"#B8DFE0":BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,border:"none",cursor:"pointer"}}>{loading?"Wird angemeldet...":"Anmelden"}</button>
+        </div>
+        <div style={{textAlign:"center",marginTop:16,fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)"}}>Kein Konto? Bitte wende dich an deine Therapeutin.</div>
+      </div>
+    </div>
+  );
+};
+
+const PasswordResetScreen = ({ onDone }) => {
+  const [password, setPassword] = useState("");
+  const [password2, setPassword2] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const inp = { width:"100%", padding:"13px 14px", borderRadius:10, border:"1.5px solid #B8DFE0", fontSize:16, fontFamily:"'DM Sans',sans-serif", outline:"none", color:"#102828", background:"white", WebkitTextFillColor:"#102828", boxSizing:"border-box" };
+
+  const handleReset = async () => {
+    if (!password || password.length < 6) { setError("Passwort muss mindestens 6 Zeichen haben."); return; }
+    if (password !== password2) { setError("Passwörter stimmen nicht überein."); return; }
+    setLoading(true); setError("");
+    const { error: err } = await supabase.auth.updateUser({ password, data: { must_change_password: false } });
+    if (err) { setError("Fehler: " + err.message); setLoading(false); return; }
+    await supabase.auth.signOut();
+    setSuccess(true);
+    setLoading(false);
+    setTimeout(() => onDone(), 2000);
+  };
+
   return (
     <div style={{ minHeight:"100vh", background:`linear-gradient(160deg,${DARK} 0%,#2A7A7B 60%,${BRAND} 100%)`, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
       <div style={{ width:"100%", maxWidth:360 }}>
@@ -129,14 +204,33 @@ const LoginScreen = () => {
           <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:ACCENT, letterSpacing:"1.5px", textTransform:"uppercase" }}>Tierphysiotherapie & Osteopathie</div>
         </div>
         <div style={{ background:"white", borderRadius:22, padding:"28px 24px", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
-          <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:DARK, marginBottom:4 }}>Willkommen zurück</div>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#3D7070", marginBottom:22 }}>Bitte melde dich an um fortzufahren.</div>
-          <div style={{ marginBottom:14 }}><div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:"#3D7070", letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Email</div><input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="deine@email.de" style={inp}/></div>
-          <div style={{ marginBottom:20 }}><div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:"#3D7070", letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Passwort</div><input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="••••••••" style={inp}/></div>
-          {error&&<div style={{ background:"#FFE8E8", borderRadius:10, padding:"10px 14px", marginBottom:16, fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#C0392B" }}>{error}</div>}
-          <button onClick={handleLogin} disabled={loading} style={{ width:"100%", padding:"14px", borderRadius:12, background:loading?"#B8DFE0":BRAND, color:"#102828", fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:15, border:"none", cursor:"pointer" }}>{loading?"Wird angemeldet...":"Anmelden"}</button>
+          {success ? (
+            <div style={{ textAlign:"center", padding:"12px 0" }}>
+              <div style={{ width:56, height:56, borderRadius:"50%", background:BRAND+"20", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>
+                <Icon name="check" size={28} color={BRAND}/>
+              </div>
+              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:DARK, marginBottom:8 }}>Passwort gesetzt!</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#3D7070" }}>Du wirst zum Login weitergeleitet...</div>
+            </div>
+          ) : (
+            <>
+              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:DARK, marginBottom:4 }}>Neues Passwort</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#3D7070", marginBottom:22 }}>Bitte wähle ein neues Passwort für deinen Account.</div>
+              <div style={{ marginBottom:14 }}>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:"#3D7070", letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Neues Passwort</div>
+                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mindestens 6 Zeichen" style={inp}/>
+              </div>
+              <div style={{ marginBottom:20 }}>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:"#3D7070", letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Passwort wiederholen</div>
+                <input type="password" value={password2} onChange={e=>setPassword2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleReset()} placeholder="••••••••" style={inp}/>
+              </div>
+              {error && <div style={{ background:"#FFE8E8", borderRadius:10, padding:"10px 14px", marginBottom:16, fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#C0392B" }}>{error}</div>}
+              <button onClick={handleReset} disabled={loading} style={{ width:"100%", padding:"14px", borderRadius:12, background:loading?"#B8DFE0":BRAND, color:"#102828", fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:15, border:"none", cursor:"pointer" }}>
+                {loading ? "Wird gespeichert..." : "Passwort speichern"}
+              </button>
+            </>
+          )}
         </div>
-        <div style={{ textAlign:"center", marginTop:16, fontFamily:"'DM Sans',sans-serif", fontSize:12, color:"rgba(255,255,255,0.5)" }}>Kein Konto? Bitte wende dich an deine Therapeutin.</div>
       </div>
     </div>
   );
@@ -147,6 +241,10 @@ export default function App() {
   const t=T[lang];
   const [session,setSession]=useState(null);
   const [authLoading,setAuthLoading]=useState(true);
+  const [isRecoveryMode,setIsRecoveryMode]=useState(()=>{
+    if(sessionStorage.getItem("_recovery")==="1")return true;
+    return window.location.hash.includes("type=recovery");
+  });
   const isAdmin=session?.user?.id===ADMIN_ID;
 
   const [view,setView]=useState("owner");
@@ -157,6 +255,21 @@ export default function App() {
   const [exercises,setExercises]=useState([]);
   const [templates,setTemplates]=useState([]);
   const [doneLogs,setDoneLogs]=useState([]);
+  const [historyLogs,setHistoryLogs]=useState([]);
+  const [feedbacks,setFeedbacks]=useState([]);
+  const [feedbackSheet,setFeedbackSheet]=useState(null);
+  const [feedbackPain,setFeedbackPain]=useState(0);
+  const [feedbackComment,setFeedbackComment]=useState("");
+  const [viewFeedbackEx,setViewFeedbackEx]=useState(null);
+  const [pushEnabled,setPushEnabled]=useState(false);
+  const [pushTime,setPushTime]=useState("09:00");
+  const [pushLoading,setPushLoading]=useState(false);
+  const [calendarOpen,setCalendarOpen]=useState(false);
+
+  const today=new Date().toISOString().split("T")[0];
+  // Week boundaries (Monday–Sunday)
+  const getWeekStart=()=>{const d=new Date();const day=d.getDay();const diff=day===0?-6:1-day;d.setDate(d.getDate()+diff);return d.toISOString().split("T")[0];};
+  const weekStart=getWeekStart();
   const [userEmails,setUserEmails]=useState([]);
   const [loading,setLoading]=useState(true);
   const [selectedExercise,setSelectedExercise]=useState(null);
@@ -167,6 +280,7 @@ export default function App() {
   const [sheetData,setSheetData]=useState(null);
   const [selectedTemplate,setSelectedTemplate]=useState(null);
   const [duration,setDuration]=useState("");
+  const [repeatCount,setRepeatCount]=useState(1);
   const [newPatient,setNewPatient]=useState(EMPTY_PATIENT);
   const [editPatientData,setEditPatientData]=useState(null);
   const [newTemplate,setNewTemplate]=useState(EMPTY_TEMPLATE);
@@ -186,86 +300,189 @@ export default function App() {
   const [showPasswordChange,setShowPasswordChange]=useState(false);
   const [newPassword,setNewPassword]=useState("");
 
-  const today=new Date().toISOString().split("T")[0];
-  const hasLoadedRef=useRef(false);
+  // ── Handle Android back button – close sheet/exercise instead of app ──
+  useEffect(()=>{
+    const handleBack=(e)=>{
+      if(selectedExercise){e.preventDefault();setSelectedExercise(null);return;}
+      if(sheet){e.preventDefault();closeSheet();return;}
+    };
+    window.addEventListener("popstate",handleBack);
+    // Push a state so back button has something to pop
+    if(selectedExercise||sheet) window.history.pushState({modal:true},"");
+    return()=>window.removeEventListener("popstate",handleBack);
+  },[selectedExercise,sheet]);
 
-  // ── KEY FIX: pass userId directly from getSession, don't wait for state ──
+  // ── Auth: load data with userId directly from session ──
   useEffect(()=>{
     supabase.auth.getSession().then(({data:{session:s}})=>{
       setSession(s);
       setAuthLoading(false);
-      if(s && !hasLoadedRef.current){
-        hasLoadedRef.current=true;
-        loadAll(s.user.id); // Pass userId directly!
-      }
+      if(s) loadAll(s.user.id);
     });
-    const {data:{subscription}}=supabase.auth.onAuthStateChange((_e,s)=>{
-      setSession(s);
-      if(!s)hasLoadedRef.current=false;
+    const{data:{subscription}}=supabase.auth.onAuthStateChange((event,s)=>{
+      if(event==="PASSWORD_RECOVERY"){
+        sessionStorage.setItem("_recovery","1");
+        setIsRecoveryMode(true);
+        setAuthLoading(false);
+        return;
+      }
+      if(event==="SIGNED_OUT"){
+        // Clear all state on logout
+        sessionStorage.removeItem("_recovery"); setIsRecoveryMode(false);
+        setSession(null);
+        setPatients([]);setExercises([]);setDoneLogs([]);setHistoryLogs([]);setFeedbacks([]);setTemplates([]);
+        setOwnerPatient(null);setSelectedPatient(null);
+        setLoading(true);
+      } else if(event==="SIGNED_IN"&&s){
+        setIsRecoveryMode(false);
+        setSession(s);
+        loadAll(s.user.id);
+        checkPushStatus();
+      }
     });
     return()=>subscription.unsubscribe();
   },[]);
 
   async function loadAll(userId) {
     setLoading(true);
-    const uid=userId||session?.user?.id;
-    const [{data:pd},{data:ed},{data:ld},{data:td},{data:ue}]=await Promise.all([
-      supabase.from("patients").select("*").order("name"),
-      supabase.from("exercises").select("*").order("created_at"),
-      supabase.from("exercise_logs").select("*").eq("done_date",today),
-      supabase.from("exercise_templates").select("*").order("title"),
-      supabase.from("user_emails").select("id,email")
-    ]);
-    const pl=pd||[];
-    setPatients(pl);
-    setExercises(ed||[]);
-    setDoneLogs(ld||[]);
-    setTemplates(td||[]);
-    setUserEmails(ue||[]);
+    const uid=userId;
+    try{
+      const [{data:pd},{data:ed},{data:ld},{data:td},{data:ue},{data:hl},{data:fb}]=await Promise.all([
+        supabase.from("patients").select("*").order("name"),
+        supabase.from("exercises").select("*").order("created_at"),
+        supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
+        supabase.from("exercise_templates").select("*").order("title"),
+        supabase.rpc("get_user_emails"),
+        supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-27);return d.toISOString().split("T")[0];})()),
+        supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false})
+      ]);
+      const pl=pd||[];
+      setPatients(pl);
+      setExercises(ed||[]);
+      setDoneLogs(ld||[]);
+      setHistoryLogs(hl||[]);
+      setFeedbacks(fb||[]);
+      setTemplates(td||[]);
+      setUserEmails(ue||[]);
 
-    // ── CRITICAL: find owner's patient immediately using userId ──
-    setOwnerPatient(prev=>{
-      if(prev && pl.find(p=>p.id===prev.id)) return pl.find(p=>p.id===prev.id);
-      if(uid && uid!==ADMIN_ID){
-        const mine=pl.find(p=>p.user_id===uid);
-        if(mine) return mine;
+      // Find owner's patient by userId
+      let ownerPat=null;
+      if(uid&&uid!==ADMIN_ID){
+        ownerPat=pl.find(p=>p.user_id===uid)||pl[0]||null;
+      } else {
+        ownerPat=pl[0]||null;
       }
-      return pl.length>0?pl[0]:null;
-    });
-    setSelectedPatient(prev=>prev?pl.find(p=>p.id===prev.id)||null:null);
+      setOwnerPatient(ownerPat);
+      setSelectedPatient(prev=>prev?pl.find(p=>p.id===prev.id)||null:null);
 
-    // Check must-change-password
-    if(uid && uid!==ADMIN_ID){
-      const {data:{user}}=await supabase.auth.getUser();
-      if(user?.user_metadata?.must_change_password) setMustChangePassword(true);
-    }
+      if(uid&&uid!==ADMIN_ID){
+        const{data:{user}}=await supabase.auth.getUser();
+        if(user?.user_metadata?.must_change_password)setMustChangePassword(true);
+      }
+    }catch(e){console.error("loadAll error",e);}
     setLoading(false);
   }
 
-  const handleLogout=async()=>{sessionStorage.removeItem("_tfpw");await supabase.auth.signOut();};
-  const closeSheet=()=>{setSheet(null);setSheetData(null);setSelectedTemplate(null);setAssignFilterCats([]);setAssignFilterRegions([]);setDuration("");setEditTemplateData(null);setEditPatientData(null);setNewAccountMode("new");setSelectedExistingUserId("");setResetEmailSent(false);setUserSearch("");setNewPassword("");setShowPasswordChange(false);};
+  const handleLogout=async()=>{
+    sessionStorage.removeItem("_tfpw");
+    await supabase.auth.signOut();
+  };
+
+  const closeSheet=()=>{
+    setSheet(null);setSheetData(null);setSelectedTemplate(null);
+    setAssignFilterCats([]);setAssignFilterRegions([]);
+    setDuration("");setRepeatCount(1);
+    setEditTemplateData(null);setEditPatientData(null);
+    setNewAccountMode("new");setSelectedExistingUserId("");
+    setResetEmailSent(false);setUserSearch("");
+    setNewPassword("");setShowPasswordChange(false);
+  };
 
   const exForPatient=(pid)=>exercises.filter(e=>e.patient_id===pid);
-  const isDone=(eid)=>doneLogs.some(l=>l.exercise_id===eid);
-  const getUserEmail=(uid)=>userEmails.find(u=>u.id===uid)?.email||null;
 
-  const toggleDone=async(eid)=>{
-    if(isDone(eid)){
-      await supabase.from("exercise_logs").delete().eq("exercise_id",eid).eq("done_date",today);
-      setDoneLogs(prev=>prev.filter(l=>l.exercise_id!==eid));
-    }else{
-      const {data}=await supabase.from("exercise_logs").insert({exercise_id:eid,done_date:today,done:true}).select().single();
+  // ── Weekly repeat logic ──
+  const getDoneCountThisWeek=(eid)=>doneLogs.filter(l=>l.exercise_id===eid).length;
+  const isFullyDone=(ex)=>getDoneCountThisWeek(ex.id)>=(ex.repeat_count||1);
+
+  const toggleRepeat=async(eid,repeatCount)=>{
+    const currentCount=getDoneCountThisWeek(eid);
+    const maxCount=repeatCount||1;
+    if(currentCount<maxCount){
+      // Add one log for today
+      const{data}=await supabase.from("exercise_logs").insert({exercise_id:eid,done_date:today,done:true}).select().single();
       if(data)setDoneLogs(prev=>[...prev,data]);
+    } else {
+      // Remove all logs for this week (reset)
+      await supabase.from("exercise_logs").delete().eq("exercise_id",eid).gte("done_date",weekStart).lte("done_date",today);
+      setDoneLogs(prev=>prev.filter(l=>l.exercise_id!==eid));
     }
   };
 
   const changePassword=async()=>{
     if(!newPassword||newPassword.length<6){alert("Passwort muss mindestens 6 Zeichen haben.");return;}
     setSaving(true);
-    const {error}=await supabase.auth.updateUser({password:newPassword,data:{must_change_password:false}});
+    const{error}=await supabase.auth.updateUser({password:newPassword,data:{must_change_password:false}});
     if(error)alert("Fehler: "+error.message);
     else{setMustChangePassword(false);setShowPasswordChange(false);setNewPassword("");}
     setSaving(false);
+  };
+
+  // ── Push notifications ──
+  function urlBase64ToUint8Array(base64String){
+    const padding="=".repeat((4-base64String.length%4)%4);
+    const base64=(base64String+padding).replace(/-/g,"+").replace(/_/g,"/");
+    const raw=atob(base64);
+    return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+  }
+
+  const checkPushStatus=async()=>{
+    if(!("serviceWorker" in navigator)||!("PushManager" in window))return;
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    if(sub){
+      setPushEnabled(true);
+      // Load saved time
+      const{data}=await supabase.from("push_subscriptions").select("reminder_time").eq("endpoint",sub.endpoint).maybeSingle();
+      if(data?.reminder_time)setPushTime(data.reminder_time.substring(0,5));
+    }
+  };
+
+  const enablePush=async()=>{
+    if(!("serviceWorker" in navigator)||!("PushManager" in window)){alert("Dein Browser unterstützt keine Push-Benachrichtigungen.");return;}
+    setPushLoading(true);
+    try{
+      const permission=await Notification.requestPermission();
+      if(permission!=="granted"){setPushLoading(false);return;}
+      const reg=await navigator.serviceWorker.ready;
+      const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
+      const{endpoint,keys}=sub.toJSON();
+      await supabase.from("push_subscriptions").upsert({
+        user_id:session.user.id,endpoint,p256dh:keys.p256dh,auth:keys.auth,
+        reminder_time:pushTime,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone
+      },{onConflict:"user_id,endpoint"});
+      setPushEnabled(true);
+    }catch(e){console.error(e);}
+    setPushLoading(false);
+  };
+
+  const disablePush=async()=>{
+    setPushLoading(true);
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    if(sub){
+      await supabase.from("push_subscriptions").delete().eq("endpoint",sub.endpoint);
+      await sub.unsubscribe();
+    }
+    setPushEnabled(false);
+    setPushLoading(false);
+  };
+
+  const updatePushTime=async(time)=>{
+    setPushTime(time);
+    if(!pushEnabled)return;
+    const reg=await navigator.serviceWorker.ready;
+    const sub=await reg.pushManager.getSubscription();
+    if(sub)await supabase.from("push_subscriptions").update({reminder_time:time}).eq("endpoint",sub.endpoint);
   };
 
   const addPatient=async()=>{
@@ -275,7 +492,7 @@ export default function App() {
     if(newAccountMode==="existing"){
       userId=selectedExistingUserId||null;
     }else if(newAccountMode==="new"&&newPatient.ownerEmail&&newPatient.ownerPassword){
-      const {data:sd,error:se}=await supabase.auth.signUp({
+      const{data:sd,error:se}=await supabase.auth.signUp({
         email:newPatient.ownerEmail,password:newPatient.ownerPassword,
         options:{data:{must_change_password:newPatient.ownerPassword===newPatient.ownerEmail}}
       });
@@ -284,7 +501,7 @@ export default function App() {
       const storedPw=sessionStorage.getItem("_tfpw");
       if(storedPw)await supabase.auth.signInWithPassword({email:THERAPIST_EMAIL,password:storedPw});
     }
-    const {data,error}=await supabase.from("patients").insert({
+    const{data,error}=await supabase.from("patients").insert({
       name:newPatient.name,breed:newPatient.breed,age:newPatient.age,
       owner:newPatient.owner,condition:newPatient.condition,avatar:newPatient.avatar,user_id:userId
     }).select().single();
@@ -296,9 +513,9 @@ export default function App() {
   const updatePatient=async()=>{
     if(!editPatientData?.name)return;
     setSaving(true);
-    const {id,_newUserId,ownerEmail,ownerPassword,...fields}=editPatientData;
+    const{id,_newUserId,ownerEmail,ownerPassword,...fields}=editPatientData;
     if(_newUserId!==undefined)fields.user_id=_newUserId||null;
-    const {data,error}=await supabase.from("patients").update(fields).eq("id",id).select().single();
+    const{data,error}=await supabase.from("patients").update(fields).eq("id",id).select().single();
     if(error){alert("Fehler: "+error.message);setSaving(false);return;}
     if(data){
       setPatients(prev=>prev.map(p=>p.id===data.id?data:p).sort((a,b)=>a.name.localeCompare(b.name)));
@@ -312,12 +529,6 @@ export default function App() {
     if(!email)return;
     await supabase.auth.resetPasswordForEmail(email);
     setResetEmailSent(true);
-  };
-
-  const adminSetPassword=async(userId,newPw)=>{
-    // Uses Supabase admin API - needs service role, so we use resetPasswordForEmail as fallback
-    const email=getUserEmail(userId);
-    if(email){await sendPasswordReset(email);}
   };
 
   const deletePatient=async(pid)=>{
@@ -335,12 +546,12 @@ export default function App() {
   const addExercise=async()=>{
     if(!selectedTemplate||!selectedPatient||!duration)return;
     setSaving(true);
-    const {data,error}=await supabase.from("exercises").insert({
+    const{data,error}=await supabase.from("exercises").insert({
       patient_id:selectedPatient.id,title:selectedTemplate.title,
       categories:selectedTemplate.categories||[],target_regions:selectedTemplate.target_regions||[],
       difficulty:selectedTemplate.difficulty,description:selectedTemplate.description,
       instructions:selectedTemplate.instructions,image_url:selectedTemplate.image_url||null,
-      video_url:selectedTemplate.video_url||null,duration
+      video_url:selectedTemplate.video_url||null,duration,repeat_count:repeatCount
     }).select().single();
     if(!error&&data)setExercises(prev=>[...prev,data]);
     setSaving(false);closeSheet();
@@ -358,7 +569,7 @@ export default function App() {
   const addTemplate=async()=>{
     if(!newTemplate.title)return;
     setSaving(true);
-    const {data,error}=await supabase.from("exercise_templates").insert({...newTemplate,instructions:newTemplate.instructions.filter(Boolean)}).select().single();
+    const{data,error}=await supabase.from("exercise_templates").insert({...newTemplate,instructions:newTemplate.instructions.filter(Boolean)}).select().single();
     if(!error&&data)setTemplates(prev=>[...prev,data]);
     setSaving(false);setNewTemplate(EMPTY_TEMPLATE);closeSheet();
   };
@@ -366,7 +577,7 @@ export default function App() {
   const updateTemplate=async()=>{
     if(!editTemplateData?.title)return;
     setSaving(true);
-    const {data,error}=await supabase.from("exercise_templates").update({
+    const{data,error}=await supabase.from("exercise_templates").update({
       title:editTemplateData.title,categories:editTemplateData.categories||[],
       target_regions:editTemplateData.target_regions||[],difficulty:editTemplateData.difficulty,
       description:editTemplateData.description,instructions:(editTemplateData.instructions||[]).filter(Boolean),
@@ -383,11 +594,62 @@ export default function App() {
     setDeleting(null);closeSheet();
   };
 
+  const saveFeedback=async()=>{
+    if(!feedbackSheet||feedbackPain===0)return;
+    setSaving(true);
+    const existing=getLatestFeedback(feedbackSheet.id);
+    let data,error;
+    if(existing){
+      ({data,error}=await supabase.from("exercise_feedback").update({
+        pain_level:feedbackPain,comment:feedbackComment.trim()||null
+      }).eq("id",existing.id).select().single());
+      if(!error&&data)setFeedbacks(prev=>prev.map(f=>f.id===data.id?data:f));
+    } else {
+      ({data,error}=await supabase.from("exercise_feedback").insert({
+        exercise_id:feedbackSheet.id,patient_id:feedbackSheet.patient_id,
+        pain_level:feedbackPain,comment:feedbackComment.trim()||null
+      }).select().single());
+      if(!error&&data)setFeedbacks(prev=>[data,...prev]);
+    }
+    setSaving(false);
+    setFeedbackSheet(null);setFeedbackPain(0);setFeedbackComment("");
+  };
+
+  const getLatestFeedback=(eid)=>feedbacks.find(f=>f.exercise_id===eid)||null;
+
+  const PAIN_LABELS=["","Kein Schmerz","Leicht","Mittel","Stark","Sehr stark"];
+  const PAIN_COLORS=["","#2E7D32","#8BC34A","#FF9800","#F44336","#B71C1C"];
   const ownerExs=ownerPatient?exForPatient(ownerPatient.id):[];
-  const doneCount=ownerExs.filter(e=>isDone(e.id)).length;
+  const doneCount=ownerExs.filter(e=>isFullyDone(e)).length;
   const totalCount=ownerExs.length;
   const progress=totalCount>0?(doneCount/totalCount)*100:0;
   const allDone=totalCount>0&&doneCount===totalCount;
+
+  // ── Streak & calendar logic ──
+  const ownerExIds=ownerExs.map(e=>e.id);
+  const activeDates=new Set(
+    historyLogs.filter(l=>ownerExIds.includes(l.exercise_id)).map(l=>l.done_date)
+  );
+  if(doneCount>0)activeDates.add(today);
+  const calcStreak=()=>{
+    let streak=0;
+    const d=new Date();
+    for(let i=0;i<28;i++){
+      const dateStr=d.toISOString().split("T")[0];
+      if(activeDates.has(dateStr)){streak++;}
+      else if(i===0&&doneCount===0){break;}
+      else if(i>0){break;}
+      d.setDate(d.getDate()-1);
+    }
+    return streak;
+  };
+  const streak=calcStreak();
+  const calendarDays=Array.from({length:28},(_,i)=>{
+    const d=new Date();
+    d.setDate(d.getDate()-(27-i));
+    const dateStr=d.toISOString().split("T")[0];
+    return{dateStr,isToday:dateStr===today,done:activeDates.has(dateStr)};
+  });
 
   const filteredOwnerExs=ownerExs.filter(ex=>{
     const cOk=filterCats.length===0||(ex.categories||[]).some(c=>filterCats.includes(c));
@@ -413,12 +675,14 @@ export default function App() {
   );
 
   const patLabel=(p)=>`${p.avatar||""} ${p.name} - ${p.breed} - ${p.owner}`.trim();
+  const getUserEmail=(uid)=>userEmails.find(u=>u.id===uid)?.email||null;
+
   const inp={width:"100%",padding:"11px 14px",borderRadius:10,border:"1.5px solid #B8DFE0",fontSize:16,fontFamily:"'DM Sans',sans-serif",outline:"none",background:"white",color:"#102828",WebkitTextFillColor:"#102828",boxSizing:"border-box"};
   const SL=({text})=><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>{text}</div>;
   const SheetHeader=({title,onClose})=>(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:"#102828"}}>{title}</div><button onClick={onClose} style={{background:LIGHT,borderRadius:"50%",width:32,height:32,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="close" size={14} color="#3D7070"/></button></div>);
-  const SearchInput=({value,onChange,placeholder})=>(<div style={{position:"relative",marginBottom:10}}><input value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder||"Suchen..."} style={{...inp,paddingLeft:36,borderRadius:12}}/><div style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)"}}><Icon name="filter" size={14} color="#3D7070"/></div></div>);
 
   if(authLoading)return <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${DARK},${BRAND})`,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={LOGO_URL} alt="" style={{height:60,objectFit:"contain"}}/></div>;
+  if(isRecoveryMode)return <PasswordResetScreen onDone={()=>{sessionStorage.removeItem("_recovery");setIsRecoveryMode(false);window.location.hash="";}} />;
   if(!session)return <LoginScreen/>;
   if(loading)return <div style={{minHeight:"100vh",background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}><Icon name="paw" size={48} color={BRAND}/><div style={{fontFamily:"'DM Sans',sans-serif",color:"#3D7070"}}>Wird geladen...</div></div>;
 
@@ -441,13 +705,13 @@ export default function App() {
         .pbar{height:8px;background:rgba(255,255,255,0.2);border-radius:99px;overflow:hidden;}
         .pfill{height:100%;border-radius:99px;background:linear-gradient(90deg,#8FD4D5,#ffffff88);transition:width .6s ease;}
         .nav-tab{padding:9px 0;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;border:none;transition:all .18s;flex:1;display:flex;align-items:center;justify-content:center;gap:5px;}
-        select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%233D7070' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px!important;}
         .tmpl-row{padding:10px 12px;border-radius:10px;cursor:pointer;border:2px solid transparent;display:flex;align-items:center;gap:10px;transition:all .15s;}
         .tmpl-row:hover{background:${LIGHT};}
         .tmpl-row.sel{border-color:${BRAND};background:${LIGHT};}
         .iBtn{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;flex-shrink:0;transition:all .15s;}
         .iBtn:hover{opacity:.8;}
         .mode-btn{flex:1;padding:9px 6px;border-radius:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;border:2px solid;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px;}
+        .repeat-box{width:32px;height:32px;border-radius:8px;border:2px solid;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;}
       `}</style>
 
       {/* HEADER */}
@@ -463,10 +727,10 @@ export default function App() {
             </div>
             <div style={{display:"flex",gap:6,alignItems:"center"}}>
               <div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
-                <button className="btn" onClick={()=>setLangOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:5,background:"#2A6364",borderRadius:9,padding:"7px 10px",color:ACCENT,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600}}>
-                  <Icon name="lang" size={14} color={ACCENT}/>{t.langLabel}<Icon name="chevdown" size={12} color={ACCENT}/>
+                <button className="btn" onClick={()=>setLangOpen(o=>!o)} style={{display:"flex",alignItems:"center",background:"#2A6364",borderRadius:9,padding:"7px 9px"}}>
+                  <Icon name="lang" size={15} color={ACCENT}/>
                 </button>
-                {langOpen&&<div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:"white",borderRadius:12,boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:130,zIndex:50}}>
+                {langOpen&&<div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:"white",borderRadius:12,boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:140,zIndex:50}}>
                   {[["de","🇩🇪 Deutsch"],["en","🇬🇧 English"],["es","🇪🇸 Español"]].map(([l,label])=>(
                     <button key={l} className="btn" onClick={()=>{setLang(l);setLangOpen(false);}} style={{width:"100%",padding:"11px 16px",textAlign:"left",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:l===lang?700:400,color:l===lang?BRAND:"#102828",background:l===lang?LIGHT:"white",display:"block"}}>{label}</button>
                   ))}
@@ -478,7 +742,7 @@ export default function App() {
             </div>
           </div>
           <div style={{display:"flex",background:"#2A6364"}}>
-            {[["owner","home",t.navOwner],...(isAdmin?[["therapist","practice",t.navTherapist]]:[]),["info","info",t.navInfo]].map(([v,ic,lb])=>(
+            {[["owner","home",isAdmin?"Vorschau":t.navOwner],...(isAdmin?[["therapist","practice",t.navTherapist]]:[["profile","profile",t.navProfile]]),["info","info",t.navInfo]].map(([v,ic,lb])=>(
               <button key={v} className="nav-tab" onClick={()=>setView(v)} style={{background:view===v?"white":"transparent",color:view===v?DARK:ACCENT,borderRadius:view===v?"10px 10px 0 0":0,marginTop:view===v?3:0}}>
                 <Icon name={ic} size={14} color={view===v?DARK:ACCENT}/>{lb}
               </button>
@@ -490,26 +754,35 @@ export default function App() {
       {/* OWNER VIEW */}
       {view==="owner"&&(
         <div style={{maxWidth:480,margin:"0 auto",padding:"16px 14px 80px"}}>
+          {isAdmin&&(
+            <div style={{background:BRAND+"18",border:`1.5px solid ${BRAND}`,borderRadius:12,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+              <Icon name="info" size={15} color={BRAND}/>
+              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:MID}}>Vorschau — so sehen Ihre Kunden die App</span>
+            </div>
+          )}
           {mustChangePassword&&(
             <div style={{background:"#FFF8E1",border:"1.5px solid #FFB300",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#E65100",marginBottom:6,display:"flex",alignItems:"center",gap:8}}><Icon name="lock" size={16} color="#E65100"/>Bitte Passwort ändern</div>
               <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#5D4037",marginBottom:10}}>Aus Sicherheitsgründen bitte ein eigenes Passwort vergeben.</div>
-              {!showPasswordChange?(
-                <button className="btn" onClick={()=>setShowPasswordChange(true)} style={{background:"#FFB300",color:"#102828",borderRadius:9,padding:"8px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700}}>Passwort jetzt ändern</button>
-              ):(
-                <div style={{display:"flex",gap:8}}>
-                  <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Neues Passwort..." style={{...inp,flex:1}}/>
-                  <button className="btn" onClick={changePassword} disabled={saving} style={{background:BRAND,color:"#102828",borderRadius:9,padding:"8px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,flexShrink:0}}>{saving?"...":"Speichern"}</button>
-                </div>
-              )}
+              <div style={{display:"flex",gap:8}}>
+                <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Neues Passwort..." style={{...inp,flex:1}}/>
+                <button className="btn" onClick={changePassword} disabled={saving||!newPassword} style={{background:newPassword?BRAND:"#B8DFE0",color:"#102828",borderRadius:9,padding:"8px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,flexShrink:0}}>{saving?"...":"Speichern"}</button>
+              </div>
+            </div>
+          )}
+
+          {/* Owner name greeting */}
+          {ownerPatient&&(
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK,marginBottom:12}}>
+              Hallo, {ownerPatient.owner}!
             </div>
           )}
 
           {patients.length>1&&(
             <div style={{marginBottom:12}}>
-              <select value={ownerPatient?.id||""} onChange={e=>{setOwnerPatient(patients.find(p=>p.id===e.target.value)||null);setFilterCats([]);setFilterRegions([]);}} style={{...inp,borderRadius:12}}>
+              <CustomSelect value={ownerPatient?.id||""} onChange={e=>{setOwnerPatient(patients.find(p=>p.id===e.target.value)||null);setFilterCats([]);setFilterRegions([]);}}>
                 {patients.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
-              </select>
+              </CustomSelect>
             </div>
           )}
 
@@ -519,45 +792,105 @@ export default function App() {
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:600}}>{t.noPatient}</div>
             </div>
           ):(<>
-            <div style={{padding:"18px 20px",marginBottom:14,background:`linear-gradient(135deg,${DARK} 0%,${BRAND} 100%)`,color:"#E6F6F6",borderRadius:18,boxShadow:"0 4px 24px rgba(95,184,185,0.32)"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+            {/* ── Stat tiles ── */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+              {/* Tile 1: Wochenfortschritt */}
+              <div style={{background:`linear-gradient(135deg,${DARK} 0%,${MID} 100%)`,borderRadius:16,padding:"16px 14px 14px",boxShadow:"0 4px 16px rgba(30,74,75,0.25)",display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:110}}>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:ACCENT,letterSpacing:"1px",textTransform:"uppercase",marginBottom:6}}>Diese Woche</div>
                 <div>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#B8E8E8",letterSpacing:"1px",textTransform:"uppercase",marginBottom:3}}>{t.progress}</div>
-                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:36,fontWeight:700,lineHeight:1}}>{doneCount}/{totalCount}</div>
-                  <div style={{fontSize:13,color:allDone?"white":"#B8E8E8",fontFamily:"'DM Sans',sans-serif",marginTop:5,fontWeight:allDone?700:400}}>
-                    {allDone?`🎉 ${t.allDone(ownerPatient.name)}`:t.exercisesDone}
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:42,fontWeight:700,color:"white",lineHeight:1}}>{doneCount}</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:allDone?"#6EE7B7":ACCENT,marginTop:3,fontWeight:allDone?700:400}}>
+                    {allDone?"Alle erledigt!":`von ${totalCount} Übungen`}
                   </div>
                 </div>
-                <div style={{textAlign:"center"}}>
-                  <div style={{fontSize:48,lineHeight:1}}>{ownerPatient.avatar||"🐕"}</div>
-                  <div style={{fontSize:11,color:"#B8E8E8",marginTop:4,fontFamily:"'DM Sans',sans-serif"}}>{ownerPatient.name}</div>
+                <div style={{marginTop:10,height:4,borderRadius:99,background:"rgba(255,255,255,0.15)"}}>
+                  <div style={{height:"100%",borderRadius:99,background:allDone?"#6EE7B7":ACCENT,width:`${progress}%`,transition:"width .5s ease"}}/>
                 </div>
               </div>
-              <div className="pbar" style={{marginTop:14}}><div className="pfill" style={{width:`${progress}%`}}/></div>
+              {/* Tile 2: Streak */}
+              <div style={{background:`linear-gradient(135deg,${MID} 0%,${BRAND} 100%)`,borderRadius:16,padding:"16px 14px 14px",boxShadow:"0 4px 16px rgba(95,184,185,0.25)",display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:110}}>
+                <div style={{display:"flex",alignItems:"center",gap:5}}>
+                  <Icon name="star" size={12} color="#FBBF24"/>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"#E6F6F6",letterSpacing:"1px",textTransform:"uppercase"}}>Streak</div>
+                </div>
+                <div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:42,fontWeight:700,color:"white",lineHeight:1}}>
+                    {streak>0?streak:"—"}
+                  </div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#E6F6F6",marginTop:3}}>
+                    {streak===1?"Tag in Folge":streak>1?"Tage in Folge":"Noch kein Streak"}
+                  </div>
+                </div>
+                <div style={{marginTop:10,display:"flex",gap:4}}>
+                  {[0,1,2,3,4,5,6].map(i=>(
+                    <div key={i} style={{flex:1,height:4,borderRadius:99,background:i<(streak%7||7)?"rgba(255,255,255,0.75)":"rgba(255,255,255,0.2)"}}/>
+                  ))}
+                </div>
+              </div>
             </div>
+            {/* ── 28-Tage Kalender ── */}
+            <div style={{background:PALE,borderRadius:14,marginBottom:14,overflow:"hidden",border:`1px solid ${LIGHT}`}}>
+              <button className="btn" onClick={()=>setCalendarOpen(o=>!o)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",gap:4}}>
+                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",letterSpacing:"0.8px",textTransform:"uppercase",fontWeight:600}}>Letzte 28 Tage</span>
+                <Icon name="chevdown" size={12} color={MID}/>
+              </button>
+              {calendarOpen&&(
+                <div style={{padding:"0 14px 12px",display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
+                  {calendarDays.map(({dateStr,isToday,done})=>(
+                    <div key={dateStr} style={{height:22,borderRadius:6,background:done?BRAND:isToday?ACCENT+"40":LIGHT,outline:isToday?`2px solid ${ACCENT}`:"none",outlineOffset:1}}/>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div style={{display:"flex",gap:8,marginBottom:12}}>
               <FilterDropdown label={t.filterCategory} icon="filter" options={CATEGORIES} selected={filterCats} onChange={setFilterCats} color={BRAND}/>
               <FilterDropdown label={t.filterRegion} icon="target" options={TARGET_REGIONS} selected={filterRegions} onChange={setFilterRegions} color={MID}/>
             </div>
+
             {filteredOwnerExs.length===0&&<div className="card" style={{padding:20,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>{t.noExercises}</div>}
+
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {filteredOwnerExs.map(ex=>{
-                const done=isDone(ex.id);
+                const rc=ex.repeat_count||1;
+                const doneNow=getDoneCountThisWeek(ex.id);
+                const fullyDone=doneNow>=rc;
                 return(
-                  <div key={ex.id} className="card ex-card" onClick={()=>setSelectedExercise(ex)} style={{padding:"14px",display:"flex",gap:12,alignItems:"center",opacity:done?0.62:1}}>
-                    {ex.image_url?<img src={ex.image_url} alt={ex.title} style={{width:50,height:50,borderRadius:12,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2}}/>
-                      :<div style={{width:50,height:50,borderRadius:12,background:BRAND+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={22} color={BRAND}/></div>}
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8}}>
-                        <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600,lineHeight:1.3,textDecoration:done?"line-through":"none",color:done?ACCENT:"#102828"}}>{ex.title}</div>
-                        <button className="btn" onClick={e=>{e.stopPropagation();toggleDone(ex.id);}} style={{width:28,height:28,borderRadius:"50%",border:`2px solid ${done?BRAND:"#B8DFE0"}`,background:done?BRAND:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                          {done&&<Icon name="check" size={14} color="white"/>}
-                        </button>
-                      </div>
-                      <div style={{display:"flex",gap:5,marginTop:5,flexWrap:"wrap"}}>
-                        {(ex.categories||[]).slice(0,2).map(c=><span key={c} className="tag" style={{background:BRAND+"20",color:BRAND}}>{c}</span>)}
-                        <span className="tag" style={{background:(difficultyColor[ex.difficulty]||BRAND)+"20",color:difficultyColor[ex.difficulty]||BRAND}}>{ex.difficulty}</span>
-                        <span className="tag" style={{background:LIGHT,color:"#3D7070"}}>⏱ {ex.duration}</span>
+                  <div key={ex.id} className="card ex-card" onClick={()=>setSelectedExercise(ex)} style={{padding:"14px",opacity:fullyDone?0.65:1}}>
+                    <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                      {ex.image_url?<img src={ex.image_url} alt={ex.title} style={{width:50,height:50,borderRadius:12,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2}}/>
+                        :<div style={{width:50,height:50,borderRadius:12,background:BRAND+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={22} color={BRAND}/></div>}
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600,lineHeight:1.3,textDecoration:fullyDone?"line-through":"none",color:fullyDone?ACCENT:"#102828",marginBottom:5}}>{ex.title}</div>
+                        <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:7}}>
+                          {(ex.categories||[]).slice(0,2).map(c=><span key={c} className="tag" style={{background:BRAND+"20",color:BRAND}}>{c}</span>)}
+                          <span className="tag" style={{background:(difficultyColor[ex.difficulty]||BRAND)+"20",color:difficultyColor[ex.difficulty]||BRAND}}>{ex.difficulty}</span>
+                          <span className="tag" style={{background:LIGHT,color:"#3D7070"}}>⏱ {ex.duration}</span>
+                        </div>
+                        {/* Repeat checkboxes */}
+                        <div style={{display:"flex",alignItems:"center",gap:6}} onClick={e=>e.stopPropagation()}>
+                          <Icon name="repeat" size={13} color="#3D7070"/>
+                          <div style={{display:"flex",gap:5}}>
+                            {Array.from({length:rc}).map((_,i)=>{
+                              const checked=i<doneNow;
+                              return(
+                                <button key={i} className="repeat-box" onClick={e=>{e.stopPropagation();toggleRepeat(ex.id,rc);}}
+                                  style={{borderColor:checked?BRAND:"#B8DFE0",background:checked?BRAND:"white",width:28,height:28}}>
+                                  {checked&&<Icon name="check" size={13} color="white"/>}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{doneNow}/{rc}× diese Woche</span>
+                        </div>
+                        {/* Feedback button + latest feedback indicator */}
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginTop:7}} onClick={e=>e.stopPropagation()}>
+                          <button className="btn" onClick={e=>{e.stopPropagation();const fb=getLatestFeedback(ex.id);setFeedbackSheet(ex);setFeedbackPain(fb?.pain_level||0);setFeedbackComment(fb?.comment||"");}}
+                            style={{display:"flex",alignItems:"center",gap:4,background:LIGHT,borderRadius:8,padding:"4px 10px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color:"#3D7070",border:`1px solid #B8DFE0`}}>
+                            <Icon name="info" size={12} color="#3D7070"/> Befund melden
+                          </button>
+                          {(()=>{const fb=getLatestFeedback(ex.id);return fb?(<span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:PAIN_COLORS[fb.pain_level],fontWeight:600}}>● {PAIN_LABELS[fb.pain_level]}</span>):null;})()}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -565,6 +898,54 @@ export default function App() {
               })}
             </div>
           </>)}
+        </div>
+      )}
+
+      {/* PROFILE VIEW */}
+      {view==="profile"&&!isAdmin&&(
+        <div style={{maxWidth:480,margin:"0 auto",padding:"16px 14px 80px"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK,marginBottom:4}}>{t.navProfile}</div>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:20}}>
+            {ownerPatient?.owner||""}
+          </div>
+
+          {/* Push notifications card */}
+          <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <div style={{width:40,height:40,borderRadius:12,background:pushEnabled?BRAND+"18":LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <Icon name={pushEnabled?"bell":"belloff"} size={20} color={pushEnabled?BRAND:"#3D7070"}/>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK}}>Erinnerungen</div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginTop:1}}>
+                  {pushEnabled?"Täglich aktiv — nur bei offenen Übungen":"Erinnert dich täglich an deine Übungen"}
+                </div>
+              </div>
+            </div>
+
+            {pushEnabled&&(
+              <div style={{background:LIGHT,borderRadius:12,padding:"14px 16px",marginBottom:14}}>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:10}}>Erinnerungszeit</div>
+                <div style={{display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flex:1,background:"white",borderRadius:10,border:`1.5px solid ${BRAND}`,padding:"10px 14px"}}>
+                    <Icon name="clock" size={16} color={BRAND}/>
+                    <input type="time" value={pushTime} onChange={e=>updatePushTime(e.target.value)}
+                      style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,fontWeight:600,color:DARK,border:"none",outline:"none",background:"transparent",WebkitTextFillColor:DARK,flex:1}}/>
+                  </div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070"}}>Uhr</div>
+                </div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:ACCENT,marginTop:8}}>
+                  Die Erinnerung wird nur gesendet wenn noch Übungen offen sind.
+                </div>
+              </div>
+            )}
+
+            <button className="btn" onClick={pushEnabled?disablePush:enablePush} disabled={pushLoading}
+              style={{width:"100%",padding:"13px",borderRadius:12,background:pushEnabled?"#FFE8E8":BRAND,color:pushEnabled?"#C0392B":"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+              <Icon name={pushEnabled?"belloff":"bell"} size={16} color={pushEnabled?"#C0392B":"#102828"}/>
+              {pushLoading?"...":(pushEnabled?"Erinnerungen deaktivieren":"Erinnerungen aktivieren")}
+            </button>
+          </div>
         </div>
       )}
 
@@ -652,10 +1033,10 @@ export default function App() {
               <div style={{marginBottom:14}}>
                 <SL text="Patient suchen & auswählen"/>
                 <SearchInput value={assignPatientSearch} onChange={setAssignPatientSearch} placeholder="Name oder Besitzer..."/>
-                <select value={selectedPatient?.id||""} onChange={e=>setSelectedPatient(patients.find(p=>p.id===e.target.value)||null)} style={{...inp,borderRadius:12}}>
+                <CustomSelect value={selectedPatient?.id||""} onChange={e=>setSelectedPatient(patients.find(p=>p.id===e.target.value)||null)}>
                   <option value="">{t.selectPatient}</option>
                   {filteredAssignPatients.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
-                </select>
+                </CustomSelect>
               </div>
               {selectedPatient&&(<>
                 <button className="btn" onClick={()=>setSheet("addExercise")} style={{width:"100%",background:DARK,color:"#E6F6F6",borderRadius:12,padding:"12px",fontSize:13,fontFamily:"'DM Sans',sans-serif",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:14}}>
@@ -665,17 +1046,29 @@ export default function App() {
                 {exForPatient(selectedPatient.id).length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:ACCENT,textAlign:"center",padding:"12px 0"}}>{t.noExercisesYet}</div>}
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   {exForPatient(selectedPatient.id).map(ex=>{
-                    const done=isDone(ex.id);
+                    const rc=ex.repeat_count||1;
+                    const doneNow=getDoneCountThisWeek(ex.id);
+                    const fullyDone=doneNow>=rc;
                     return(
-                      <div key={ex.id} className="card" style={{padding:"11px 13px",display:"flex",gap:10,alignItems:"center",borderLeft:`4px solid ${done?BRAND:"#E0E0E0"}`,opacity:done?0.75:1}}>
+                      <div key={ex.id} className="card" style={{padding:"11px 13px",display:"flex",gap:10,alignItems:"center",borderLeft:`4px solid ${fullyDone?BRAND:"#E0E0E0"}`,opacity:fullyDone?0.75:1}}>
                         {ex.image_url?<img src={ex.image_url} alt={ex.title} style={{width:38,height:38,borderRadius:8,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}/>
-                          :<div style={{width:38,height:38,borderRadius:8,background:done?BRAND+"20":LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}><Icon name="paw" size={17} color={done?BRAND:ACCENT}/></div>}
+                          :<div style={{width:38,height:38,borderRadius:8,background:fullyDone?BRAND+"20":LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}><Icon name="paw" size={17} color={fullyDone?BRAND:ACCENT}/></div>}
                         <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}>
-                          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}>
-                            {done&&<div style={{width:16,height:16,borderRadius:"50%",background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="check" size={10} color="white"/></div>}
-                            <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:done?"#3D7070":"#102828",textDecoration:done?"line-through":"none",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{ex.title}</div>
+                          <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:fullyDone?"#3D7070":"#102828",textDecoration:fullyDone?"line-through":"none"}}>{ex.title}</div>
+                          <div style={{display:"flex",alignItems:"center",gap:5,marginTop:3}}>
+                            {Array.from({length:rc}).map((_,i)=>(
+                              <div key={i} style={{width:10,height:10,borderRadius:3,background:i<doneNow?BRAND:"#E0E0E0"}}/>
+                            ))}
+                            <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{doneNow}/{rc} · {ex.duration}</span>
                           </div>
-                          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:done?BRAND:"#3D7070"}}>{done?"✓ Heute erledigt":`⏱ ${ex.duration}`}</div>
+                          {(()=>{const fb=getLatestFeedback(ex.id);return fb?(
+                            <div style={{marginTop:5,display:"flex",alignItems:"center",gap:6}}>
+                              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>● {PAIN_LABELS[fb.pain_level]}</span>
+                              <button className="btn" onClick={e=>{e.stopPropagation();setViewFeedbackEx(ex);}} style={{display:"flex",alignItems:"center",gap:3,background:LIGHT,borderRadius:6,padding:"2px 8px",fontFamily:"'DM Sans',sans-serif",fontSize:10,fontWeight:600,color:"#3D7070",border:`1px solid #B8DFE0`}}>
+                                <Icon name="info" size={10} color="#3D7070"/> anzeigen
+                              </button>
+                            </div>
+                          ):null;})()}
                         </div>
                         <button className="iBtn" onClick={()=>{setSheetData(ex);setSheet("confirmDeleteEx");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                       </div>
@@ -747,11 +1140,29 @@ export default function App() {
                 </div>
               </div>
             )}
-            {view==="owner"&&(
-              <button className="btn" onClick={()=>{toggleDone(selectedExercise.id);setSelectedExercise(null);}} style={{width:"100%",padding:"14px",borderRadius:12,background:isDone(selectedExercise.id)?LIGHT:BRAND,color:isDone(selectedExercise.id)?"#3D7070":"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
-                {isDone(selectedExercise.id)?t.markUndone:t.markDone}
-              </button>
-            )}
+            {view==="owner"&&(()=>{
+              const rc=selectedExercise.repeat_count||1;
+              const doneNow=getDoneCountThisWeek(selectedExercise.id);
+              const fullyDone=doneNow>=rc;
+              return(
+                <div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,justifyContent:"center"}}>
+                    {Array.from({length:rc}).map((_,i)=>{
+                      const checked=i<doneNow;
+                      return(
+                        <button key={i} className="repeat-box" onClick={()=>toggleRepeat(selectedExercise.id,rc)}
+                          style={{borderColor:checked?BRAND:"#B8DFE0",background:checked?BRAND:"white",width:36,height:36,borderRadius:10}}>
+                          {checked&&<Icon name="check" size={18} color="white"/>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button className="btn" onClick={()=>{toggleRepeat(selectedExercise.id,rc);if(doneNow+1>=rc)setSelectedExercise(null);}} style={{width:"100%",padding:"14px",borderRadius:12,background:fullyDone?LIGHT:BRAND,color:fullyDone?"#3D7070":"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+                    {fullyDone?t.markUndone:`${t.markDone} (${doneNow+1<rc?doneNow+1:rc}/${rc})`}
+                  </button>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
@@ -761,27 +1172,44 @@ export default function App() {
         <div className="overlay" onClick={closeSheet}>
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={t.assignBtn} onClose={closeSheet}/>
-            <div style={{display:"flex",flexDirection:"column",gap:14}}>
-              <div><SL text={t.step1}/><select value={selectedPatient?.id||""} onChange={e=>setSelectedPatient(patients.find(p=>p.id===e.target.value)||null)} style={inp}><option value="">{t.selectPatient}</option>{patients.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}</select></div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <div style={{flex:1}}><SL text={t.step1}/>
+                  <CustomSelect value={selectedPatient?.id||""} onChange={e=>setSelectedPatient(patients.find(p=>p.id===e.target.value)||null)}>
+                    <option value="">{t.selectPatient}</option>
+                    {patients.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
+                  </CustomSelect>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <div style={{flex:1}}><SL text={t.step3}/><input value={duration} onChange={e=>setDuration(e.target.value)} placeholder={t.freqPh} style={inp}/></div>
+                <div style={{flex:"0 0 auto"}}>
+                  <SL text={t.step4}/>
+                  <div style={{display:"flex",alignItems:"center",gap:6,height:46}}>
+                    <button className="btn" onClick={()=>setRepeatCount(Math.max(1,repeatCount-1))} style={{width:32,height:32,borderRadius:8,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:DARK}}>−</button>
+                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:DARK,minWidth:28,textAlign:"center"}}>{repeatCount}x</span>
+                    <button className="btn" onClick={()=>setRepeatCount(Math.min(7,repeatCount+1))} style={{width:32,height:32,borderRadius:8,background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:"#102828"}}>+</button>
+                  </div>
+                </div>
+              </div>
               <div>
                 <SL text={t.step2}/>
-                <div style={{display:"flex",gap:8,marginBottom:10}}>
+                <div style={{display:"flex",gap:8,marginBottom:8}}>
                   <FilterDropdown label={t.filterCategory} icon="filter" options={CATEGORIES} selected={assignFilterCats} onChange={setAssignFilterCats} color={BRAND}/>
                   <FilterDropdown label={t.filterRegion} icon="target" options={TARGET_REGIONS} selected={assignFilterRegions} onChange={setAssignFilterRegions} color={MID}/>
                 </div>
-                <div style={{display:"flex",flexDirection:"column",gap:5,maxHeight:200,overflowY:"auto",border:`1px solid ${LIGHT}`,borderRadius:11,padding:6}}>
+                <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:300,overflowY:"auto",border:`1px solid ${LIGHT}`,borderRadius:11,padding:5}}>
                   {filteredTemplates.map(tmpl=>(
                     <div key={tmpl.id} className={"tmpl-row"+(selectedTemplate?.id===tmpl.id?" sel":"")} onClick={()=>setSelectedTemplate(selectedTemplate?.id===tmpl.id?null:tmpl)}>
-                      {tmpl.image_url?<img src={tmpl.image_url} alt={tmpl.title} style={{width:36,height:36,borderRadius:7,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2}}/>
-                        :<div style={{width:36,height:36,borderRadius:7,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={16} color={ACCENT}/></div>}
-                      <div style={{flex:1}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:"#102828"}}>{tmpl.title}</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{(tmpl.categories||[]).join(", ")} · {tmpl.difficulty}</div></div>
+                      {tmpl.image_url?<img src={tmpl.image_url} alt={tmpl.title} style={{width:32,height:32,borderRadius:6,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2}}/>
+                        :<div style={{width:32,height:32,borderRadius:6,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={14} color={ACCENT}/></div>}
+                      <div style={{flex:1,fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:"#102828"}}>{tmpl.title}</div>
                       {selectedTemplate?.id===tmpl.id&&<Icon name="check" size={15} color={BRAND}/>}
                     </div>
                   ))}
                   {filteredTemplates.length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:ACCENT,textAlign:"center",padding:"12px 0"}}>{t.noCategoryEx}</div>}
                 </div>
               </div>
-              <div><SL text={t.step3}/><input value={duration} onChange={e=>setDuration(e.target.value)} placeholder={t.freqPh} style={inp}/></div>
               <button className="btn" onClick={addExercise} disabled={saving} style={{width:"100%",padding:"14px",borderRadius:12,background:selectedTemplate&&selectedPatient&&duration?BRAND:"#B8DFE0",color:selectedTemplate&&selectedPatient&&duration?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:t.assignBtn}
               </button>
@@ -810,15 +1238,15 @@ export default function App() {
                 </div>
                 {newAccountMode==="new"&&(<>
                   <div style={{marginBottom:10}}><SL text="Email"/><input value={newPatient.ownerEmail||""} onChange={e=>setNewPatient(p=>({...p,ownerEmail:e.target.value}))} placeholder="besitzer@email.de" type="email" style={inp}/></div>
-                  <div><SL text="Passwort"/><input value={newPatient.ownerPassword||""} onChange={e=>setNewPatient(p=>({...p,ownerPassword:e.target.value}))} placeholder="Mind. 6 Zeichen (Tipp: Email als Passwort)" type="text" style={inp}/></div>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",marginTop:8}}>💡 Tipp: Email als initiales Passwort verwenden → Besitzer wird beim ersten Login aufgefordert es zu ändern.</div>
+                  <div><SL text="Passwort"/><input value={newPatient.ownerPassword||""} onChange={e=>setNewPatient(p=>({...p,ownerPassword:e.target.value}))} placeholder="Mind. 6 Zeichen" type="text" style={inp}/></div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",marginTop:8}}>💡 Tipp: Email als initiales Passwort verwenden</div>
                 </>)}
                 {newAccountMode==="existing"&&(<>
                   <SearchInput value={userSearch} onChange={setUserSearch} placeholder="User suchen..."/>
-                  <select value={selectedExistingUserId} onChange={e=>setSelectedExistingUserId(e.target.value)} style={inp}>
+                  <CustomSelect value={selectedExistingUserId} onChange={e=>setSelectedExistingUserId(e.target.value)}>
                     <option value="">User auswählen...</option>
                     {filteredUsers.map(u=><option key={u.id} value={u.id}>{u.email}</option>)}
-                  </select>
+                  </CustomSelect>
                 </>)}
                 {newAccountMode==="none"&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070"}}>Dieser Patient bekommt keinen App-Zugang.</div>}
               </div>
@@ -849,26 +1277,24 @@ export default function App() {
                     <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#102828",flex:1}}>{getUserEmail(editPatientData.user_id)}</span>
                   </div>
                   {resetEmailSent
-                    ?<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#2E7D32",background:"#E8F5E9",borderRadius:8,padding:"8px 12px",marginBottom:10}}>✓ Passwort-Reset Email wurde gesendet!</div>
+                    ?<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#2E7D32",background:"#E8F5E9",borderRadius:8,padding:"8px 12px",marginBottom:10}}>✓ Passwort-Reset Email gesendet!</div>
                     :<button className="btn" onClick={()=>sendPasswordReset(getUserEmail(editPatientData.user_id))} style={{background:"white",border:`1.5px solid ${BRAND}`,borderRadius:9,padding:"8px 12px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:BRAND,display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
                       <Icon name="mail" size={13} color={BRAND}/>Passwort-Reset Email senden
                     </button>}
-                  <div style={{marginTop:4}}>
-                    <SL text="Anderen User verknüpfen"/>
-                    <SearchInput value={userSearch} onChange={setUserSearch} placeholder="User suchen..."/>
-                    <select value={editPatientData._newUserId!==undefined?(editPatientData._newUserId||""):(editPatientData.user_id||"")} onChange={e=>setEditPatientData(p=>({...p,_newUserId:e.target.value||null}))} style={inp}>
-                      <option value="">Kein Login</option>
-                      {filteredUsers.map(u=><option key={u.id} value={u.id}>{u.email}</option>)}
-                    </select>
-                  </div>
+                  <SL text="Anderen User verknüpfen"/>
+                  <SearchInput value={userSearch} onChange={setUserSearch} placeholder="User suchen..."/>
+                  <CustomSelect value={editPatientData._newUserId!==undefined?(editPatientData._newUserId||""):(editPatientData.user_id||"")} onChange={e=>setEditPatientData(p=>({...p,_newUserId:e.target.value||null}))}>
+                    <option value="">Kein Login</option>
+                    {filteredUsers.map(u=><option key={u.id} value={u.id}>{u.email}</option>)}
+                  </CustomSelect>
                 </>):(<>
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginBottom:10}}>Kein Login-Konto verknüpft.</div>
                   <SL text="User verknüpfen"/>
                   <SearchInput value={userSearch} onChange={setUserSearch} placeholder="User suchen..."/>
-                  <select value={editPatientData._newUserId||""} onChange={e=>setEditPatientData(p=>({...p,_newUserId:e.target.value||null}))} style={inp}>
+                  <CustomSelect value={editPatientData._newUserId||""} onChange={e=>setEditPatientData(p=>({...p,_newUserId:e.target.value||null}))}>
                     <option value="">User auswählen...</option>
                     {filteredUsers.map(u=><option key={u.id} value={u.id}>{u.email}</option>)}
-                  </select>
+                  </CustomSelect>
                 </>)}
               </div>
               <button className="btn" onClick={updatePatient} disabled={saving||!editPatientData.name} style={{width:"100%",padding:"14px",borderRadius:12,background:editPatientData.name?BRAND:"#B8DFE0",color:editPatientData.name?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
@@ -888,7 +1314,11 @@ export default function App() {
               <div><SL text="Titel *"/><input value={newTemplate.title} onChange={e=>setNewTemplate(p=>({...p,title:e.target.value}))} placeholder="z.B. Cavaletti-Stangen" style={inp}/></div>
               <div><SL text="Kategorie"/><MultiSelect options={CATEGORIES} selected={newTemplate.categories} onChange={v=>setNewTemplate(p=>({...p,categories:v}))} color={BRAND}/></div>
               <div><SL text="Zielregion"/><MultiSelect options={TARGET_REGIONS} selected={newTemplate.target_regions} onChange={v=>setNewTemplate(p=>({...p,target_regions:v}))} color={MID}/></div>
-              <div><SL text="Schwierigkeit"/><select value={newTemplate.difficulty} onChange={e=>setNewTemplate(p=>({...p,difficulty:e.target.value}))} style={inp}>{["Leicht","Mittel","Schwer"].map(d=><option key={d}>{d}</option>)}</select></div>
+              <div><SL text="Schwierigkeit"/>
+                <CustomSelect value={newTemplate.difficulty} onChange={e=>setNewTemplate(p=>({...p,difficulty:e.target.value}))}>
+                  {["Leicht","Mittel","Schwer"].map(d=><option key={d}>{d}</option>)}
+                </CustomSelect>
+              </div>
               <div><SL text="Beschreibung"/><textarea value={newTemplate.description} onChange={e=>setNewTemplate(p=>({...p,description:e.target.value}))} rows={3} placeholder="Kurze Erklärung..." style={{...inp,resize:"vertical"}}/></div>
               <div><SL text="Schritte"/>{newTemplate.instructions.map((s,i)=><input key={i} value={s} onChange={e=>setNewTemplate(p=>({...p,instructions:p.instructions.map((x,j)=>j===i?e.target.value:x)}))} placeholder={`Schritt ${i+1}...`} style={{...inp,marginBottom:6}}/>)}</div>
               <div><SL text="Bild-URL"/><input value={newTemplate.image_url} onChange={e=>setNewTemplate(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
@@ -910,7 +1340,11 @@ export default function App() {
               <div><SL text="Titel *"/><input value={editTemplateData.title} onChange={e=>setEditTemplateData(p=>({...p,title:e.target.value}))} style={inp}/></div>
               <div><SL text="Kategorie"/><MultiSelect options={CATEGORIES} selected={editTemplateData.categories||[]} onChange={v=>setEditTemplateData(p=>({...p,categories:v}))} color={BRAND}/></div>
               <div><SL text="Zielregion"/><MultiSelect options={TARGET_REGIONS} selected={editTemplateData.target_regions||[]} onChange={v=>setEditTemplateData(p=>({...p,target_regions:v}))} color={MID}/></div>
-              <div><SL text="Schwierigkeit"/><select value={editTemplateData.difficulty} onChange={e=>setEditTemplateData(p=>({...p,difficulty:e.target.value}))} style={inp}>{["Leicht","Mittel","Schwer"].map(d=><option key={d}>{d}</option>)}</select></div>
+              <div><SL text="Schwierigkeit"/>
+                <CustomSelect value={editTemplateData.difficulty} onChange={e=>setEditTemplateData(p=>({...p,difficulty:e.target.value}))}>
+                  {["Leicht","Mittel","Schwer"].map(d=><option key={d}>{d}</option>)}
+                </CustomSelect>
+              </div>
               <div><SL text="Beschreibung"/><textarea value={editTemplateData.description||""} onChange={e=>setEditTemplateData(p=>({...p,description:e.target.value}))} rows={3} style={{...inp,resize:"vertical"}}/></div>
               <div><SL text="Schritte"/>{(editTemplateData.instructions||["","",""]).map((s,i)=><input key={i} value={s} onChange={e=>setEditTemplateData(p=>({...p,instructions:(p.instructions||[]).map((x,j)=>j===i?e.target.value:x)}))} placeholder={`Schritt ${i+1}...`} style={{...inp,marginBottom:6}}/>)}</div>
               <div><SL text="Bild-URL"/><input value={editTemplateData.image_url||""} onChange={e=>setEditTemplateData(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
@@ -924,39 +1358,68 @@ export default function App() {
       )}
 
       {/* CONFIRM SHEETS */}
-      {sheet==="confirmDeleteEx"&&sheetData&&(
-        <div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}>
-          <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übung entfernen?</div>
-          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft entfernt.</div>
-          <div style={{display:"flex",gap:9}}>
-            <button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button>
-            <button className="btn" onClick={()=>deleteExercise(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.remove}</button>
+      {sheet==="confirmDeleteEx"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übung entfernen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft entfernt.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteExercise(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.remove}</button></div></div></div>)}
+      {sheet==="confirmDeletePt"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Patient löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.name}</strong> und alle Übungen werden dauerhaft gelöscht.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deletePatient(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
+      {sheet==="confirmDeleteTmpl"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übungsvorlage löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird aus der Bibliothek gelöscht. Bereits zugewiesene Übungen bleiben erhalten.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
+
+      {/* SHEET: VIEW FEEDBACK (Therapist) */}
+      {viewFeedbackEx&&(
+        <div className="overlay" onClick={()=>setViewFeedbackEx(null)}>
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title="Feedback vom Besitzer" onClose={()=>setViewFeedbackEx(null)}/>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:16}}>{viewFeedbackEx.title}</div>
+            {(()=>{
+              const exFeedbacks=feedbacks.filter(f=>f.exercise_id===viewFeedbackEx.id);
+              if(exFeedbacks.length===0)return <div style={{textAlign:"center",padding:"24px 0",color:ACCENT,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch kein Feedback vorhanden.</div>;
+              return(
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  {exFeedbacks.map((fb,i)=>(
+                    <div key={fb.id} style={{background:PALE,borderRadius:12,padding:"14px 16px",borderLeft:`4px solid ${PAIN_COLORS[fb.pain_level]}`}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:fb.comment?8:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>{fb.pain_level}</span>
+                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>{PAIN_LABELS[fb.pain_level]}</span>
+                        </div>
+                        <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{new Date(fb.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}</span>
+                      </div>
+                      {fb.comment&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:DARK,lineHeight:1.6}}>„{fb.comment}"</div>}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
-        </div></div>
+        </div>
       )}
-      {sheet==="confirmDeletePt"&&sheetData&&(
-        <div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}>
-          <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Patient löschen?</div>
-          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.name}</strong> und alle Übungen werden dauerhaft gelöscht.</div>
-          <div style={{display:"flex",gap:9}}>
-            <button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button>
-            <button className="btn" onClick={()=>deletePatient(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button>
+
+      {/* SHEET: FEEDBACK */}
+      {feedbackSheet&&(
+        <div className="overlay" onClick={()=>{setFeedbackSheet(null);setFeedbackPain(0);setFeedbackComment("");}}>
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title="Befund melden" onClose={()=>{setFeedbackSheet(null);setFeedbackPain(0);setFeedbackComment("");}}/>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:16}}>{feedbackSheet.title}</div>
+            <div style={{marginBottom:18}}>
+              <SL text="Schmerzlevel"/>
+              <div style={{display:"flex",gap:8,marginTop:4}}>
+                {[1,2,3,4,5].map(n=>(
+                  <button key={n} className="btn" onClick={()=>setFeedbackPain(n)} style={{flex:1,padding:"12px 0",borderRadius:10,border:`2px solid ${feedbackPain===n?PAIN_COLORS[n]:"#B8DFE0"}`,background:feedbackPain===n?PAIN_COLORS[n]+"18":"white",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:feedbackPain===n?PAIN_COLORS[n]:DARK}}>{n}</span>
+                    <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,fontWeight:600,color:feedbackPain===n?PAIN_COLORS[n]:"#3D7070",textAlign:"center",lineHeight:1.2}}>{PAIN_LABELS[n]}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{marginBottom:18}}>
+              <SL text="Kommentar (optional)"/>
+              <textarea value={feedbackComment} onChange={e=>setFeedbackComment(e.target.value)} rows={3} placeholder="z.B. Hund hat gezittert, Übung abgebrochen..." style={{...inp,resize:"vertical"}}/>
+            </div>
+            <button className="btn" onClick={saveFeedback} disabled={saving||feedbackPain===0} style={{width:"100%",padding:"14px",borderRadius:12,background:feedbackPain>0?BRAND:"#B8DFE0",color:feedbackPain>0?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+              {saving?"Wird gespeichert...":"Befund speichern"}
+            </button>
           </div>
-        </div></div>
+        </div>
       )}
-      {sheet==="confirmDeleteTmpl"&&sheetData&&(
-        <div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}>
-          <div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übungsvorlage löschen?</div>
-          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird aus der Bibliothek gelöscht. Bereits zugewiesene Übungen bleiben erhalten.</div>
-          <div style={{display:"flex",gap:9}}>
-            <button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button>
-            <button className="btn" onClick={()=>deleteTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button>
-          </div>
-        </div></div>
-      )}
+
     </div>
   );
 }
