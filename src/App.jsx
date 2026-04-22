@@ -792,11 +792,27 @@ export default function App() {
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:600}}>{t.noPatient}</div>
             </div>
           ):(<>
+            {/* ── Dankestext wenn alles erledigt ── */}
+            {allDone&&(
+              <div style={{background:`linear-gradient(135deg,#0F3D2E 0%,${DARK} 100%)`,borderRadius:16,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:12,boxShadow:"0 4px 16px rgba(30,74,75,0.3)"}}>
+                <div style={{fontSize:36,lineHeight:1,flexShrink:0}}>{ownerPatient.avatar||"🐕"}</div>
+                <div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#6EE7B7",marginBottom:2}}>Alle erledigt!</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#B8E8E8"}}>{ownerPatient.name} sagt Danke!</div>
+                </div>
+                <div style={{marginLeft:"auto",flexShrink:0}}>
+                  <Icon name="check" size={22} color="#6EE7B7"/>
+                </div>
+              </div>
+            )}
             {/* ── Stat tiles ── */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
               {/* Tile 1: Wochenfortschritt */}
-              <div style={{background:`linear-gradient(135deg,${DARK} 0%,${MID} 100%)`,borderRadius:16,padding:"16px 14px 14px",boxShadow:"0 4px 16px rgba(30,74,75,0.25)",display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:110}}>
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:ACCENT,letterSpacing:"1px",textTransform:"uppercase",marginBottom:6}}>Diese Woche</div>
+              <div style={{background:`linear-gradient(135deg,${DARK} 0%,${MID} 100%)`,borderRadius:16,padding:"16px 14px 14px",boxShadow:"0 4px 16px rgba(30,74,75,0.25)",display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:120}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:ACCENT,letterSpacing:"1px",textTransform:"uppercase"}}>Diese Woche</div>
+                  <div style={{fontSize:22,lineHeight:1}}>{ownerPatient.avatar||"🐕"}</div>
+                </div>
                 <div>
                   <div style={{fontFamily:"'Playfair Display',serif",fontSize:42,fontWeight:700,color:"white",lineHeight:1}}>{doneCount}</div>
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:allDone?"#6EE7B7":ACCENT,marginTop:3,fontWeight:allDone?700:400}}>
@@ -808,7 +824,7 @@ export default function App() {
                 </div>
               </div>
               {/* Tile 2: Streak */}
-              <div style={{background:`linear-gradient(135deg,${MID} 0%,${BRAND} 100%)`,borderRadius:16,padding:"16px 14px 14px",boxShadow:"0 4px 16px rgba(95,184,185,0.25)",display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:110}}>
+              <div style={{background:`linear-gradient(135deg,${MID} 0%,${BRAND} 100%)`,borderRadius:16,padding:"16px 14px 14px",boxShadow:"0 4px 16px rgba(95,184,185,0.25)",display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:120}}>
                 <div style={{display:"flex",alignItems:"center",gap:5}}>
                   <Icon name="star" size={12} color="#FBBF24"/>
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"#E6F6F6",letterSpacing:"1px",textTransform:"uppercase"}}>Streak</div>
