@@ -464,8 +464,8 @@ export default function App() {
   .qr-box{display:flex;flex-direction:column;align-items:center;gap:6px}
   .qr-img{width:72px;height:72px}
   .qr-label{font-size:9px;color:#888;text-align:center;line-height:1.4}
-  .footer-note{font-size:10px;color:#aaa;text-align:center;padding-top:18px;border-top:1px solid #f0f0f0;line-height:1.7}
-  @media print{body{padding:20px 28px}@page{margin:1.2cm;@bottom-left{content:"Fit Fun Dog · Tierphysiotherapie & Osteopathie · www.fit-fun-dog.de";font-size:8px;color:#aaa;font-family:sans-serif}@bottom-right{content:"Seite " counter(page);font-size:8px;color:#aaa;font-family:sans-serif}@top-left{content:none}@top-right{content:none}}.no-print{display:none}}
+  .footer-note{font-size:10px;color:#aaa;text-align:center;padding-top:18px;border-top:1px solid #f0f0f0;line-height:1.7}.print-footer{display:none;position:fixed;bottom:0;left:0;right:0;padding:6px 28px;background:white;border-top:1px solid #eee;font-size:8px;color:#aaa;font-family:sans-serif;display:flex;justify-content:space-between;align-items:center}
+  @media print{body{padding:20px 28px}@page{margin:0.8cm}.no-print{display:none}.print-footer{display:block!important}}
 </style>
 </head>
 <body>
@@ -551,6 +551,7 @@ ${patExercises.map((ex) => `
   Made with Love by Claudia · <a href="https://fitfundog.vercel.app/" target="_blank" style="color:#3D8E8F;text-decoration:none">Fit Fun Dog</a>
 </div>
 
+<div class="print-footer"><span>Fit Fun Dog · Tierphysiotherapie &amp; Osteopathie · www.fit-fun-dog.de</span><span>info@fit-fun-dog.de · 0159 / 04976681</span></div>
 </body></html>`;
 
     // PWA-safe: use blob URL instead of window.open with content
