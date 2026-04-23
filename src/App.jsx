@@ -465,7 +465,7 @@ export default function App() {
   .qr-img{width:72px;height:72px}
   .qr-label{font-size:9px;color:#888;text-align:center;line-height:1.4}
   .footer-note{font-size:10px;color:#aaa;text-align:center;padding-top:18px;border-top:1px solid #f0f0f0;line-height:1.7}
-  @media print{body{padding:20px 28px} @page{margin:0.8cm} .no-print{display:none}}
+  @media print{body{padding:20px 28px}@page{margin:1.2cm;@bottom-left{content:"Fit Fun Dog · Tierphysiotherapie & Osteopathie · www.fit-fun-dog.de";font-size:8px;color:#aaa;font-family:sans-serif}@bottom-right{content:"Seite " counter(page);font-size:8px;color:#aaa;font-family:sans-serif}@top-left{content:none}@top-right{content:none}}.no-print{display:none}}
 </style>
 </head>
 <body>
