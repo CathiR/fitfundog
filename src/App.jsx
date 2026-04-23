@@ -420,9 +420,9 @@ export default function App() {
   .brand-name{font-family:"DM Sans",sans-serif;font-size:26px;font-weight:700;letter-spacing:6px;color:#102828;margin-bottom:6px}
   .brand-sub{font-size:10px;letter-spacing:3px;color:#555;text-transform:uppercase}
   /* META ROW */
-  .meta-row{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;gap:24px}
+  .meta-row{display:grid;grid-template-columns:1fr 1fr;align-items:start;margin-bottom:32px;gap:24px}
   .contact-block{display:flex;flex-direction:column;gap:7px}
-  .contact-item{display:flex;align-items:center;gap:8px;font-size:11px;color:#555}
+  .contact-item{display:flex;align-items:center;gap:0;font-size:11px;color:#555}.contact-item svg{width:16px;flex-shrink:0;margin-right:7px}
   .contact-icon{width:14px;text-align:center;color:#3D8E8F;font-size:12px}
   .patient-block{text-align:right}
   .patient-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:6px}
@@ -480,9 +480,9 @@ export default function App() {
 <!-- META ROW: contact left, patient right -->
 <div class="meta-row">
   <div class="contact-block">
-    <div class="contact-item"><span class="contact-icon">⊕</span>www.fit-fun-dog.de</div>
-    <div class="contact-item"><span class="contact-icon">✉</span>info@fit-fun-dog.de</div>
-    <div class="contact-item"><span class="contact-icon">☏</span>0159 / 04976681</div>
+    <div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3D8E8F" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><a href="https://www.fit-fun-dog.de" target="_blank" style="color:#555;text-decoration:none">www.fit-fun-dog.de</a></div>
+    <div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3D8E8F" stroke-width="2.5" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><a href="mailto:info@fit-fun-dog.de" style="color:#555;text-decoration:none">info@fit-fun-dog.de</a></div>
+    <div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3D8E8F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>0159 / 04976681</div>
   </div>
   <div class="patient-block">
     <div class="patient-label">P&nbsp;A&nbsp;T&nbsp;I&nbsp;E&nbsp;N&nbsp;T</div>
@@ -548,7 +548,7 @@ ${patExercises.map((ex) => `
   </div>
 </div>
 <div class="footer-note">
-  Erstellt von Claudia · <a href="https://fitfundog.vercel.app/" target="_blank" style="color:#3D8E8F;text-decoration:none">Fit Fun Dog</a> &nbsp;·&nbsp; Bitte führe die Übungen nur nach Anweisung der Therapeutin durch.
+  Made with Love by Claudia · <a href="https://fitfundog.vercel.app/" target="_blank" style="color:#3D8E8F;text-decoration:none">Fit Fun Dog</a>
 </div>
 
 </body></html>`;
@@ -583,19 +583,7 @@ ${patExercises.map((ex) => `
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
 
-  const shareExercisePlan = async (patient) => {
-    const patExercises = exercises.filter(e => e.patient_id === patient.id);
-    const text = `Übungsplan für ${patient.name}\n\n${patExercises.map((ex,i) => `${i+1}. ${ex.title}${ex.repeat_count?" ("+ex.repeat_count+"×/Woche)":""}${ex.video_url?"\nVideo: "+ex.video_url:""}`).join("\n\n")}\n\nÜbungen in der App: https://fitfundog.vercel.app/\nTermin buchen: https://fit-fun-dog-Termin-online-vereinbaren.as.me/`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: `Übungsplan ${patient.name} · Fit Fun Dog`, text });
-      } catch(e) { if (e.name !== "AbortError") console.error(e); }
-    } else {
-      // Fallback: copy to clipboard
-      await navigator.clipboard.writeText(text).catch(()=>{});
-      alert("Text in die Zwischenablage kopiert!");
-    }
-  };
+
 
   const handleLogout=async()=>{
     sessionStorage.removeItem("_tfpw");
@@ -1216,7 +1204,6 @@ ${patExercises.map((ex) => `
                       </div>
                       <div style={{display:"flex",gap:5}}>
                         <button className="iBtn" title="Übungsplan drucken" onClick={()=>printExercisePlan(p)} style={{background:"#E8F5E9"}}><Icon name="print" size={14} color="#2E7D32"/></button>
-                        <button className="iBtn" title="Plan als Text teilen (PDF: erst drucken, dann teilen)" onClick={()=>shareExercisePlan(p)} style={{background:"#E8F0FF"}}><Icon name="mail" size={14} color="#5B4FCF"/></button>
                         <button className="iBtn" onClick={()=>{setEditPatientData({...p});setSheet("editPatient");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
                         <button className="iBtn" onClick={()=>{setSheetData(p);setSheet("confirmDeletePt");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                       </div>
@@ -1276,7 +1263,6 @@ ${patExercises.map((ex) => `
                     <Icon name="assign" size={16} color="#E6F6F6"/> Übung zuweisen
                   </button>
                   <button className="iBtn" title="Übungsplan drucken" onClick={()=>printExercisePlan(selectedPatient)} style={{background:"#E8F5E9",width:44,height:44,borderRadius:12,flexShrink:0}}><Icon name="print" size={16} color="#2E7D32"/></button>
-                  <button className="iBtn" title="Plan als Text teilen (PDF: erst drucken, dann teilen)" onClick={()=>shareExercisePlan(selectedPatient)} style={{background:"#E8F0FF",width:44,height:44,borderRadius:12,flexShrink:0}}><Icon name="mail" size={16} color="#5B4FCF"/></button>
                 </div>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>{t.homeExercises(exForPatient(selectedPatient.id).length)}</div>
                 {exForPatient(selectedPatient.id).length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:ACCENT,textAlign:"center",padding:"12px 0"}}>{t.noExercisesYet}</div>}
