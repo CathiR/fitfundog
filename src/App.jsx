@@ -554,34 +554,16 @@ ${patExercises.map((ex) => `
 <div class="print-footer"><span>Fit Fun Dog · Tierphysiotherapie &amp; Osteopathie · www.fit-fun-dog.de</span><span>info@fit-fun-dog.de · 0159 / 04976681</span></div>
 </body></html>`;
 
-    // PWA-safe: use blob URL instead of window.open with content
-    const blob = new Blob([html], {type: "text/html"});
-    const url = URL.createObjectURL(blob);
-
-    // Try Web Share API first (mobile PWA) - share as URL to open in browser
-    // For print: open blob in same tab briefly, then restore
-    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
-
-    if (isStandalone) {
-      // PWA mode: open in same tab, user prints, back button returns to app
-      const printWindow = window.open(url, "_blank");
-      if (printWindow) {
-        printWindow.onload = () => { printWindow.print(); };
-      } else {
-        // Fallback: navigate current tab
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `Uebungsplan_${patient.name.replace(/\s+/g,"-")}.html`;
-        a.click();
-      }
-    } else {
-      const printWindow = window.open(url, "_blank");
-      if (printWindow) {
-        printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
-      }
+    // Open new window and write HTML directly - avoids blob: URL in print header
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
+      // Fallback if onload doesn't fire
+      setTimeout(() => { try { printWindow.focus(); printWindow.print(); } catch(e){} }, 1200);
     }
-
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
 
 
