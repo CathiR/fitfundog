@@ -413,28 +413,27 @@ export default function App() {
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;600;700&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:"DM Sans",sans-serif;color:#102828;background:white;padding:16px 32px;font-size:13px}
+  body{font-family:"DM Sans",sans-serif;color:#102828;background:white;padding:10px 32px 16px;font-size:13px}
   /* HEADER */
-  .header{text-align:center;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid #e0e0e0}
-  .logo{height:40px;object-fit:contain;margin-bottom:4px;mix-blend-mode:multiply}
-  .brand-name{font-family:"DM Sans",sans-serif;font-size:18px;font-weight:700;letter-spacing:6px;color:#102828;margin-bottom:3px}
-  .brand-sub{font-size:10px;letter-spacing:3px;color:#555;text-transform:uppercase}
+  .header{text-align:center;padding-bottom:6px;margin-bottom:8px;border-bottom:1px solid #e0e0e0}
+  .logo{height:32px;object-fit:contain;margin-bottom:3px;mix-blend-mode:multiply}
+  .brand-name{font-family:"DM Sans",sans-serif;font-size:16px;font-weight:700;letter-spacing:6px;color:#102828;margin-bottom:2px}
+  .brand-sub{font-size:9px;letter-spacing:2.5px;color:#555;text-transform:uppercase}
   /* META ROW */
-  .meta-row{display:grid;grid-template-columns:1fr 1fr;align-items:start;margin-bottom:10px;gap:24px}
-  .contact-block{display:flex;flex-direction:column;gap:7px}
+  .meta-row{display:grid;grid-template-columns:1fr 1fr;align-items:start;margin-bottom:8px;gap:24px}
+  .contact-block{display:flex;flex-direction:column;gap:5px}
   .contact-item{display:flex;align-items:center;gap:0;font-size:11px;color:#555}.contact-item svg{width:16px;flex-shrink:0;margin-right:7px}
   .contact-icon{width:14px;text-align:center;color:#3D8E8F;font-size:12px}
   .patient-block{text-align:right}
-  .patient-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:6px}
-  .patient-name{font-family:"Playfair Display",serif;font-size:16px;font-weight:700;color:#1E4A4B;margin-bottom:3px}
-  .patient-meta{font-size:11px;color:#666;line-height:1.7}
-  .patient-condition{font-size:11px;color:#3D8E8F;margin-top:3px;font-style:italic}
-  .plan-date{font-size:10px;color:#aaa;margin-top:6px;letter-spacing:1px}
+  .patient-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:3px}
+  .patient-name{font-family:"Playfair Display",serif;font-size:15px;font-weight:700;color:#1E4A4B;margin-bottom:2px}
+  .patient-meta{font-size:11px;color:#666;line-height:1.4}
+  .patient-condition{font-size:11px;color:#3D8E8F;margin-top:2px;font-style:italic}
+  .plan-date{font-size:10px;color:#aaa;margin-top:3px;letter-spacing:1px}
   /* DIVIDER */
-  .divider{border:none;border-top:1px solid #e8e8e8;margin:0 0 8px}
+  .divider{border:none;border-top:1px solid #e8e8e8;margin:0 0 6px}
   /* SECTION */
-  .section-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#aaa;margin-bottom:10px}
-  .exercises-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 20px}
+  .section-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#aaa;margin-bottom:8px}
   /* EXERCISE */
   .exercise{display:flex;gap:14px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f0f0f0;page-break-inside:avoid}
   .exercise:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
@@ -466,7 +465,7 @@ export default function App() {
   .qr-img{width:52px;height:52px}
   .qr-label{font-size:9px;color:#888;text-align:center;line-height:1.4}
   .footer-note{font-size:10px;color:#aaa;text-align:center;padding-top:18px;border-top:1px solid #f0f0f0;line-height:1.7}.print-footer{display:none;position:fixed;bottom:0;left:0;right:0;padding:6px 28px;background:white;border-top:1px solid #eee;font-size:8px;color:#aaa;font-family:sans-serif;display:flex;justify-content:space-between;align-items:center}
-  @media print{body{padding:20px 28px}@page{margin:0.8cm}.no-print{display:none}.print-footer{display:block!important}}
+  @media print{body{padding:10px 28px}@page{margin:0.8cm}.no-print{display:none}.print-footer{display:block!important}}
 </style>
 </head>
 <body>
@@ -500,7 +499,6 @@ export default function App() {
 <div class="section-label">H&nbsp;E&nbsp;I&nbsp;M&nbsp;Ü&nbsp;B&nbsp;U&nbsp;N&nbsp;G&nbsp;E&nbsp;N &nbsp;·&nbsp; ${patExercises.length} Übung${patExercises.length!==1?"en":""}</div>
 
 <!-- EXERCISES -->
-<div class="exercises-grid">
 ${patExercises.map((ex) => `
 <div class="exercise">
   ${ex.image_url
@@ -532,7 +530,6 @@ ${patExercises.map((ex) => `
       </div>` : ""}
   </div>
 </div>`).join("")}
-</div>
 
 <!-- FOOTER -->
 <div class="footer-divider"></div>
