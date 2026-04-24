@@ -147,6 +147,8 @@ const LoginScreen = () => {
   const [password,setPassword]=useState("");
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
+  const [showPw,setShowPw]=useState(false);
+  const [resetSent,setResetSent]=useState(false);
   const inp={width:"100%",padding:"13px 14px",borderRadius:10,border:"1.5px solid #B8DFE0",fontSize:16,fontFamily:"'DM Sans',sans-serif",outline:"none",color:"#102828",background:"white",WebkitTextFillColor:"#102828",boxSizing:"border-box"};
   const handleLogin=async()=>{
     if(!email||!password){setError("Bitte Email und Passwort eingeben.");return;}
@@ -167,11 +169,17 @@ const LoginScreen = () => {
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:DARK,marginBottom:4}}>Willkommen zurück</div>
           <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:22}}>Bitte melde dich an um fortzufahren.</div>
           <div style={{marginBottom:14}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>Email</div><input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="deine@email.de" style={inp}/></div>
-          <div style={{marginBottom:20}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>Passwort</div><input type="password" value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="••••••••" style={inp}/></div>
+          <div style={{marginBottom:20}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>Passwort</div><div style={{position:"relative"}}><input type={showPw?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="••••••••" style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:"#3D7070"}}>{showPw?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div></div>
           {error&&<div style={{background:"#FFE8E8",borderRadius:10,padding:"10px 14px",marginBottom:16,fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#C0392B"}}>{error}</div>}
           <button onClick={handleLogin} disabled={loading} style={{width:"100%",padding:"14px",borderRadius:12,background:loading?"#B8DFE0":BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,border:"none",cursor:"pointer"}}>{loading?"Wird angemeldet...":"Anmelden"}</button>
         </div>
-        <div style={{textAlign:"center",marginTop:16,fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.5)"}}>Kein Konto? Bitte wende dich an deine Therapeutin.</div>
+        <div style={{textAlign:"center",marginTop:14}}>
+          {resetSent
+            ?<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.8)"}}>✓ Reset-Email gesendet – bitte Postfach prüfen.</div>
+            :<button onClick={async()=>{if(!email){setError("Bitte zuerst Email eingeben.");return;}await supabase.auth.resetPasswordForEmail(email,{redirectTo:"https://pawphysio.vercel.app"});setResetSent(true);}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.65)",textDecoration:"underline",padding:0}}>Passwort vergessen?</button>
+          }
+        </div>
+        <div style={{textAlign:"center",marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.4)"}}>Kein Konto? Bitte wende dich an deine Therapeutin.</div>
       </div>
     </div>
   );
@@ -295,6 +303,7 @@ export default function App() {
   const [selectedExistingUserId,setSelectedExistingUserId]=useState("");
   const [resetEmailSent,setResetEmailSent]=useState(false);
   const [patientSearch,setPatientSearch]=useState("");
+  const [ownerSearch,setOwnerSearch]=useState("");
   const [assignPatientSearch,setAssignPatientSearch]=useState("");
   const [userSearch,setUserSearch]=useState("");
   const [mustChangePassword,setMustChangePassword]=useState(false);
@@ -940,10 +949,13 @@ ${patExercises.map((ex) => `
       {view==="owner"&&(
         <div style={{maxWidth:480,margin:"0 auto",padding:"16px 14px 80px"}}>
           {isAdmin&&(
-            <div style={{background:BRAND+"18",border:`1.5px solid ${BRAND}`,borderRadius:12,padding:"10px 14px",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
-              <Icon name="info" size={15} color={BRAND}/>
-              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:MID}}>Vorschau — so sehen Ihre Kunden die App</span>
-            </div>
+            <>
+              <div style={{background:BRAND+"18",border:`1.5px solid ${BRAND}`,borderRadius:12,padding:"10px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
+                <Icon name="info" size={15} color={BRAND}/>
+                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:MID}}>Vorschau — so sehen Ihre Kunden die App</span>
+              </div>
+              <SearchInput value={ownerSearch} onChange={setOwnerSearch} placeholder="Besitzer oder Patient suchen..."/>
+            </>
           )}
           {mustChangePassword&&(
             <div style={{background:"#FFF8E1",border:"1.5px solid #FFB300",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
@@ -957,19 +969,28 @@ ${patExercises.map((ex) => `
           )}
 
           {/* Owner name greeting */}
-          {ownerPatient&&(
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK,marginBottom:12}}>
-              Hallo, {ownerPatient.owner}!
-            </div>
-          )}
+          {ownerPatient&&(()=>{
+            const h=new Date().getHours();
+            const greet=h<12?"Guten Morgen":h<18?"Guten Tag":"Guten Abend";
+            return(
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK,marginBottom:12}}>
+                {greet}, {ownerPatient.owner}!
+              </div>
+            );
+          })()}
 
-          {patients.length>1&&(
-            <div style={{marginBottom:12}}>
-              <CustomSelect value={ownerPatient?.id||""} onChange={e=>{setOwnerPatient(patients.find(p=>p.id===e.target.value)||null);setFilterCats([]);setFilterRegions([]);}}>
-                {patients.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
-              </CustomSelect>
-            </div>
-          )}
+          {(()=>{
+            const visiblePts=isAdmin&&ownerSearch
+              ?patients.filter(p=>p.name.toLowerCase().includes(ownerSearch.toLowerCase())||p.owner.toLowerCase().includes(ownerSearch.toLowerCase()))
+              :patients;
+            return visiblePts.length>1&&(
+              <div style={{marginBottom:12}}>
+                <CustomSelect value={ownerPatient?.id||""} onChange={e=>{setOwnerPatient(patients.find(p=>p.id===e.target.value)||null);setFilterCats([]);setFilterRegions([]);}}>
+                  {visiblePts.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
+                </CustomSelect>
+              </div>
+            );
+          })()}
 
           {!ownerPatient?(
             <div className="card" style={{padding:28,textAlign:"center",color:"#3D7070"}}>
