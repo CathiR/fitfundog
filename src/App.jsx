@@ -191,6 +191,8 @@ const PasswordResetScreen = ({ onDone }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [showPw1,setShowPw1]=useState(false);
+  const [showPw2,setShowPw2]=useState(false);
   const inp = { width:"100%", padding:"13px 14px", borderRadius:10, border:"1.5px solid #B8DFE0", fontSize:16, fontFamily:"'DM Sans',sans-serif", outline:"none", color:"#102828", background:"white", WebkitTextFillColor:"#102828", boxSizing:"border-box" };
 
   const handleReset = async () => {
@@ -227,11 +229,11 @@ const PasswordResetScreen = ({ onDone }) => {
               <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#3D7070", marginBottom:22 }}>Bitte wähle ein neues Passwort für deinen Account.</div>
               <div style={{ marginBottom:14 }}>
                 <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:"#3D7070", letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Neues Passwort</div>
-                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mindestens 6 Zeichen" style={inp}/>
+                <div style={{position:"relative"}}><input type={showPw1?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mindestens 6 Zeichen" style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw1(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:"#3D7070"}}>{showPw1?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
               </div>
               <div style={{ marginBottom:20 }}>
                 <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:"#3D7070", letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Passwort wiederholen</div>
-                <input type="password" value={password2} onChange={e=>setPassword2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleReset()} placeholder="••••••••" style={inp}/>
+                <div style={{position:"relative"}}><input type={showPw2?"text":"password"} value={password2} onChange={e=>setPassword2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleReset()} placeholder="••••••••" style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw2(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:"#3D7070"}}>{showPw2?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
               </div>
               {error && <div style={{ background:"#FFE8E8", borderRadius:10, padding:"10px 14px", marginBottom:16, fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#C0392B" }}>{error}</div>}
               <button onClick={handleReset} disabled={loading} style={{ width:"100%", padding:"14px", borderRadius:12, background:loading?"#B8DFE0":BRAND, color:"#102828", fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:15, border:"none", cursor:"pointer" }}>
@@ -307,6 +309,7 @@ export default function App() {
   const [assignPatientSearch,setAssignPatientSearch]=useState("");
   const [userSearch,setUserSearch]=useState("");
   const [mustChangePassword,setMustChangePassword]=useState(false);
+  const [showNewPw,setShowNewPw]=useState(false);
   const [showPasswordChange,setShowPasswordChange]=useState(false);
   const [newPassword,setNewPassword]=useState("");
 
@@ -962,7 +965,7 @@ ${patExercises.map((ex) => `
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#E65100",marginBottom:6,display:"flex",alignItems:"center",gap:8}}><Icon name="lock" size={16} color="#E65100"/>Bitte Passwort ändern</div>
               <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#5D4037",marginBottom:10}}>Aus Sicherheitsgründen bitte ein eigenes Passwort vergeben.</div>
               <div style={{display:"flex",gap:8}}>
-                <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Neues Passwort..." style={{...inp,flex:1}}/>
+                <div style={{position:"relative",flex:1}}><input type={showNewPw?"text":"password"} value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Neues Passwort..." style={{...inp,width:"100%",paddingRight:42}}/><button onClick={()=>setShowNewPw(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:"#3D7070"}}>{showNewPw?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
                 <button className="btn" onClick={changePassword} disabled={saving||!newPassword} style={{background:newPassword?BRAND:"#B8DFE0",color:"#102828",borderRadius:9,padding:"8px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,flexShrink:0}}>{saving?"...":"Speichern"}</button>
               </div>
             </div>
@@ -983,6 +986,9 @@ ${patExercises.map((ex) => `
             const visiblePts=isAdmin&&ownerSearch
               ?patients.filter(p=>p.name.toLowerCase().includes(ownerSearch.toLowerCase())||p.owner.toLowerCase().includes(ownerSearch.toLowerCase()))
               :patients;
+            if(isAdmin&&ownerSearch&&visiblePts.length===1&&ownerPatient?.id!==visiblePts[0].id){
+              setOwnerPatient(visiblePts[0]);setFilterCats([]);setFilterRegions([]);
+            }
             return visiblePts.length>1&&(
               <div style={{marginBottom:12}}>
                 <CustomSelect value={ownerPatient?.id||""} onChange={e=>{setOwnerPatient(patients.find(p=>p.id===e.target.value)||null);setFilterCats([]);setFilterRegions([]);}}>
