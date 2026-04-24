@@ -458,11 +458,11 @@ export default function App() {
   .video-url{font-size:9px;color:#aaa;word-break:break-all;margin-top:1px}
   /* FOOTER SECTION */
   .footer-divider{border:none;border-top:1px solid #e0e0e0;margin:14px 0 10px}
-  .footer-cols{display:flex;justify-content:center;gap:48px;margin-bottom:12px}
-  .footer-col{flex:1}
-  .footer-col-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:6px}
+  .footer-cols{display:flex;justify-content:center;align-items:center;gap:0;margin-bottom:0}
+  .footer-col{flex:0 0 auto}
+  .footer-col-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:5px}
   .qr-box{display:flex;flex-direction:column;align-items:center;gap:6px}
-  .qr-img{width:52px;height:52px}
+  .qr-img{width:44px;height:44px}
   .qr-label{font-size:9px;color:#888;text-align:center;line-height:1.4}
   .footer-note{font-size:10px;color:#aaa;text-align:center;padding-top:18px;border-top:1px solid #f0f0f0;line-height:1.7}.print-footer{display:none;position:fixed;bottom:0;left:0;right:0;padding:6px 28px;background:white;border-top:1px solid #eee;font-size:8px;color:#aaa;font-family:sans-serif;display:flex;justify-content:space-between;align-items:center}
   @media print{body{padding:20px 28px}@page{margin:0.8cm}.no-print{display:none}.print-footer{display:block!important}}
@@ -534,21 +534,21 @@ ${patExercises.map((ex) => `
 <!-- FOOTER -->
 <div class="footer-divider"></div>
 <div class="footer-cols">
-  <div class="footer-col" style="text-align:center">
+  <div class="footer-col" style="text-align:center;padding:0 40px">
     <div class="footer-col-label">A P P</div>
     <div class="qr-box">
       <img class="qr-img" src="${APP_QR}" alt="App QR"/>
     </div>
   </div>
-  <div class="footer-col" style="text-align:center">
+  <div class="footer-col" style="text-align:center;padding:0 40px;border-left:1px solid #f0f0f0;border-right:1px solid #f0f0f0">
+    <div style="font-size:10px;color:#aaa;line-height:1.6">Made with Love by Claudia<br/><a href="https://fitfundog.vercel.app/" target="_blank" style="color:#3D8E8F;text-decoration:none">Fit Fun Dog</a></div>
+  </div>
+  <div class="footer-col" style="text-align:center;padding:0 40px">
     <div class="footer-col-label">T E R M I N &nbsp; B U C H E N</div>
     <div class="qr-box">
       <img class="qr-img" src="${BOOKING_QR}" alt="Termin QR"/>
     </div>
   </div>
-</div>
-<div class="footer-note">
-  Made with Love by Claudia · <a href="https://fitfundog.vercel.app/" target="_blank" style="color:#3D8E8F;text-decoration:none">Fit Fun Dog</a>
 </div>
 
 <div class="print-footer"><span>Fit Fun Dog · Tierphysiotherapie &amp; Osteopathie · www.fit-fun-dog.de</span><span>info@fit-fun-dog.de · 0159 / 04976681</span></div>
