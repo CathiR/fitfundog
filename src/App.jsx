@@ -413,27 +413,27 @@ export default function App() {
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;600;700&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:"DM Sans",sans-serif;color:#102828;background:white;padding:40px 48px;font-size:13px}
+  body{font-family:"DM Sans",sans-serif;color:#102828;background:white;padding:16px 32px;font-size:13px}
   /* HEADER */
-  .header{text-align:center;padding-bottom:20px;margin-bottom:28px;border-bottom:1px solid #e0e0e0}
-  .logo{height:72px;object-fit:contain;margin-bottom:10px;mix-blend-mode:multiply}
-  .brand-name{font-family:"DM Sans",sans-serif;font-size:26px;font-weight:700;letter-spacing:6px;color:#102828;margin-bottom:6px}
+  .header{text-align:center;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid #e0e0e0}
+  .logo{height:40px;object-fit:contain;margin-bottom:4px;mix-blend-mode:multiply}
+  .brand-name{font-family:"DM Sans",sans-serif;font-size:18px;font-weight:700;letter-spacing:6px;color:#102828;margin-bottom:3px}
   .brand-sub{font-size:10px;letter-spacing:3px;color:#555;text-transform:uppercase}
   /* META ROW */
-  .meta-row{display:grid;grid-template-columns:1fr 1fr;align-items:start;margin-bottom:32px;gap:24px}
+  .meta-row{display:grid;grid-template-columns:1fr 1fr;align-items:start;margin-bottom:10px;gap:24px}
   .contact-block{display:flex;flex-direction:column;gap:7px}
   .contact-item{display:flex;align-items:center;gap:0;font-size:11px;color:#555}.contact-item svg{width:16px;flex-shrink:0;margin-right:7px}
   .contact-icon{width:14px;text-align:center;color:#3D8E8F;font-size:12px}
   .patient-block{text-align:right}
   .patient-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:6px}
-  .patient-name{font-family:"Playfair Display",serif;font-size:19px;font-weight:700;color:#1E4A4B;margin-bottom:4px}
+  .patient-name{font-family:"Playfair Display",serif;font-size:16px;font-weight:700;color:#1E4A4B;margin-bottom:3px}
   .patient-meta{font-size:11px;color:#666;line-height:1.7}
   .patient-condition{font-size:11px;color:#3D8E8F;margin-top:3px;font-style:italic}
   .plan-date{font-size:10px;color:#aaa;margin-top:6px;letter-spacing:1px}
   /* DIVIDER */
-  .divider{border:none;border-top:1px solid #e8e8e8;margin:0 0 28px}
+  .divider{border:none;border-top:1px solid #e8e8e8;margin:0 0 8px}
   /* SECTION */
-  .section-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#aaa;margin-bottom:18px}
+  .section-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#aaa;margin-bottom:12px}
   /* EXERCISE */
   .exercise{display:flex;gap:18px;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid #f0f0f0;page-break-inside:avoid}
   .exercise:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
@@ -457,7 +457,7 @@ export default function App() {
   .video-text{font-size:10px;color:#3D8E8F;line-height:1.5}
   .video-url{font-size:9px;color:#aaa;word-break:break-all;margin-top:1px}
   /* FOOTER SECTION */
-  .footer-divider{border:none;border-top:1px solid #e0e0e0;margin:36px 0 24px}
+  .footer-divider{border:none;border-top:1px solid #e0e0e0;margin:20px 0 16px}
   .footer-cols{display:flex;justify-content:space-between;gap:32px;margin-bottom:28px}
   .footer-col{flex:1}
   .footer-col-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:10px}
