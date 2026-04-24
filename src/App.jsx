@@ -433,12 +433,13 @@ export default function App() {
   /* DIVIDER */
   .divider{border:none;border-top:1px solid #e8e8e8;margin:0 0 8px}
   /* SECTION */
-  .section-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#aaa;margin-bottom:12px}
+  .section-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#aaa;margin-bottom:10px}
+  .exercises-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 20px}
   /* EXERCISE */
-  .exercise{display:flex;gap:18px;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid #f0f0f0;page-break-inside:avoid}
+  .exercise{display:flex;gap:14px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f0f0f0;page-break-inside:avoid}
   .exercise:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
-  .ex-img{width:88px;height:88px;border-radius:8px;object-fit:contain;background:#f7fbfb;flex-shrink:0;border:1px solid #e8f5f5;padding:4px}
-  .ex-img-placeholder{width:88px;height:88px;border-radius:8px;background:#f7fbfb;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:30px;border:1px solid #e8f5f5}
+  .ex-img{width:72px;height:72px;border-radius:8px;object-fit:contain;background:#f7fbfb;flex-shrink:0;border:1px solid #e8f5f5;padding:3px}
+  .ex-img-placeholder{width:72px;height:72px;border-radius:8px;background:#f7fbfb;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid #e8f5f5}
   .ex-body{flex:1;min-width:0}
   .ex-title{font-family:"Playfair Display",serif;font-size:14px;font-weight:700;color:#102828;margin-bottom:5px}
   .ex-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
@@ -447,22 +448,22 @@ export default function App() {
   .tag-diff-leicht{background:#e8f8f0;color:#2E7D32}
   .tag-diff-mittel{background:#fff3e0;color:#e65100}
   .tag-diff-schwer{background:#fde8e8;color:#c0392b}
-  .ex-desc{font-size:11.5px;color:#444;line-height:1.65;margin-bottom:10px}
+  .ex-desc{font-size:11px;color:#444;line-height:1.6;margin-bottom:8px}
   .steps-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#3D8E8F;margin-bottom:7px}
-  .step{display:flex;gap:9px;margin-bottom:5px;align-items:flex-start}
+  .step{display:flex;gap:8px;margin-bottom:4px;align-items:flex-start}
   .step-num{width:18px;height:18px;border-radius:50%;background:#5fb8b9;color:white;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-  .step-text{font-size:11.5px;color:#333;line-height:1.55}
+  .step-text{font-size:11px;color:#333;line-height:1.5}
   .video-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 10px;background:#f7fbfb;border-radius:7px;border:1px solid #e0f0f0}
   .video-qr{width:44px;height:44px;flex-shrink:0}
   .video-text{font-size:10px;color:#3D8E8F;line-height:1.5}
   .video-url{font-size:9px;color:#aaa;word-break:break-all;margin-top:1px}
   /* FOOTER SECTION */
-  .footer-divider{border:none;border-top:1px solid #e0e0e0;margin:20px 0 16px}
-  .footer-cols{display:flex;justify-content:space-between;gap:32px;margin-bottom:28px}
+  .footer-divider{border:none;border-top:1px solid #e0e0e0;margin:14px 0 10px}
+  .footer-cols{display:flex;justify-content:center;gap:48px;margin-bottom:12px}
   .footer-col{flex:1}
-  .footer-col-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:10px}
+  .footer-col-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:6px}
   .qr-box{display:flex;flex-direction:column;align-items:center;gap:6px}
-  .qr-img{width:72px;height:72px}
+  .qr-img{width:52px;height:52px}
   .qr-label{font-size:9px;color:#888;text-align:center;line-height:1.4}
   .footer-note{font-size:10px;color:#aaa;text-align:center;padding-top:18px;border-top:1px solid #f0f0f0;line-height:1.7}.print-footer{display:none;position:fixed;bottom:0;left:0;right:0;padding:6px 28px;background:white;border-top:1px solid #eee;font-size:8px;color:#aaa;font-family:sans-serif;display:flex;justify-content:space-between;align-items:center}
   @media print{body{padding:20px 28px}@page{margin:0.8cm}.no-print{display:none}.print-footer{display:block!important}}
@@ -499,6 +500,7 @@ export default function App() {
 <div class="section-label">H&nbsp;E&nbsp;I&nbsp;M&nbsp;Ü&nbsp;B&nbsp;U&nbsp;N&nbsp;G&nbsp;E&nbsp;N &nbsp;·&nbsp; ${patExercises.length} Übung${patExercises.length!==1?"en":""}</div>
 
 <!-- EXERCISES -->
+<div class="exercises-grid">
 ${patExercises.map((ex) => `
 <div class="exercise">
   ${ex.image_url
@@ -530,6 +532,7 @@ ${patExercises.map((ex) => `
       </div>` : ""}
   </div>
 </div>`).join("")}
+</div>
 
 <!-- FOOTER -->
 <div class="footer-divider"></div>
