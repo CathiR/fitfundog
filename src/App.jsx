@@ -265,6 +265,8 @@ export default function App() {
   const [ownerPatient,setOwnerPatient]=useState(null);
   const [exercises,setExercises]=useState([]);
   const [templates,setTemplates]=useState([]);
+  const [planTemplates,setPlanTemplates]=useState([]);
+  const [planTemplateExercises,setPlanTemplateExercises]=useState([]);
   const [doneLogs,setDoneLogs]=useState([]);
   const [historyLogs,setHistoryLogs]=useState([]);
   const [feedbacks,setFeedbacks]=useState([]);
@@ -296,6 +298,15 @@ export default function App() {
   const [editPatientData,setEditPatientData]=useState(null);
   const [newTemplate,setNewTemplate]=useState(EMPTY_TEMPLATE);
   const [editTemplateData,setEditTemplateData]=useState(null);
+  const [propagateTemplateUpdate,setPropagateTemplateUpdate]=useState(false);
+  const EMPTY_PLAN={title:"",note:""};
+  const [newPlan,setNewPlan]=useState(EMPTY_PLAN);
+  const [editPlanData,setEditPlanData]=useState(null);
+  const [planExerciseDraft,setPlanExerciseDraft]=useState([]);
+  const [selectedPlanTemplate,setSelectedPlanTemplate]=useState(null);
+  const [planAssignState,setPlanAssignState]=useState(null);
+  const [planAssignPatient,setPlanAssignPatient]=useState(null);
+  const [planAssignSearch,setPlanAssignSearch]=useState("");
   const [langOpen,setLangOpen]=useState(false);
   const [filterCats,setFilterCats]=useState([]);
   const [filterRegions,setFilterRegions]=useState([]);
@@ -360,14 +371,16 @@ export default function App() {
     setLoading(true);
     const uid=userId;
     try{
-      const [{data:pd},{data:ed},{data:ld},{data:td},{data:ue},{data:hl},{data:fb}]=await Promise.all([
+      const [{data:pd},{data:ed},{data:ld},{data:td},{data:ue},{data:hl},{data:fb},{data:ptd},{data:pte}]=await Promise.all([
         supabase.from("patients").select("*").order("name"),
         supabase.from("exercises").select("*").order("created_at"),
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
         supabase.from("exercise_templates").select("*").order("title"),
         supabase.rpc("get_user_emails"),
         supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-27);return d.toISOString().split("T")[0];})()),
-        supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false})
+        supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false}),
+        supabase.from("plan_templates").select("*").order("created_at"),
+        supabase.from("plan_template_exercises").select("*").order("sort_order")
       ]);
       const pl=pd||[];
       setPatients(pl);
@@ -377,6 +390,8 @@ export default function App() {
       setFeedbacks(fb||[]);
       setTemplates(td||[]);
       setUserEmails(ue||[]);
+      setPlanTemplates(ptd||[]);
+      setPlanTemplateExercises(pte||[]);
 
       // Find owner's patient by userId
       let ownerPat=null;
@@ -748,7 +763,8 @@ ${patExercises.map((ex) => `
       categories:selectedTemplate.categories||[],target_regions:selectedTemplate.target_regions||[],
       difficulty:selectedTemplate.difficulty,description:selectedTemplate.description,
       instructions:selectedTemplate.instructions,image_url:selectedTemplate.image_url||null,
-      video_url:selectedTemplate.video_url||null,duration,repeat_count:repeatCount
+      video_url:selectedTemplate.video_url||null,duration,repeat_count:repeatCount,
+      template_id:selectedTemplate.id||null
     }).select().single();
     if(!error&&data)setExercises(prev=>[...prev,data]);
     setSaving(false);closeSheet();
@@ -774,14 +790,28 @@ ${patExercises.map((ex) => `
   const updateTemplate=async()=>{
     if(!editTemplateData?.title)return;
     setSaving(true);
-    const{data,error}=await supabase.from("exercise_templates").update({
+    const fields={
       title:editTemplateData.title,categories:editTemplateData.categories||[],
       target_regions:editTemplateData.target_regions||[],difficulty:editTemplateData.difficulty,
       description:editTemplateData.description,instructions:(editTemplateData.instructions||[]).filter(Boolean),
       image_url:editTemplateData.image_url||null,video_url:editTemplateData.video_url||null
-    }).eq("id",editTemplateData.id).select().single();
-    if(!error&&data)setTemplates(prev=>prev.map(t=>t.id===data.id?data:t));
-    setSaving(false);closeSheet();
+    };
+    const{data,error}=await supabase.from("exercise_templates").update(fields).eq("id",editTemplateData.id).select().single();
+    if(!error&&data){
+      setTemplates(prev=>prev.map(t=>t.id===data.id?data:t));
+      if(propagateTemplateUpdate){
+        // Update all exercises that have this template_id
+        await supabase.from("exercises").update({
+          title:fields.title,categories:fields.categories,target_regions:fields.target_regions,
+          difficulty:fields.difficulty,description:fields.description,instructions:fields.instructions,
+          image_url:fields.image_url,video_url:fields.video_url
+        }).eq("template_id",editTemplateData.id);
+        // Reload exercises to reflect changes
+        const{data:ed}=await supabase.from("exercises").select("*").order("created_at");
+        if(ed)setExercises(ed);
+      }
+    }
+    setSaving(false);setPropagateTemplateUpdate(false);closeSheet();
   };
 
   const deleteTemplate=async(tid)=>{
@@ -789,6 +819,60 @@ ${patExercises.map((ex) => `
     await supabase.from("exercise_templates").delete().eq("id",tid);
     setTemplates(prev=>prev.filter(t=>t.id!==tid));
     setDeleting(null);closeSheet();
+  };
+
+  // ── Plan Template CRUD ──
+  const addPlanTemplate=async()=>{
+    if(!newPlan.title)return;
+    setSaving(true);
+    const{data:planData,error:planErr}=await supabase.from("plan_templates").insert({title:newPlan.title,note:newPlan.note||null}).select().single();
+    if(planErr||!planData){alert("Fehler: "+(planErr?.message||"Unbekannt"));setSaving(false);return;}
+    // insert exercises
+    if(planExerciseDraft.length>0){
+      const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:planData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,sort_order:i}));
+      await supabase.from("plan_template_exercises").insert(rows);
+    }
+    await loadAll(ADMIN_ID);
+    setSaving(false);setNewPlan(EMPTY_PLAN);setPlanExerciseDraft([]);setSelectedPlanTemplate(null);closeSheet();
+  };
+
+  const updatePlanTemplate=async()=>{
+    if(!editPlanData?.title)return;
+    setSaving(true);
+    await supabase.from("plan_templates").update({title:editPlanData.title,note:editPlanData.note||null}).eq("id",editPlanData.id);
+    // Replace exercises: delete old, insert new
+    await supabase.from("plan_template_exercises").delete().eq("plan_template_id",editPlanData.id);
+    if(planExerciseDraft.length>0){
+      const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:editPlanData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,sort_order:i}));
+      await supabase.from("plan_template_exercises").insert(rows);
+    }
+    await loadAll(ADMIN_ID);
+    setSaving(false);setEditPlanData(null);setPlanExerciseDraft([]);setSelectedPlanTemplate(null);closeSheet();
+  };
+
+  const deletePlanTemplate=async(pid)=>{
+    setDeleting(pid);
+    await supabase.from("plan_template_exercises").delete().eq("plan_template_id",pid);
+    await supabase.from("plan_templates").delete().eq("id",pid);
+    setPlanTemplates(prev=>prev.filter(p=>p.id!==pid));
+    setPlanTemplateExercises(prev=>prev.filter(p=>p.plan_template_id!==pid));
+    setDeleting(null);closeSheet();
+  };
+
+  const assignPlanToPatient=async()=>{
+    if(!planAssignState||!planAssignPatient)return;
+    setSaving(true);
+    const rows=planAssignState.exercises.map(ex=>({
+      patient_id:planAssignPatient.id,
+      title:ex.title,categories:ex.categories||[],target_regions:ex.target_regions||[],
+      difficulty:ex.difficulty,description:ex.description,instructions:ex.instructions||[],
+      image_url:ex.image_url||null,video_url:ex.video_url||null,
+      duration:ex.duration||"",repeat_count:ex.repeat_count||1,
+      template_id:ex.exercise_template_id||null
+    }));
+    const{data:newExercises,error}=await supabase.from("exercises").insert(rows).select();
+    if(!error&&newExercises)setExercises(prev=>[...prev,...newExercises]);
+    setSaving(false);setPlanAssignState(null);setPlanAssignPatient(null);setPlanAssignSearch("");closeSheet();
   };
 
   const saveFeedback=async()=>{
@@ -1181,9 +1265,9 @@ ${patExercises.map((ex) => `
       {view==="therapist"&&isAdmin&&(
         <div style={{maxWidth:480,margin:"0 auto",padding:"0 0 80px"}}>
           <div style={{display:"flex",gap:0,background:"white",borderBottom:`2px solid ${LIGHT}`,padding:"0 14px"}}>
-            {[["patients","Patienten"],["exercises","Übungen"],["assign","Zuweisen"]].map(([tab,lb])=>(
-              <button key={tab} className="btn" onClick={()=>setPracticeTab(tab)} style={{flex:1,padding:"13px 8px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:practiceTab===tab?BRAND:"#3D7070",borderBottom:practiceTab===tab?`2px solid ${BRAND}`:"2px solid transparent",marginBottom:-2,display:"flex",alignItems:"center",justifyContent:"center",gap:5}}>
-                <Icon name={tab==="patients"?"user":tab==="exercises"?"tip":"assign"} size={14} color={practiceTab===tab?BRAND:"#3D7070"}/>{lb}
+            {[["patients","user","Patienten"],["exercises","tip","Übungen"],["plans","star","Pläne"],["assign","assign","Zuweisen"]].map(([tab,ic,lb])=>(
+              <button key={tab} className="btn" onClick={()=>setPracticeTab(tab)} style={{flex:1,padding:"13px 6px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:practiceTab===tab?BRAND:"#3D7070",borderBottom:practiceTab===tab?`2px solid ${BRAND}`:"2px solid transparent",marginBottom:-2,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                <Icon name={ic} size={13} color={practiceTab===tab?BRAND:"#3D7070"}/>{lb}
               </button>
             ))}
           </div>
@@ -1246,12 +1330,76 @@ ${patExercises.map((ex) => `
                       </div>
                     </div>
                     <div style={{display:"flex",gap:5}}>
-                      <button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:["","",""]});setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
+                      <button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:["","",""]});setPropagateTemplateUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
                       <button className="iBtn" onClick={()=>{setSheetData(tmpl);setSheet("confirmDeleteTmpl");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                     </div>
                   </div>
                 ))}
                 {templates.length===0&&<div className="card" style={{padding:24,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Übungsvorlagen erstellt.</div>}
+              </div>
+            </div>
+          )}
+
+          {practiceTab==="plans"&&(
+            <div style={{padding:"16px 14px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK}}>Behandlungspläne</div>
+                <button className="btn" onClick={()=>{setNewPlan(EMPTY_PLAN);setPlanExerciseDraft([]);setSelectedPlanTemplate(null);setSheet("addPlan");}} style={{background:BRAND,color:"#102828",borderRadius:10,padding:"9px 14px",fontSize:12,fontFamily:"'DM Sans',sans-serif",fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
+                  <Icon name="plus" size={14} color="#102828"/> Neuer Plan
+                </button>
+              </div>
+              {planTemplates.length===0&&<div className="card" style={{padding:24,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Behandlungspläne erstellt.</div>}
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {planTemplates.map(plan=>{
+                  const planExs=planTemplateExercises.filter(pe=>pe.plan_template_id===plan.id);
+                  return(
+                    <div key={plan.id} className="card" style={{padding:"14px 16px"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:planExs.length>0?10:0}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#102828"}}>{plan.title}</div>
+                          {plan.note&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginTop:3}}>{plan.note}</div>}
+                          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:ACCENT,marginTop:4}}>{planExs.length} Übung{planExs.length!==1?"en":""}</div>
+                        </div>
+                        <div style={{display:"flex",gap:5,flexShrink:0}}>
+                          <button className="btn" onClick={()=>{
+                            const exItems=planExs.map(pe=>{
+                              const tmpl=templates.find(t=>t.id===pe.exercise_template_id);
+                              return{...pe,title:tmpl?.title||"",categories:tmpl?.categories||[],target_regions:tmpl?.target_regions||[],difficulty:tmpl?.difficulty||"Leicht",description:tmpl?.description||"",instructions:tmpl?.instructions||[],image_url:tmpl?.image_url||null,video_url:tmpl?.video_url||null,duration:pe.default_duration||"",repeat_count:pe.default_repeat_count||1};
+                            });
+                            setPlanAssignState({plan,exercises:exItems});
+                            setPlanAssignPatient(null);setPlanAssignSearch("");
+                            setSheet("assignPlan");
+                          }} style={{background:DARK,color:"white",borderRadius:9,padding:"6px 12px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",gap:5,cursor:"pointer",border:"none"}}>
+                            <Icon name="assign" size={12} color="white"/> Zuweisen
+                          </button>
+                          <button className="iBtn" onClick={()=>{
+                            setEditPlanData({...plan});
+                            const draft=planExs.map(pe=>({exercise_template_id:pe.exercise_template_id,default_duration:pe.default_duration||"",default_repeat_count:pe.default_repeat_count||1,sort_order:pe.sort_order}));
+                            setPlanExerciseDraft(draft);setSelectedPlanTemplate(null);setSheet("editPlan");
+                          }} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
+                          <button className="iBtn" onClick={()=>{setSheetData(plan);setSheet("confirmDeletePlan");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
+                        </div>
+                      </div>
+                      {planExs.length>0&&(
+                        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                          {planExs.map((pe,idx)=>{
+                            const tmpl=templates.find(t=>t.id===pe.exercise_template_id);
+                            return(
+                              <div key={pe.id||idx} style={{display:"flex",alignItems:"center",gap:8,background:LIGHT,borderRadius:9,padding:"7px 10px"}}>
+                                {tmpl?.image_url?<img src={tmpl.image_url} alt={tmpl.title} style={{width:26,height:26,borderRadius:6,objectFit:"contain",flexShrink:0,background:"white",padding:1}}/>
+                                  :<div style={{width:26,height:26,borderRadius:6,background:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={12} color={ACCENT}/></div>}
+                                <div style={{flex:1,minWidth:0}}>
+                                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{tmpl?.title||"Unbekannte Übung"}</div>
+                                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{pe.default_duration||"—"} · {pe.default_repeat_count||1}× pro Woche</div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -1581,6 +1729,14 @@ ${patExercises.map((ex) => `
               <div><SL text="Schritte"/>{(editTemplateData.instructions||["","",""]).map((s,i)=><input key={i} value={s} onChange={e=>setEditTemplateData(p=>({...p,instructions:(p.instructions||[]).map((x,j)=>j===i?e.target.value:x)}))} placeholder={`Schritt ${i+1}...`} style={{...inp,marginBottom:6}}/>)}</div>
               <div><SL text="Bild-URL"/><input value={editTemplateData.image_url||""} onChange={e=>setEditTemplateData(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
               <div><SL text="Video-URL"/><input value={editTemplateData.video_url||""} onChange={e=>setEditTemplateData(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/..." style={inp}/></div>
+              {/* Propagation checkbox */}
+              <label style={{display:"flex",alignItems:"flex-start",gap:10,background:propagateTemplateUpdate?"#FFF8E1":"#F8F8F8",border:`1.5px solid ${propagateTemplateUpdate?"#FFB300":"#B8DFE0"}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
+                <input type="checkbox" checked={propagateTemplateUpdate} onChange={e=>setPropagateTemplateUpdate(e.target.checked)} style={{width:18,height:18,marginTop:1,flexShrink:0,accentColor:BRAND,cursor:"pointer"}}/>
+                <div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#102828"}}>Änderungen auf bestehende Patienten-Übungen übertragen</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",marginTop:3}}>Alle Übungen, die auf dieser Vorlage basieren, werden ebenfalls aktualisiert (Titel, Beschreibung, Schritte, Bild, Video). Dauer und Häufigkeit bleiben unverändert.</div>
+                </div>
+              </label>
               <button className="btn" onClick={updateTemplate} disabled={saving||!editTemplateData.title} style={{width:"100%",padding:"14px",borderRadius:12,background:editTemplateData.title?BRAND:"#B8DFE0",color:editTemplateData.title?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:"Änderungen speichern"}
               </button>
@@ -1593,6 +1749,124 @@ ${patExercises.map((ex) => `
       {sheet==="confirmDeleteEx"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übung entfernen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft entfernt.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteExercise(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.remove}</button></div></div></div>)}
       {sheet==="confirmDeletePt"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Patient löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.name}</strong> und alle Übungen werden dauerhaft gelöscht.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deletePatient(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
       {sheet==="confirmDeleteTmpl"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übungsvorlage löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird aus der Bibliothek gelöscht. Bereits zugewiesene Übungen bleiben erhalten.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
+      {sheet==="confirmDeletePlan"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Plan löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft gelöscht. Bereits zugewiesene Patienten-Übungen bleiben erhalten.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deletePlanTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
+
+      {/* SHEET: ADD PLAN */}
+      {(sheet==="addPlan"||sheet==="editPlan")&&(
+        <div className="overlay" onClick={closeSheet}>
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title={sheet==="addPlan"?"Neuer Behandlungsplan":"Plan bearbeiten"} onClose={closeSheet}/>
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              <div><SL text="Name des Plans *"/><input value={sheet==="addPlan"?newPlan.title:editPlanData?.title||""} onChange={e=>sheet==="addPlan"?setNewPlan(p=>({...p,title:e.target.value})):setEditPlanData(p=>({...p,title:e.target.value}))} placeholder="z.B. Hüft-Reha Phase 1" style={inp}/></div>
+              <div><SL text="Notiz (optional)"/><textarea value={sheet==="addPlan"?newPlan.note:editPlanData?.note||""} onChange={e=>sheet==="addPlan"?setNewPlan(p=>({...p,note:e.target.value})):setEditPlanData(p=>({...p,note:e.target.value}))} rows={2} placeholder="z.B. Für Hunde nach OP, Woche 1–4" style={{...inp,resize:"vertical"}}/></div>
+
+              {/* Exercise list in plan */}
+              <div>
+                <SL text="Übungen im Plan"/>
+                {planExerciseDraft.length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:ACCENT,textAlign:"center",padding:"8px 0"}}>Noch keine Übungen hinzugefügt.</div>}
+                <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:8}}>
+                  {planExerciseDraft.map((ex,idx)=>{
+                    const tmpl=templates.find(t=>t.id===ex.exercise_template_id);
+                    return(
+                      <div key={idx} style={{background:LIGHT,borderRadius:10,padding:"8px 10px"}}>
+                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828",marginBottom:6}}>{tmpl?.title||"Unbekannte Übung"}</div>
+                        <div style={{display:"flex",alignItems:"center",gap:6}}>
+                          <input value={ex.default_duration} onChange={e=>setPlanExerciseDraft(prev=>prev.map((x,i)=>i===idx?{...x,default_duration:e.target.value}:x))} placeholder="Dauer..." style={{...inp,fontSize:12,padding:"4px 8px",flex:1}}/>
+                          <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
+                            <button className="btn" onClick={()=>setPlanExerciseDraft(prev=>prev.map((x,i)=>i===idx?{...x,default_repeat_count:Math.max(1,(x.default_repeat_count||1)-1)}:x))} style={{width:22,height:22,borderRadius:5,background:"white",border:`1px solid #B8DFE0`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:DARK}}>−</button>
+                            <span style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:DARK,minWidth:20,textAlign:"center"}}>{ex.default_repeat_count||1}x</span>
+                            <button className="btn" onClick={()=>setPlanExerciseDraft(prev=>prev.map((x,i)=>i===idx?{...x,default_repeat_count:Math.min(7,(x.default_repeat_count||1)+1)}:x))} style={{width:22,height:22,borderRadius:5,background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#102828"}}>+</button>
+                          </div>
+                          <button className="btn" onClick={()=>setPlanExerciseDraft(prev=>prev.filter((_,i)=>i!==idx))} style={{width:22,height:22,borderRadius:5,background:"#FFE8E8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                            <Icon name="trash" size={11} color="#C0392B"/>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Add exercise to plan */}
+                <div style={{background:PALE,borderRadius:10,padding:"10px",border:`1.5px dashed ${BRAND}50`}}>
+                  <SL text="Übung hinzufügen"/>
+                  <div style={{display:"flex",flexDirection:"column",gap:4,maxHeight:200,overflowY:"auto",border:`1px solid ${LIGHT}`,borderRadius:9,padding:4,background:"white"}}>
+                    {templates.map(tmpl=>(
+                      <div key={tmpl.id} className={"tmpl-row"+(selectedPlanTemplate?.id===tmpl.id?" sel":"")} onClick={()=>setSelectedPlanTemplate(selectedPlanTemplate?.id===tmpl.id?null:tmpl)}>
+                        {tmpl.image_url?<img src={tmpl.image_url} alt={tmpl.title} style={{width:26,height:26,borderRadius:5,objectFit:"contain",flexShrink:0,background:LIGHT,padding:1}}/>
+                          :<div style={{width:26,height:26,borderRadius:5,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={12} color={ACCENT}/></div>}
+                        <div style={{flex:1,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828"}}>{tmpl.title}</div>
+                        {selectedPlanTemplate?.id===tmpl.id&&<Icon name="check" size={13} color={BRAND}/>}
+                      </div>
+                    ))}
+                    {templates.length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:ACCENT,textAlign:"center",padding:"10px 0"}}>Keine Übungsvorlagen vorhanden.</div>}
+                  </div>
+                  <button className="btn" disabled={!selectedPlanTemplate} onClick={()=>{
+                    if(!selectedPlanTemplate)return;
+                    setPlanExerciseDraft(prev=>[...prev,{exercise_template_id:selectedPlanTemplate.id,default_duration:"",default_repeat_count:1,sort_order:prev.length}]);
+                    setSelectedPlanTemplate(null);
+                  }} style={{marginTop:8,width:"100%",padding:"9px",borderRadius:9,background:selectedPlanTemplate?BRAND:"#B8DFE0",color:selectedPlanTemplate?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                    <Icon name="plus" size={13} color={selectedPlanTemplate?"#102828":"#B8DFE0"}/> Zum Plan hinzufügen
+                  </button>
+                </div>
+              </div>
+
+              <button className="btn" disabled={saving||(sheet==="addPlan"?!newPlan.title:!editPlanData?.title)} onClick={sheet==="addPlan"?addPlanTemplate:updatePlanTemplate}
+                style={{width:"100%",padding:"14px",borderRadius:12,background:(sheet==="addPlan"?newPlan.title:editPlanData?.title)?BRAND:"#B8DFE0",color:(sheet==="addPlan"?newPlan.title:editPlanData?.title)?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+                {saving?t.saving:sheet==="addPlan"?"Plan speichern":"Änderungen speichern"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SHEET: ASSIGN PLAN TO PATIENT */}
+      {sheet==="assignPlan"&&planAssignState&&(
+        <div className="overlay" onClick={closeSheet}>
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title={`Plan: ${planAssignState.plan.title}`} onClose={closeSheet}/>
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              <div>
+                <SL text="Patient auswählen"/>
+                <SearchInput value={planAssignSearch} onChange={setPlanAssignSearch} placeholder="Name oder Besitzer..."/>
+                <CustomSelect value={planAssignPatient?.id||""} onChange={e=>setPlanAssignPatient(patients.find(p=>p.id===e.target.value)||null)}>
+                  <option value="">Patient auswählen...</option>
+                  {patients.filter(p=>!planAssignSearch||p.name.toLowerCase().includes(planAssignSearch.toLowerCase())||p.owner.toLowerCase().includes(planAssignSearch.toLowerCase())).map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
+                </CustomSelect>
+              </div>
+
+              {planAssignState.exercises.length>0&&(
+                <div>
+                  <SL text="Übungen anpassen"/>
+                  <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                    {planAssignState.exercises.map((ex,idx)=>(
+                      <div key={idx} style={{background:PALE,borderRadius:10,padding:"8px 10px",border:`1.5px solid ${LIGHT}`}}>
+                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828",marginBottom:6}}>{ex.title}</div>
+                        <div style={{display:"flex",alignItems:"center",gap:6}}>
+                          <input value={ex.duration} onChange={e=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,duration:e.target.value}:x)}))} placeholder="Dauer..." style={{...inp,fontSize:12,padding:"4px 8px",flex:1}}/>
+                          <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
+                            <button className="btn" onClick={()=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,repeat_count:Math.max(1,(x.repeat_count||1)-1)}:x)}))} style={{width:22,height:22,borderRadius:5,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:DARK}}>−</button>
+                            <span style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:DARK,minWidth:20,textAlign:"center"}}>{ex.repeat_count||1}x</span>
+                            <button className="btn" onClick={()=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,repeat_count:Math.min(7,(x.repeat_count||1)+1)}:x)}))} style={{width:22,height:22,borderRadius:5,background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#102828"}}>+</button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {planAssignState.exercises.length===0&&(
+                <div style={{background:LIGHT,borderRadius:10,padding:"14px",textAlign:"center",fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070"}}>Dieser Plan enthält noch keine Übungen.</div>
+              )}
+
+              <button className="btn" disabled={saving||!planAssignPatient||planAssignState.exercises.length===0} onClick={assignPlanToPatient}
+                style={{width:"100%",padding:"14px",borderRadius:12,background:(planAssignPatient&&planAssignState.exercises.length>0)?BRAND:"#B8DFE0",color:(planAssignPatient&&planAssignState.exercises.length>0)?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+                {saving?t.saving:`${planAssignState.exercises.length} Übung${planAssignState.exercises.length!==1?"en":""} zuweisen`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SHEET: VIEW FEEDBACK (Therapist) */}
       {viewFeedbackEx&&(
