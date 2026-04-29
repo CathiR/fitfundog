@@ -17,7 +17,7 @@ const LOGO_URL = "https://tkgwdmntglzfeulpgfpw.supabase.co/storage/v1/object/pub
 const CATEGORIES = ["Regeneration", "Balance", "Kräftigung", "Koordination", "Mobilisation"];
 const TARGET_REGIONS = ["Ganzer Körper", "Hinterhand", "Vorderhand", "Rumpf", "Vorderpfoten", "Rücken"];
 const EMPTY_PATIENT = { name: "", breed: "", age: "", owner: "", condition: "", avatar: "🐕", ownerEmail: "", ownerPassword: "" };
-const EMPTY_TEMPLATE = { title: "", categories: [], target_regions: [], difficulty: "Leicht", description: "", instructions: ["","",""], image_url: "", video_url: "" };
+const EMPTY_TEMPLATE = { title: "", categories: [], target_regions: [], difficulty: "Leicht", description: "", instructions: [""], image_url: "", video_url: "" };
 const difficultyColor = { "Leicht": BRAND, "Mittel": MID, "Schwer": "#C0392B" };
 
 // ── SearchInput OUTSIDE App to prevent focus loss on re-render ──
@@ -1330,7 +1330,7 @@ ${patExercises.map((ex) => `
                       </div>
                     </div>
                     <div style={{display:"flex",gap:5}}>
-                      <button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:["","",""]});setPropagateTemplateUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
+                      <button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setPropagateTemplateUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
                       <button className="iBtn" onClick={()=>{setSheetData(tmpl);setSheet("confirmDeleteTmpl");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                     </div>
                   </div>
@@ -1700,7 +1700,21 @@ ${patExercises.map((ex) => `
                 </CustomSelect>
               </div>
               <div><SL text="Beschreibung"/><textarea value={newTemplate.description} onChange={e=>setNewTemplate(p=>({...p,description:e.target.value}))} rows={3} placeholder="Kurze Erklärung..." style={{...inp,resize:"vertical"}}/></div>
-              <div><SL text="Schritte"/>{newTemplate.instructions.map((s,i)=><input key={i} value={s} onChange={e=>setNewTemplate(p=>({...p,instructions:p.instructions.map((x,j)=>j===i?e.target.value:x)}))} placeholder={`Schritt ${i+1}...`} style={{...inp,marginBottom:6}}/>)}</div>
+              <div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+                  <SL text="Schritte"/>
+                  <button className="btn" onClick={()=>setNewTemplate(p=>({...p,instructions:[...p.instructions,""]}))} style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:8,background:BRAND+"20",fontSize:12,fontWeight:700,fontFamily:"'DM Sans',sans-serif",color:MID}}>
+                    <Icon name="plus" size={12} color={MID}/>Schritt
+                  </button>
+                </div>
+                {newTemplate.instructions.map((s,i)=>(
+                  <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
+                    <div style={{width:22,height:22,borderRadius:"50%",background:BRAND,color:"white",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'DM Sans',sans-serif"}}>{i+1}</div>
+                    <input value={s} onChange={e=>setNewTemplate(p=>({...p,instructions:p.instructions.map((x,j)=>j===i?e.target.value:x)}))} placeholder={`Schritt ${i+1}...`} style={{...inp,flex:1,marginBottom:0}}/>
+                    {newTemplate.instructions.length>1&&<button className="btn" onClick={()=>setNewTemplate(p=>({...p,instructions:p.instructions.filter((_,j)=>j!==i)}))} style={{width:28,height:28,borderRadius:7,background:"#FFE8E8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="close" size={12} color="#C0392B"/></button>}
+                  </div>
+                ))}
+              </div>
               <div><SL text="Bild-URL"/><input value={newTemplate.image_url} onChange={e=>setNewTemplate(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
               <div><SL text="Video-URL (optional)"/><input value={newTemplate.video_url} onChange={e=>setNewTemplate(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/..." style={inp}/></div>
               <button className="btn" onClick={addTemplate} disabled={saving||!newTemplate.title} style={{width:"100%",padding:"14px",borderRadius:12,background:newTemplate.title?BRAND:"#B8DFE0",color:newTemplate.title?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
@@ -1726,7 +1740,22 @@ ${patExercises.map((ex) => `
                 </CustomSelect>
               </div>
               <div><SL text="Beschreibung"/><textarea value={editTemplateData.description||""} onChange={e=>setEditTemplateData(p=>({...p,description:e.target.value}))} rows={3} style={{...inp,resize:"vertical"}}/></div>
-              <div><SL text="Schritte"/>{(editTemplateData.instructions||["","",""]).map((s,i)=><input key={i} value={s} onChange={e=>setEditTemplateData(p=>({...p,instructions:(p.instructions||[]).map((x,j)=>j===i?e.target.value:x)}))} placeholder={`Schritt ${i+1}...`} style={{...inp,marginBottom:6}}/>)}</div>
+              <div>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
+                  <SL text="Schritte"/>
+                  <button className="btn" onClick={()=>setEditTemplateData(p=>({...p,instructions:[...(p.instructions||[]),""]}))}
+                    style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:8,background:BRAND+"20",fontSize:12,fontWeight:700,fontFamily:"'DM Sans',sans-serif",color:MID}}>
+                    <Icon name="plus" size={12} color={MID}/>Schritt
+                  </button>
+                </div>
+                {(editTemplateData.instructions&&editTemplateData.instructions.length>0?editTemplateData.instructions:[""]).map((s,i)=>(
+                  <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
+                    <div style={{width:22,height:22,borderRadius:"50%",background:BRAND,color:"white",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'DM Sans',sans-serif"}}>{i+1}</div>
+                    <input value={s} onChange={e=>setEditTemplateData(p=>({...p,instructions:(p.instructions||[]).map((x,j)=>j===i?e.target.value:x)}))} placeholder={`Schritt ${i+1}...`} style={{...inp,flex:1,marginBottom:0}}/>
+                    {(editTemplateData.instructions||[]).length>1&&<button className="btn" onClick={()=>setEditTemplateData(p=>({...p,instructions:(p.instructions||[]).filter((_,j)=>j!==i)}))} style={{width:28,height:28,borderRadius:7,background:"#FFE8E8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="close" size={12} color="#C0392B"/></button>}
+                  </div>
+                ))}
+              </div>
               <div><SL text="Bild-URL"/><input value={editTemplateData.image_url||""} onChange={e=>setEditTemplateData(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
               <div><SL text="Video-URL"/><input value={editTemplateData.video_url||""} onChange={e=>setEditTemplateData(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/..." style={inp}/></div>
               {/* Propagation checkbox */}
@@ -1771,7 +1800,7 @@ ${patExercises.map((ex) => `
                       <div key={idx} style={{background:LIGHT,borderRadius:10,padding:"8px 10px"}}>
                         <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828",marginBottom:6}}>{tmpl?.title||"Unbekannte Übung"}</div>
                         <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          <input value={ex.default_duration} onChange={e=>setPlanExerciseDraft(prev=>prev.map((x,i)=>i===idx?{...x,default_duration:e.target.value}:x))} placeholder="Dauer..." style={{...inp,fontSize:12,padding:"4px 8px",flex:1}}/>
+                          <input value={ex.default_duration} onChange={e=>setPlanExerciseDraft(prev=>prev.map((x,i)=>i===idx?{...x,default_duration:e.target.value}:x))} placeholder="Dauer..." style={{...inp,fontSize:16,padding:"4px 8px",flex:1}}/>
                           <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
                             <button className="btn" onClick={()=>setPlanExerciseDraft(prev=>prev.map((x,i)=>i===idx?{...x,default_repeat_count:Math.max(1,(x.default_repeat_count||1)-1)}:x))} style={{width:22,height:22,borderRadius:5,background:"white",border:`1px solid #B8DFE0`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:DARK}}>−</button>
                             <span style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:DARK,minWidth:20,textAlign:"center"}}>{ex.default_repeat_count||1}x</span>
@@ -1842,7 +1871,7 @@ ${patExercises.map((ex) => `
                       <div key={idx} style={{background:PALE,borderRadius:10,padding:"8px 10px",border:`1.5px solid ${LIGHT}`}}>
                         <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828",marginBottom:6}}>{ex.title}</div>
                         <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          <input value={ex.duration} onChange={e=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,duration:e.target.value}:x)}))} placeholder="Dauer..." style={{...inp,fontSize:12,padding:"4px 8px",flex:1}}/>
+                          <input value={ex.duration} onChange={e=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,duration:e.target.value}:x)}))} placeholder="Dauer..." style={{...inp,fontSize:16,padding:"4px 8px",flex:1}}/>
                           <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
                             <button className="btn" onClick={()=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,repeat_count:Math.max(1,(x.repeat_count||1)-1)}:x)}))} style={{width:22,height:22,borderRadius:5,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:DARK}}>−</button>
                             <span style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:DARK,minWidth:20,textAlign:"center"}}>{ex.repeat_count||1}x</span>
