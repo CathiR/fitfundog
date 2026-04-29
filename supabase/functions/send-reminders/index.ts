@@ -2,8 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const VAPID_PUBLIC_KEY = Deno.env.get("BPOAPZ3DeTf-FL_rmbeEufuh-bhAEH-zrUR-TPTsRVfNCotxh_jJ-7A5AHu9pWNyM24HxX_E5Ls1dy4Mt82b1F4VAPID_PUBLIC_KEY")!;
-const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PJd6SGIk3DXRAaM1ke72vlKeHZXicbjx76cYe7OU0W60RIVATE_KEY")!;
+const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY")!;
+const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const VAPID_SUBJECT = "mailto:fitfundog@freenet.de";
 
 // ── VAPID JWT helper ──
@@ -101,6 +101,7 @@ Deno.serve(async (req) => {
 
   // Get all subscriptions where reminder_time matches current hour (in user's timezone)
   const { data: subs } = await supabase.from("push_subscriptions").select("*");
+  console.log(`send-reminders: ${subs?.length ?? 0} subscriptions found, utc=${nowUtc.toISOString()}`);
   if (!subs?.length) return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
 
   for (const sub of subs) {
@@ -110,7 +111,8 @@ Deno.serve(async (req) => {
       const userHour = userNow.getHours();
       const userMin = userNow.getMinutes();
       const [remHour, remMin] = (sub.reminder_time || "09:00").split(":").map(Number);
-      if (userHour !== remHour || userMin > 5) continue; // only fire within 5-min window
+      // Fire within a 2-minute window around reminder_time to account for cron timing drift
+      if (userHour !== remHour || Math.abs(userMin - remMin) > 2) continue;
 
       // Get patient for this user
       const { data: patients } = await supabase.from("patients").select("id,name").eq("user_id", sub.user_id);
@@ -139,7 +141,9 @@ Deno.serve(async (req) => {
           url: "/"
         });
 
+        console.log(`Sending push to user ${sub.user_id}, status will follow`);
         const status = await sendPush(sub, payload);
+        console.log(`Push status: ${status}`);
         if (status < 300) sent++;
         else if (status === 410) {
           // Subscription expired – remove it
@@ -151,6 +155,7 @@ Deno.serve(async (req) => {
     }
   }
 
+  console.log(`send-reminders done: sent=${sent}, errors=${errors.length}`);
   return new Response(JSON.stringify({ sent, errors }), {
     status: 200,
     headers: { "Content-Type": "application/json" }
