@@ -647,25 +647,43 @@ ${patExercises.map((ex) => `
     return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
   }
 
+  const isPWA=()=>window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;
+
   const checkPushStatus=async()=>{
     if(!("serviceWorker" in navigator)||!("PushManager" in window))return;
-    const reg=await navigator.serviceWorker.ready;
-    const sub=await reg.pushManager.getSubscription();
-    if(sub){
-      setPushEnabled(true);
-      // Load saved time
-      const{data}=await supabase.from("push_subscriptions").select("reminder_time").eq("endpoint",sub.endpoint).maybeSingle();
-      if(data?.reminder_time)setPushTime(data.reminder_time.substring(0,5));
-    }
+    try{
+      const reg=await navigator.serviceWorker.ready;
+      const sub=await reg.pushManager.getSubscription();
+      if(sub){
+        setPushEnabled(true);
+        const{data}=await supabase.from("push_subscriptions").select("reminder_time").eq("endpoint",sub.endpoint).maybeSingle();
+        if(data?.reminder_time)setPushTime(data.reminder_time.substring(0,5));
+      }
+    }catch(e){console.error("checkPushStatus error",e);}
   };
 
   const enablePush=async()=>{
-    if(!("serviceWorker" in navigator)||!("PushManager" in window)){alert("Dein Browser unterstützt keine Push-Benachrichtigungen.");return;}
+    // iOS: must be running as PWA (added to home screen)
+    const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+    if(isIOS&&!isPWA()){
+      alert("Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.");
+      return;
+    }
+    if(!("serviceWorker" in navigator)||!("PushManager" in window)){
+      alert("Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.");
+      return;
+    }
     setPushLoading(true);
     try{
-      const permission=await Notification.requestPermission();
-      if(permission!=="granted"){setPushLoading(false);return;}
+      // Ensure SW is ready before requesting permission
       const reg=await navigator.serviceWorker.ready;
+      const permission=await Notification.requestPermission();
+      if(permission==="denied"){
+        alert("Benachrichtigungen sind blockiert. Bitte erlaube sie in den iPhone-Einstellungen unter Mitteilungen → FitFunDog.");
+        setPushLoading(false);
+        return;
+      }
+      if(permission!=="granted"){setPushLoading(false);return;}
       const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
       const{endpoint,keys}=sub.toJSON();
       await supabase.from("push_subscriptions").upsert({
@@ -673,7 +691,10 @@ ${patExercises.map((ex) => `
         reminder_time:pushTime,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone
       },{onConflict:"user_id,endpoint"});
       setPushEnabled(true);
-    }catch(e){console.error(e);}
+    }catch(e){
+      console.error("enablePush error",e);
+      alert("Fehler beim Aktivieren: "+e.message);
+    }
     setPushLoading(false);
   };
 
@@ -1222,6 +1243,11 @@ ${patExercises.map((ex) => `
           </div>
 
           {/* Push notifications card */}
+          {(()=>{
+            const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+            const isRunningAsPWA=isPWA();
+            const showIOSHint=isIOS&&!isRunningAsPWA;
+            return(
           <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
               <div style={{width:40,height:40,borderRadius:12,background:pushEnabled?BRAND+"18":LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -1234,6 +1260,17 @@ ${patExercises.map((ex) => `
                 </div>
               </div>
             </div>
+
+            {showIOSHint&&(
+              <div style={{background:"#FFF8E1",border:"1.5px solid #FFB300",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:"#E65100",marginBottom:4}}>Noch nicht als App installiert</div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#5D4037",lineHeight:1.6}}>
+                  Für Erinnerungen muss die App auf dem Home-Bildschirm installiert sein.<br/>
+                  <strong>Safari → Teilen-Symbol → Zum Home-Bildschirm</strong><br/>
+                  Danach die App über das Icon öffnen und hier Erinnerungen aktivieren.
+                </div>
+              </div>
+            )}
 
             {pushEnabled&&(
               <div style={{background:LIGHT,borderRadius:12,padding:"14px 16px",marginBottom:14}}>
@@ -1258,6 +1295,8 @@ ${patExercises.map((ex) => `
               {pushLoading?"...":(pushEnabled?"Erinnerungen deaktivieren":"Erinnerungen aktivieren")}
             </button>
           </div>
+            );
+          })()}
         </div>
       )}
 
