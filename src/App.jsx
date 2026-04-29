@@ -675,7 +675,6 @@ ${patExercises.map((ex) => `
     }
     setPushLoading(true);
     try{
-      // Ensure SW is ready before requesting permission
       const reg=await navigator.serviceWorker.ready;
       const permission=await Notification.requestPermission();
       if(permission==="denied"){
@@ -684,12 +683,18 @@ ${patExercises.map((ex) => `
         return;
       }
       if(permission!=="granted"){setPushLoading(false);return;}
+      // Zuerst alle alten Subscriptions dieses Users löschen (verhindert Duplikate)
+      await supabase.from("push_subscriptions").delete().eq("user_id",session.user.id);
+      // Bestehende SW-Subscription aufräumen
+      const existing=await reg.pushManager.getSubscription();
+      if(existing)await existing.unsubscribe();
+      // Neue Subscription erstellen
       const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
       const{endpoint,keys}=sub.toJSON();
-      await supabase.from("push_subscriptions").upsert({
+      await supabase.from("push_subscriptions").insert({
         user_id:session.user.id,endpoint,p256dh:keys.p256dh,auth:keys.auth,
         reminder_time:pushTime,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone
-      },{onConflict:"user_id,endpoint"});
+      });
       setPushEnabled(true);
     }catch(e){
       console.error("enablePush error",e);
@@ -700,12 +705,16 @@ ${patExercises.map((ex) => `
 
   const disablePush=async()=>{
     setPushLoading(true);
-    const reg=await navigator.serviceWorker.ready;
-    const sub=await reg.pushManager.getSubscription();
-    if(sub){
-      await supabase.from("push_subscriptions").delete().eq("endpoint",sub.endpoint);
-      await sub.unsubscribe();
-    }
+    try{
+      // Alle Subscriptions dieses Users aus DB löschen
+      await supabase.from("push_subscriptions").delete().eq("user_id",session.user.id);
+      // SW-Subscription aufräumen
+      if("serviceWorker" in navigator){
+        const reg=await navigator.serviceWorker.ready;
+        const sub=await reg.pushManager.getSubscription();
+        if(sub)await sub.unsubscribe();
+      }
+    }catch(e){console.error("disablePush error",e);}
     setPushEnabled(false);
     setPushLoading(false);
   };
