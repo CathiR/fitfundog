@@ -7,6 +7,16 @@ const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const VAPID_SUBJECT = "mailto:fitfundog@freenet.de";
 
 // ── VAPID JWT helper ──
+// Extract x/y coordinates from uncompressed public key (65 bytes: 0x04 + 32 + 32)
+function getPublicKeyCoords(pubKeyBase64url: string): { x: string; y: string } {
+  const raw = new Uint8Array(base64UrlDecode(pubKeyBase64url));
+  // raw[0] === 0x04 (uncompressed point marker)
+  const x = raw.slice(1, 33);
+  const y = raw.slice(33, 65);
+  const toB64url = (b: Uint8Array) => btoa(String.fromCharCode(...b)).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");
+  return { x: toB64url(x), y: toB64url(y) };
+}
+
 async function makeVapidJwt(endpoint: string): Promise<string> {
   const url = new URL(endpoint);
   const audience = `${url.protocol}//${url.host}`;
@@ -16,9 +26,10 @@ async function makeVapidJwt(endpoint: string): Promise<string> {
   const payload = btoa(JSON.stringify({ aud: audience, exp: now + 43200, sub: VAPID_SUBJECT }))
     .replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
   const data = new TextEncoder().encode(`${header}.${payload}`);
-  const keyBytes = base64UrlDecode(VAPID_PRIVATE_KEY);
+  const { x, y } = getPublicKeyCoords(VAPID_PUBLIC_KEY);
   const cryptoKey = await crypto.subtle.importKey(
-    "pkcs8", keyBytes,
+    "jwk",
+    { kty: "EC", crv: "P-256", d: VAPID_PRIVATE_KEY, x, y, key_ops: ["sign"], ext: true },
     { name: "ECDSA", namedCurve: "P-256" },
     false, ["sign"]
   );
@@ -151,6 +162,7 @@ Deno.serve(async (req) => {
         }
       }
     } catch (e) {
+      console.error(`Push error for user ${sub.user_id}:`, String(e));
       errors.push(String(e));
     }
   }

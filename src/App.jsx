@@ -675,6 +675,9 @@ ${patExercises.map((ex) => `
     }
     setPushLoading(true);
     try{
+      // Frischen User direkt von Supabase holen – nicht aus React-State (könnte null sein)
+      const{data:{user:currentUser}}=await supabase.auth.getUser();
+      if(!currentUser){alert("Nicht eingeloggt. Bitte neu einloggen.");setPushLoading(false);return;}
       const reg=await navigator.serviceWorker.ready;
       const permission=await Notification.requestPermission();
       if(permission==="denied"){
@@ -684,17 +687,18 @@ ${patExercises.map((ex) => `
       }
       if(permission!=="granted"){setPushLoading(false);return;}
       // Zuerst alle alten Subscriptions dieses Users löschen (verhindert Duplikate)
-      await supabase.from("push_subscriptions").delete().eq("user_id",session.user.id);
+      await supabase.from("push_subscriptions").delete().eq("user_id",currentUser.id);
       // Bestehende SW-Subscription aufräumen
       const existing=await reg.pushManager.getSubscription();
       if(existing)await existing.unsubscribe();
       // Neue Subscription erstellen
       const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
       const{endpoint,keys}=sub.toJSON();
-      await supabase.from("push_subscriptions").insert({
-        user_id:session.user.id,endpoint,p256dh:keys.p256dh,auth:keys.auth,
+      const{error:insertErr}=await supabase.from("push_subscriptions").insert({
+        user_id:currentUser.id,endpoint,p256dh:keys.p256dh,auth:keys.auth,
         reminder_time:pushTime,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone
       });
+      if(insertErr){console.error("insert error",insertErr);alert("Fehler beim Speichern: "+insertErr.message);setPushLoading(false);return;}
       setPushEnabled(true);
     }catch(e){
       console.error("enablePush error",e);
@@ -706,8 +710,10 @@ ${patExercises.map((ex) => `
   const disablePush=async()=>{
     setPushLoading(true);
     try{
-      // Alle Subscriptions dieses Users aus DB löschen
-      await supabase.from("push_subscriptions").delete().eq("user_id",session.user.id);
+      const{data:{user:currentUser}}=await supabase.auth.getUser();
+      if(currentUser){
+        await supabase.from("push_subscriptions").delete().eq("user_id",currentUser.id);
+      }
       // SW-Subscription aufräumen
       if("serviceWorker" in navigator){
         const reg=await navigator.serviceWorker.ready;
