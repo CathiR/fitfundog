@@ -313,6 +313,7 @@ export default function App() {
   const [assignFilterCats,setAssignFilterCats]=useState([]);
   const [assignFilterRegions,setAssignFilterRegions]=useState([]);
   const [newAccountMode,setNewAccountMode]=useState("new");
+  const [editAccountMode,setEditAccountMode]=useState("existing");
   const [selectedExistingUserId,setSelectedExistingUserId]=useState("");
   const [resetEmailSent,setResetEmailSent]=useState(false);
   const [patientSearch,setPatientSearch]=useState("");
@@ -675,9 +676,6 @@ ${patExercises.map((ex) => `
     }
     setPushLoading(true);
     try{
-      // Frischen User direkt von Supabase holen – nicht aus React-State (könnte null sein)
-      const{data:{user:currentUser}}=await supabase.auth.getUser();
-      if(!currentUser){alert("Nicht eingeloggt. Bitte neu einloggen.");setPushLoading(false);return;}
       const reg=await navigator.serviceWorker.ready;
       const permission=await Notification.requestPermission();
       if(permission==="denied"){
@@ -687,18 +685,17 @@ ${patExercises.map((ex) => `
       }
       if(permission!=="granted"){setPushLoading(false);return;}
       // Zuerst alle alten Subscriptions dieses Users löschen (verhindert Duplikate)
-      await supabase.from("push_subscriptions").delete().eq("user_id",currentUser.id);
+      await supabase.from("push_subscriptions").delete().eq("user_id",session.user.id);
       // Bestehende SW-Subscription aufräumen
       const existing=await reg.pushManager.getSubscription();
       if(existing)await existing.unsubscribe();
       // Neue Subscription erstellen
       const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
       const{endpoint,keys}=sub.toJSON();
-      const{error:insertErr}=await supabase.from("push_subscriptions").insert({
-        user_id:currentUser.id,endpoint,p256dh:keys.p256dh,auth:keys.auth,
+      await supabase.from("push_subscriptions").insert({
+        user_id:session.user.id,endpoint,p256dh:keys.p256dh,auth:keys.auth,
         reminder_time:pushTime,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone
       });
-      if(insertErr){console.error("insert error",insertErr);alert("Fehler beim Speichern: "+insertErr.message);setPushLoading(false);return;}
       setPushEnabled(true);
     }catch(e){
       console.error("enablePush error",e);
@@ -710,10 +707,8 @@ ${patExercises.map((ex) => `
   const disablePush=async()=>{
     setPushLoading(true);
     try{
-      const{data:{user:currentUser}}=await supabase.auth.getUser();
-      if(currentUser){
-        await supabase.from("push_subscriptions").delete().eq("user_id",currentUser.id);
-      }
+      // Alle Subscriptions dieses Users aus DB löschen
+      await supabase.from("push_subscriptions").delete().eq("user_id",session.user.id);
       // SW-Subscription aufräumen
       if("serviceWorker" in navigator){
         const reg=await navigator.serviceWorker.ready;
@@ -762,7 +757,19 @@ ${patExercises.map((ex) => `
     if(!editPatientData?.name)return;
     setSaving(true);
     const{id,_newUserId,ownerEmail,ownerPassword,...fields}=editPatientData;
-    if(_newUserId!==undefined)fields.user_id=_newUserId||null;
+    // Neuen Account anlegen falls editAccountMode === "new"
+    if(editAccountMode==="new"&&ownerEmail&&ownerPassword){
+      const{data:sd,error:se}=await supabase.auth.signUp({
+        email:ownerEmail,password:ownerPassword,
+        options:{data:{must_change_password:ownerPassword===ownerEmail}}
+      });
+      if(se){alert("Account-Fehler: "+se.message);setSaving(false);return;}
+      fields.user_id=sd?.user?.id||null;
+      const storedPw=sessionStorage.getItem("_tfpw");
+      if(storedPw)await supabase.auth.signInWithPassword({email:THERAPIST_EMAIL,password:storedPw});
+    } else if(_newUserId!==undefined){
+      fields.user_id=_newUserId||null;
+    }
     const{data,error}=await supabase.from("patients").update(fields).eq("id",id).select().single();
     if(error){alert("Fehler: "+error.message);setSaving(false);return;}
     if(data){
@@ -1352,7 +1359,7 @@ ${patExercises.map((ex) => `
                       </div>
                       <div style={{display:"flex",gap:5}}>
                         <button className="iBtn" title="Übungsplan drucken" onClick={()=>printExercisePlan(p)} style={{background:"#E8F5E9"}}><Icon name="print" size={14} color="#2E7D32"/></button>
-                        <button className="iBtn" onClick={()=>{setEditPatientData({...p});setSheet("editPatient");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
+                        <button className="iBtn" onClick={()=>{setEditPatientData({...p});setEditAccountMode(p.user_id?"existing":"none");setResetEmailSent(false);setSheet("editPatient");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
                         <button className="iBtn" onClick={()=>{setSheetData(p);setSheet("confirmDeletePt");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                       </div>
                     </div>
@@ -1705,31 +1712,36 @@ ${patExercises.map((ex) => `
               <div><SL text="Emoji"/><input value={editPatientData.avatar||""} onChange={e=>setEditPatientData(p=>({...p,avatar:e.target.value}))} style={{...inp,width:60,textAlign:"center"}}/></div>
               <div style={{background:LIGHT,borderRadius:12,padding:"14px"}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:DARK,marginBottom:10}}>Login-Konto</div>
-                {editPatientData.user_id&&getUserEmail(editPatientData.user_id)?(<>
+                {editPatientData.user_id&&getUserEmail(editPatientData.user_id)&&(
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,background:"white",borderRadius:10,padding:"10px 12px"}}>
                     <Icon name="mail" size={16} color={BRAND}/>
                     <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#102828",flex:1}}>{getUserEmail(editPatientData.user_id)}</span>
                   </div>
-                  {resetEmailSent
-                    ?<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#2E7D32",background:"#E8F5E9",borderRadius:8,padding:"8px 12px",marginBottom:10}}>✓ Passwort-Reset Email gesendet!</div>
-                    :<button className="btn" onClick={()=>sendPasswordReset(getUserEmail(editPatientData.user_id))} style={{background:"white",border:`1.5px solid ${BRAND}`,borderRadius:9,padding:"8px 12px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:BRAND,display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
-                      <Icon name="mail" size={13} color={BRAND}/>Passwort-Reset Email senden
-                    </button>}
-                  <SL text="Anderen User verknüpfen"/>
+                )}
+                {editPatientData.user_id&&getUserEmail(editPatientData.user_id)&&!resetEmailSent&&(
+                  <button className="btn" onClick={()=>sendPasswordReset(getUserEmail(editPatientData.user_id))} style={{background:"white",border:`1.5px solid ${BRAND}`,borderRadius:9,padding:"8px 12px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:BRAND,display:"flex",alignItems:"center",gap:6,marginBottom:10}}>
+                    <Icon name="mail" size={13} color={BRAND}/>Passwort-Reset Email senden
+                  </button>
+                )}
+                {resetEmailSent&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#2E7D32",background:"#E8F5E9",borderRadius:8,padding:"8px 12px",marginBottom:10}}>Passwort-Reset Email gesendet.</div>}
+                <div style={{display:"flex",gap:6,marginBottom:12}}>
+                  {[["existing","Bestehend"],["new","Neu anlegen"],["none","Kein Login"]].map(([mode,label])=>(
+                    <button key={mode} className="mode-btn" onClick={()=>setEditAccountMode(mode)} style={{borderColor:editAccountMode===mode?BRAND:"#B8DFE0",background:editAccountMode===mode?BRAND:"white",color:editAccountMode===mode?"#102828":"#3D7070"}}>{label}</button>
+                  ))}
+                </div>
+                {editAccountMode==="existing"&&(<>
                   <SearchInput value={userSearch} onChange={setUserSearch} placeholder="User suchen..."/>
                   <CustomSelect value={editPatientData._newUserId!==undefined?(editPatientData._newUserId||""):(editPatientData.user_id||"")} onChange={e=>setEditPatientData(p=>({...p,_newUserId:e.target.value||null}))}>
                     <option value="">Kein Login</option>
                     {filteredUsers.map(u=><option key={u.id} value={u.id}>{u.email}</option>)}
                   </CustomSelect>
-                </>):(<>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginBottom:10}}>Kein Login-Konto verknüpft.</div>
-                  <SL text="User verknüpfen"/>
-                  <SearchInput value={userSearch} onChange={setUserSearch} placeholder="User suchen..."/>
-                  <CustomSelect value={editPatientData._newUserId||""} onChange={e=>setEditPatientData(p=>({...p,_newUserId:e.target.value||null}))}>
-                    <option value="">User auswählen...</option>
-                    {filteredUsers.map(u=><option key={u.id} value={u.id}>{u.email}</option>)}
-                  </CustomSelect>
                 </>)}
+                {editAccountMode==="new"&&(<>
+                  <div style={{marginBottom:10}}><SL text="Email"/><input value={editPatientData.ownerEmail||""} onChange={e=>setEditPatientData(p=>({...p,ownerEmail:e.target.value}))} placeholder="besitzer@email.de" type="email" style={inp}/></div>
+                  <div><SL text="Passwort"/><input value={editPatientData.ownerPassword||""} onChange={e=>setEditPatientData(p=>({...p,ownerPassword:e.target.value}))} placeholder="Mind. 6 Zeichen" type="text" style={inp}/></div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",marginTop:8}}>Tipp: Email als initiales Passwort verwenden</div>
+                </>)}
+                {editAccountMode==="none"&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070"}}>Kein App-Zugang für diesen Patienten.</div>}
               </div>
               <button className="btn" onClick={updatePatient} disabled={saving||!editPatientData.name} style={{width:"100%",padding:"14px",borderRadius:12,background:editPatientData.name?BRAND:"#B8DFE0",color:editPatientData.name?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:"Änderungen speichern"}
