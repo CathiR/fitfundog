@@ -91,9 +91,18 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
 };
 
 const T = {
-  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt." },
-  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress." },
-  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento." }
+  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", navAdmin:"Admin", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt.",
+    plans:"Behandlungspläne", noPlans:"Noch keine Behandlungspläne erstellt.", noTemplates:"Noch keine Übungsvorlagen erstellt.", newExercise:"Neue Übung erstellen", editExercise:"Übung bearbeiten", addExercise:"Übung hinzufügen", printPlan:"Übungsplan drucken", searchPatient:"Patient suchen & auswählen", unknownExercise:"Unbekannte Übung", reminderActive:"Täglich aktiv — nur bei offenen Übungen", reminderInactive:"Erinnert dich täglich an deine Übungen", deleteAccount:"Konto löschen", deleteAccountConfirm:"Konto unwiderruflich löschen", deleting:"Wird gelöscht...", deleteWord:"LÖSCHEN", pwSecurityHint:"Aus Sicherheitsgründen bitte ein eigenes Passwort vergeben.", changePw:"Bitte Passwort ändern", feedbackPlaceholder:"Dein Feedback...", feedbackTitle:"Feedback geben", feedbackSub:"Dein Feedback hilft dabei die App weiterzuentwickeln.", feedbackSend:"Feedback senden", deleteAccountWarningTitle:"Achtung – diese Aktion ist unwiderruflich", deleteAccountWarningText:"Dein Konto und alle damit verbundenen Daten werden dauerhaft gelöscht. Deine Therapiedaten bleiben bei deiner Therapeutin erhalten.", deleteConfirmLabel:(word)=>`Zur Bestätigung "${word}" eingeben`,
+    alertPwMin:"Passwort muss mindestens 6 Zeichen haben.", alertAddHomescreen:"Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.", alertNoPush:"Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.", alertPushBlocked:"Benachrichtigungen sind blockiert. Bitte erlaube sie in den iPhone-Einstellungen unter Mitteilungen → FitFunDog.", alertDeleteFail:"Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter info@fit-fun-dog.de zur manuellen Löschung.",
+    noAccount:"Kein Konto? Bitte wende dich an deine Therapeutin.", forgotPw:"Passwort vergessen?", resetSent:"Reset-Email gesendet – bitte Postfach prüfen.", adminTitle:"Admin", adminSub:"Einstellungen & App-Verwaltung", legalTitle:"Rechtliches", feedbackAppTitle:"Feedback zur App", feedbackAppSub:"Direkt an die Entwicklerin senden." },
+  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", navAdmin:"Admin", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress.",
+    plans:"Treatment Plans", noPlans:"No treatment plans created yet.", noTemplates:"No exercise templates created yet.", newExercise:"New exercise", editExercise:"Edit exercise", addExercise:"Add exercise", printPlan:"Print plan", searchPatient:"Search & select patient", unknownExercise:"Unknown exercise", reminderActive:"Active daily — only when exercises are open", reminderInactive:"Reminds you daily of your exercises", deleteAccount:"Delete account", deleteAccountConfirm:"Permanently delete account", deleting:"Deleting...", deleteWord:"DELETE", pwSecurityHint:"For security reasons please set your own password.", changePw:"Please change password", feedbackPlaceholder:"Your feedback...", feedbackTitle:"Give feedback", feedbackSub:"Your feedback helps improve the app.", feedbackSend:"Send feedback", deleteAccountWarningTitle:"Warning – this action is irreversible", deleteAccountWarningText:"Your account and all associated data will be permanently deleted. Your therapy data will remain with your therapist.", deleteConfirmLabel:(word)=>`Type "${word}" to confirm`,
+    alertPwMin:"Password must be at least 6 characters.", alertAddHomescreen:"Please add the app to your home screen first (Safari → Share → Add to Home Screen). Then open the app via the home screen icon and activate reminders again.", alertNoPush:"Your browser does not support push notifications. Please use Safari on iOS 16.4+ or Chrome on Android.", alertPushBlocked:"Notifications are blocked. Please allow them in iPhone Settings under Notifications → FitFunDog.", alertDeleteFail:"Your account cannot be deleted automatically. Please contact your therapist at info@fit-fun-dog.de for manual deletion.",
+    noAccount:"No account? Please contact your therapist.", forgotPw:"Forgot password?", resetSent:"Reset email sent – please check your inbox.", adminTitle:"Admin", adminSub:"Settings & App management", legalTitle:"Legal", feedbackAppTitle:"App feedback", feedbackAppSub:"Send directly to the developer." },
+  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", navAdmin:"Admin", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes para el entrenamiento", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento. Sin descanso suficiente, el sobreentrenamiento reemplaza al progreso.",
+    plans:"Planes de tratamiento", noPlans:"Aún no hay planes de tratamiento.", noTemplates:"Aún no hay plantillas de ejercicios.", newExercise:"Nuevo ejercicio", editExercise:"Editar ejercicio", addExercise:"Añadir ejercicio", printPlan:"Imprimir plan", searchPatient:"Buscar y seleccionar paciente", unknownExercise:"Ejercicio desconocido", reminderActive:"Activo diariamente — solo si hay ejercicios pendientes", reminderInactive:"Te recuerda tus ejercicios cada día", deleteAccount:"Eliminar cuenta", deleteAccountConfirm:"Eliminar cuenta permanentemente", deleting:"Eliminando...", deleteWord:"ELIMINAR", pwSecurityHint:"Por seguridad, establece tu propia contraseña.", changePw:"Por favor cambia la contraseña", feedbackPlaceholder:"Tu comentario...", feedbackTitle:"Dar feedback", feedbackSub:"Tu feedback ayuda a mejorar la app.", feedbackSend:"Enviar feedback", deleteAccountWarningTitle:"Atención – esta acción es irreversible", deleteAccountWarningText:"Tu cuenta y todos los datos asociados serán eliminados permanentemente. Tus datos de terapia permanecerán con tu terapeuta.", deleteConfirmLabel:(word)=>`Escribe "${word}" para confirmar`,
+    alertPwMin:"La contraseña debe tener al menos 6 caracteres.", alertAddHomescreen:"Por favor añade primero la app a tu pantalla de inicio (Safari → Compartir → Añadir a pantalla de inicio). Luego abre la app desde el icono y activa los recordatorios.", alertNoPush:"Tu navegador no admite notificaciones push. Usa Safari en iOS 16.4+ o Chrome en Android.", alertPushBlocked:"Las notificaciones están bloqueadas. Actívalas en Ajustes del iPhone en Notificaciones → FitFunDog.", alertDeleteFail:"Tu cuenta no puede eliminarse automáticamente. Contacta a tu terapeuta en info@fit-fun-dog.de para la eliminación manual.",
+    noAccount:"¿Sin cuenta? Contacta a tu terapeuta.", forgotPw:"¿Olvidaste tu contraseña?", resetSent:"Email enviado – revisa tu bandeja de entrada.", adminTitle:"Admin", adminSub:"Ajustes y gestión de la app", legalTitle:"Legal", feedbackAppTitle:"Feedback de la app", feedbackAppSub:"Enviar directamente a la desarrolladora." }
 };
 
 const TIPS = {
@@ -180,6 +189,10 @@ const LoginScreen = () => {
           }
         </div>
         <div style={{textAlign:"center",marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.4)"}}>Kein Konto? Bitte wende dich an deine Therapeutin.</div>
+        <div style={{textAlign:"center",marginTop:16,display:"flex",justifyContent:"center",gap:20}}>
+          <a href="https://fit-fun-dog.de/datenschutzerklaerung/" target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",textDecoration:"none"}}>Datenschutz</a>
+          <a href="https://fit-fun-dog.de/impressum/" target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",textDecoration:"none"}}>Impressum</a>
+        </div>
       </div>
     </div>
   );
@@ -314,6 +327,10 @@ export default function App() {
   const [assignFilterRegions,setAssignFilterRegions]=useState([]);
   const [newAccountMode,setNewAccountMode]=useState("new");
   const [editAccountMode,setEditAccountMode]=useState("existing");
+  const [showAppFeedback,setShowAppFeedback]=useState(false);
+  const [appFeedbackText,setAppFeedbackText]=useState("");
+  const [showDeleteAccount,setShowDeleteAccount]=useState(false);
+  const [deleteConfirmText,setDeleteConfirmText]=useState("");
   const [selectedExistingUserId,setSelectedExistingUserId]=useState("");
   const [resetEmailSent,setResetEmailSent]=useState(false);
   const [patientSearch,setPatientSearch]=useState("");
@@ -780,6 +797,25 @@ ${patExercises.map((ex) => `
     setSaving(false);closeSheet();
   };
 
+  const deleteAccount=async()=>{
+    if(!session?.user?.id)return;
+    setSaving(true);
+    try{
+      // Delete all user data
+      await supabase.from("push_subscriptions").delete().eq("user_id",session.user.id);
+      await supabase.from("exercise_logs").delete().eq("user_id",session.user.id);
+      // Delete the auth user via admin function
+      const{error}=await supabase.functions.invoke("delete-user",{body:{user_id:session.user.id}});
+      if(error)throw error;
+      await supabase.auth.signOut();
+    }catch(e){
+      // Fallback: just sign out and inform user to contact therapist
+      alert("Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter fitfundog@freenet.de zur manuellen Löschung.");
+      await supabase.auth.signOut();
+    }
+    setSaving(false);
+  };
+
   const sendPasswordReset=async(email)=>{
     if(!email)return;
     await supabase.auth.resetPasswordForEmail(email);
@@ -1066,7 +1102,7 @@ ${patExercises.map((ex) => `
             </div>
           </div>
           <div style={{display:"flex",background:"#2A6364"}}>
-            {[["owner","home",isAdmin?"Vorschau":t.navOwner],...(isAdmin?[["therapist","practice",t.navTherapist]]:[["profile","profile",t.navProfile]]),["info","info",t.navInfo]].map(([v,ic,lb])=>(
+            {[["owner","home",isAdmin?"Vorschau":t.navOwner],...(isAdmin?[["therapist","practice",t.navTherapist]]:[["profile","profile",t.navProfile]]),["info","info",t.navInfo],...(isAdmin?[["admin","profile",t.navAdmin]]:[])].map(([v,ic,lb])=>(
               <button key={v} className="nav-tab" onClick={()=>setView(v)} style={{background:view===v?"white":"transparent",color:view===v?DARK:ACCENT,borderRadius:view===v?"10px 10px 0 0":0,marginTop:view===v?3:0}}>
                 <Icon name={ic} size={14} color={view===v?DARK:ACCENT}/>{lb}
               </button>
@@ -1319,7 +1355,23 @@ ${patExercises.map((ex) => `
           </div>
             );
           })()}
+        {/* Feedback + Delete Account */}
+        <div style={{padding:"4px 0 8px",display:"flex",flexDirection:"column",gap:8}}>
+          <button className="btn" onClick={()=>{setAppFeedbackText("");setShowAppFeedback(true);}}
+            style={{width:"100%",padding:"12px",borderRadius:12,background:LIGHT,color:MID,fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            <Icon name="mail" size={15} color={MID}/>Feedback geben
+          </button>
+          <button className="btn" onClick={()=>{setDeleteConfirmText("");setShowDeleteAccount(true);}}
+            style={{width:"100%",padding:"12px",borderRadius:12,background:"#FFF0F0",color:"#C0392B",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+            <Icon name="trash" size={15} color="#C0392B"/>Konto löschen
+          </button>
         </div>
+        {/* Legal links */}
+        <div style={{textAlign:"center",padding:"8px 0 16px",display:"flex",justifyContent:"center",gap:20}}>
+          <a href="https://fit-fun-dog.de/datenschutzerklaerung/" target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",textDecoration:"none"}}>Datenschutz</a>
+          <a href="https://fit-fun-dog.de/impressum/" target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",textDecoration:"none"}}>Impressum</a>
+        </div>
+      </div>
       )}
 
       {/* THERAPIST VIEW */}
@@ -1520,6 +1572,39 @@ ${patExercises.map((ex) => `
               {!selectedPatient&&<div className="card" style={{padding:24,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Bitte zuerst einen Patienten auswählen.</div>}
             </div>
           )}
+        </div>
+      )}
+
+      {/* ADMIN VIEW */}
+      {view==="admin"&&isAdmin&&(
+        <div style={{maxWidth:480,margin:"0 auto",padding:"16px 14px 80px"}}>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:DARK,marginBottom:4}}>Admin</div>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:20}}>Einstellungen & App-Verwaltung</div>
+
+          {/* Feedback */}
+          <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:6}}>Feedback zur App</div>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:12}}>Direkt an die Entwicklerin senden.</div>
+            <button className="btn" onClick={()=>{setAppFeedbackText("");setShowAppFeedback(true);}}
+              style={{width:"100%",padding:"12px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+              <Icon name="mail" size={16} color="#102828"/>Feedback geben
+            </button>
+          </div>
+
+          {/* Legal */}
+          <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:12}}>Rechtliches</div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <a href="https://fit-fun-dog.de/datenschutzerklaerung/" target="_blank"
+                style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:BRAND,textDecoration:"none",display:"flex",alignItems:"center",gap:8}}>
+                <Icon name="info" size={15} color={BRAND}/>Datenschutzerklärung
+              </a>
+              <a href="https://fit-fun-dog.de/impressum/" target="_blank"
+                style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:BRAND,textDecoration:"none",display:"flex",alignItems:"center",gap:8}}>
+                <Icon name="info" size={15} color={BRAND}/>Impressum
+              </a>
+            </div>
+          </div>
         </div>
       )}
 
@@ -2016,6 +2101,49 @@ ${patExercises.map((ex) => `
             </div>
             <button className="btn" onClick={saveFeedback} disabled={saving||feedbackPain===0} style={{width:"100%",padding:"14px",borderRadius:12,background:feedbackPain>0?BRAND:"#B8DFE0",color:feedbackPain>0?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
               {saving?"Wird gespeichert...":"Befund speichern"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* SHEET: APP FEEDBACK */}
+      {showAppFeedback&&(
+        <div className="overlay" onClick={()=>setShowAppFeedback(false)}>
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title="Feedback geben" onClose={()=>setShowAppFeedback(false)}/>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:14}}>
+              Dein Feedback hilft dabei die App weiterzuentwickeln. Was funktioniert gut, was könnte besser sein?
+            </div>
+            <textarea value={appFeedbackText} onChange={e=>setAppFeedbackText(e.target.value)} rows={5}
+              placeholder="Dein Feedback..." style={{...inp,resize:"vertical",marginBottom:14}}/>
+            <a href={isAdmin?`mailto:catharinariedel@freenet.de?subject=FitFunDog App-Feedback&body=${encodeURIComponent(appFeedbackText)}`:`mailto:info@fit-fun-dog.de?subject=FitFunDog Feedback&body=${encodeURIComponent(appFeedbackText)}`}
+              onClick={()=>setTimeout(()=>setShowAppFeedback(false),500)}
+              style={{display:"block",width:"100%",padding:"14px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,textAlign:"center",textDecoration:"none",boxSizing:"border-box"}}>
+              Feedback senden
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* SHEET: DELETE ACCOUNT */}
+      {showDeleteAccount&&(
+        <div className="overlay" onClick={()=>setShowDeleteAccount(false)}>
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title="Konto löschen" onClose={()=>setShowDeleteAccount(false)}/>
+            <div style={{background:"#FFF0F0",borderRadius:12,padding:"14px 16px",marginBottom:16}}>
+              <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#C0392B",marginBottom:6}}>Achtung – diese Aktion ist unwiderruflich</div>
+              <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#5D4037",lineHeight:1.6}}>
+                Dein Konto und alle damit verbundenen Daten werden dauerhaft gelöscht. Deine Therapiedaten bleiben bei deiner Therapeutin erhalten.
+              </div>
+            </div>
+            <div style={{marginBottom:16}}>
+              <SL text={`Zur Bestätigung "LÖSCHEN" eingeben`}/>
+              <input value={deleteConfirmText} onChange={e=>setDeleteConfirmText(e.target.value)}
+                placeholder="LÖSCHEN" style={inp}/>
+            </div>
+            <button className="btn" onClick={deleteAccount} disabled={deleteConfirmText!=="LÖSCHEN"||saving}
+              style={{width:"100%",padding:"14px",borderRadius:12,background:deleteConfirmText==="LÖSCHEN"?"#C0392B":"#FFD0D0",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+              {saving?"Wird gelöscht...":"Konto unwiderruflich löschen"}
             </button>
           </div>
         </div>
