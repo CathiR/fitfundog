@@ -95,7 +95,7 @@ const T = {
     plans:"Behandlungspläne", noPlans:"Noch keine Behandlungspläne erstellt.", noTemplates:"Noch keine Übungsvorlagen erstellt.", newExercise:"Neue Übung erstellen", editExercise:"Übung bearbeiten", addExercise:"Übung hinzufügen", printPlan:"Übungsplan drucken", searchPatient:"Patient suchen & auswählen", unknownExercise:"Unbekannte Übung", reminderActive:"Täglich aktiv — nur bei offenen Übungen", reminderInactive:"Erinnert dich täglich an deine Übungen", deleteAccount:"Konto löschen", deleteAccountConfirm:"Konto unwiderruflich löschen", deleting:"Wird gelöscht...", deleteWord:"LÖSCHEN", pwSecurityHint:"Aus Sicherheitsgründen bitte ein eigenes Passwort vergeben.", changePw:"Bitte Passwort ändern", feedbackPlaceholder:"Dein Feedback...", feedbackTitle:"Feedback geben", feedbackSub:"Dein Feedback hilft dabei die App weiterzuentwickeln.", feedbackSend:"Feedback senden", deleteAccountWarningTitle:"Achtung – diese Aktion ist unwiderruflich", deleteAccountWarningText:"Dein Konto und alle damit verbundenen Daten werden dauerhaft gelöscht. Deine Therapiedaten bleiben bei deiner Therapeutin erhalten.", deleteConfirmLabel:(word)=>`Zur Bestätigung "${word}" eingeben`,
     alertPwMin:"Passwort muss mindestens 6 Zeichen haben.", alertAddHomescreen:"Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.", alertNoPush:"Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.", alertPushBlocked:"Benachrichtigungen sind blockiert. Bitte erlaube sie in den iPhone-Einstellungen unter Mitteilungen → FitFunDog.", alertDeleteFail:"Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter info@fit-fun-dog.de zur manuellen Löschung.",
     noAccount:"Kein Konto? Bitte wende dich an deine Therapeutin.", forgotPw:"Passwort vergessen?", resetSent:"Reset-Email gesendet – bitte Postfach prüfen.", adminTitle:"Admin", adminSub:"Einstellungen & App-Verwaltung", legalTitle:"Rechtliches", feedbackAppTitle:"Feedback zur App", feedbackAppSub:"Direkt an die Entwicklerin senden.",
-    thisWeek:"Diese Woche", ofExercises:(n)=>`von ${n} Übungen`, allDoneShort:"Alle erledigt!", streakLabel:"Streak", streakDay:"Tag in Folge", streakDays:"Tage in Folge", streakNone:"Noch kein Streak", last28:"Letzte 28 Tage", thisWeekShort:"diese Woche",
+    thisWeek:"Diese Woche", ofExercises:(n)=>`von ${n} Übungen`, allDoneShort:"Alle erledigt!", streakLabel:"Wochen-Streak", streakDay:"Woche in Folge", streakDays:"Wochen in Folge", streakNone:"Noch kein Streak", last28:"Letzte 16 Wochen", thisWeekShort:"diese Woche",
     reportSymptom:"Befund melden", reminders:"Erinnerungen", reminderTime:"Erinnerungszeit", reminderHint:"Die Erinnerung wird nur gesendet wenn noch Übungen offen sind.", reminderEnable:"Erinnerungen aktivieren", reminderDisable:"Erinnerungen deaktivieren", oclock:"Uhr",
     iosNotInstalled:"Noch nicht als App installiert", iosInstallHint:"Für Erinnerungen muss die App auf dem Home-Bildschirm installiert sein.", iosInstallStep:"Safari → Teilen-Symbol → Zum Home-Bildschirm", iosInstallAfter:"Danach die App über das Icon öffnen und hier Erinnerungen aktivieren.",
     greetMorning:"Guten Morgen", greetDay:"Guten Tag", greetEvening:"Guten Abend",
@@ -109,7 +109,7 @@ const T = {
     plans:"Treatment Plans", noPlans:"No treatment plans created yet.", noTemplates:"No exercise templates created yet.", newExercise:"New exercise", editExercise:"Edit exercise", addExercise:"Add exercise", printPlan:"Print plan", searchPatient:"Search & select patient", unknownExercise:"Unknown exercise", reminderActive:"Active daily — only when exercises are open", reminderInactive:"Reminds you daily of your exercises", deleteAccount:"Delete account", deleteAccountConfirm:"Permanently delete account", deleting:"Deleting...", deleteWord:"DELETE", pwSecurityHint:"For security reasons please set your own password.", changePw:"Please change password", feedbackPlaceholder:"Your feedback...", feedbackTitle:"Give feedback", feedbackSub:"Your feedback helps improve the app.", feedbackSend:"Send feedback", deleteAccountWarningTitle:"Warning – this action is irreversible", deleteAccountWarningText:"Your account and all associated data will be permanently deleted. Your therapy data will remain with your therapist.", deleteConfirmLabel:(word)=>`Type "${word}" to confirm`,
     alertPwMin:"Password must be at least 6 characters.", alertAddHomescreen:"Please add the app to your home screen first (Safari → Share → Add to Home Screen). Then open the app via the home screen icon and activate reminders again.", alertNoPush:"Your browser does not support push notifications. Please use Safari on iOS 16.4+ or Chrome on Android.", alertPushBlocked:"Notifications are blocked. Please allow them in iPhone Settings under Notifications → FitFunDog.", alertDeleteFail:"Your account cannot be deleted automatically. Please contact your therapist at info@fit-fun-dog.de for manual deletion.",
     noAccount:"No account? Please contact your therapist.", forgotPw:"Forgot password?", resetSent:"Reset email sent – please check your inbox.", adminTitle:"Admin", adminSub:"Settings & App management", legalTitle:"Legal", feedbackAppTitle:"App feedback", feedbackAppSub:"Send directly to the developer.",
-    thisWeek:"This Week", ofExercises:(n)=>`of ${n} exercises`, allDoneShort:"All done!", streakLabel:"Streak", streakDay:"day in a row", streakDays:"days in a row", streakNone:"No streak yet", last28:"Last 28 days", thisWeekShort:"this week",
+    thisWeek:"This Week", ofExercises:(n)=>`of ${n} exercises`, allDoneShort:"All done!", streakLabel:"Weekly Streak", streakDay:"week in a row", streakDays:"weeks in a row", streakNone:"No streak yet", last28:"Last 16 weeks", thisWeekShort:"this week",
     reportSymptom:"Report symptom", reminders:"Reminders", reminderTime:"Reminder time", reminderHint:"The reminder is only sent if exercises are still open.", reminderEnable:"Enable reminders", reminderDisable:"Disable reminders", oclock:"",
     iosNotInstalled:"Not installed as app yet", iosInstallHint:"For reminders the app must be installed on the home screen.", iosInstallStep:"Safari → Share → Add to Home Screen", iosInstallAfter:"Then open the app via the icon and enable reminders here.",
     greetMorning:"Good morning", greetDay:"Good afternoon", greetEvening:"Good evening",
@@ -123,7 +123,7 @@ const T = {
     plans:"Planes de tratamiento", noPlans:"Aún no hay planes de tratamiento.", noTemplates:"Aún no hay plantillas de ejercicios.", newExercise:"Nuevo ejercicio", editExercise:"Editar ejercicio", addExercise:"Añadir ejercicio", printPlan:"Imprimir plan", searchPatient:"Buscar y seleccionar paciente", unknownExercise:"Ejercicio desconocido", reminderActive:"Activo diariamente — solo si hay ejercicios pendientes", reminderInactive:"Te recuerda tus ejercicios cada día", deleteAccount:"Eliminar cuenta", deleteAccountConfirm:"Eliminar cuenta permanentemente", deleting:"Eliminando...", deleteWord:"ELIMINAR", pwSecurityHint:"Por seguridad, establece tu propia contraseña.", changePw:"Por favor cambia la contraseña", feedbackPlaceholder:"Tu comentario...", feedbackTitle:"Dar feedback", feedbackSub:"Tu feedback ayuda a mejorar la app.", feedbackSend:"Enviar feedback", deleteAccountWarningTitle:"Atención – esta acción es irreversible", deleteAccountWarningText:"Tu cuenta y todos los datos asociados serán eliminados permanentemente. Tus datos de terapia permanecerán con tu terapeuta.", deleteConfirmLabel:(word)=>`Escribe "${word}" para confirmar`,
     alertPwMin:"La contraseña debe tener al menos 6 caracteres.", alertAddHomescreen:"Por favor añade primero la app a tu pantalla de inicio (Safari → Compartir → Añadir a pantalla de inicio). Luego abre la app desde el icono y activa los recordatorios.", alertNoPush:"Tu navegador no admite notificaciones push. Usa Safari en iOS 16.4+ o Chrome en Android.", alertPushBlocked:"Las notificaciones están bloqueadas. Actívalas en Ajustes del iPhone en Notificaciones → FitFunDog.", alertDeleteFail:"Tu cuenta no puede eliminarse automáticamente. Contacta a tu terapeuta en info@fit-fun-dog.de para la eliminación manual.",
     noAccount:"¿Sin cuenta? Contacta a tu terapeuta.", forgotPw:"¿Olvidaste tu contraseña?", resetSent:"Email enviado – revisa tu bandeja de entrada.", adminTitle:"Admin", adminSub:"Ajustes y gestión de la app", legalTitle:"Legal", feedbackAppTitle:"Feedback de la app", feedbackAppSub:"Enviar directamente a la desarrolladora.",
-    thisWeek:"Esta semana", ofExercises:(n)=>`de ${n} ejercicios`, allDoneShort:"¡Todo listo!", streakLabel:"Racha", streakDay:"día seguido", streakDays:"días seguidos", streakNone:"Sin racha aún", last28:"Últimos 28 días", thisWeekShort:"esta semana",
+    thisWeek:"Esta semana", ofExercises:(n)=>`de ${n} ejercicios`, allDoneShort:"¡Todo listo!", streakLabel:"Racha semanal", streakDay:"semana seguida", streakDays:"semanas seguidas", streakNone:"Sin racha aún", last28:"Últimas 16 semanas", thisWeekShort:"esta semana",
     reportSymptom:"Reportar síntoma", reminders:"Recordatorios", reminderTime:"Hora del recordatorio", reminderHint:"El recordatorio solo se envía si aún hay ejercicios pendientes.", reminderEnable:"Activar recordatorios", reminderDisable:"Desactivar recordatorios", oclock:"",
     iosNotInstalled:"Aún no instalada como app", iosInstallHint:"Para los recordatorios la app debe estar instalada en la pantalla de inicio.", iosInstallStep:"Safari → Compartir → Añadir a pantalla de inicio", iosInstallAfter:"Luego abre la app desde el icono y activa los recordatorios aquí.",
     greetMorning:"Buenos días", greetDay:"Buenas tardes", greetEvening:"Buenas noches",
@@ -351,6 +351,7 @@ export default function App() {
   const [planAssignState,setPlanAssignState]=useState(null);
   const [planAssignPatient,setPlanAssignPatient]=useState(null);
   const [planAssignSearch,setPlanAssignSearch]=useState("");
+  const [assignSubTab,setAssignSubTab]=useState("exercises");
   const [langOpen,setLangOpen]=useState(false);
   const [filterCats,setFilterCats]=useState([]);
   const [filterRegions,setFilterRegions]=useState([]);
@@ -426,7 +427,7 @@ export default function App() {
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
         supabase.from("exercise_templates").select("*").order("title"),
         supabase.rpc("get_user_emails"),
-        supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-27);return d.toISOString().split("T")[0];})()),
+        supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-111);return d.toISOString().split("T")[0];})()),
         supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false}),
         supabase.from("plan_templates").select("*").order("created_at"),
         supabase.from("plan_template_exercises").select("*").order("sort_order")
@@ -643,6 +644,44 @@ ${patExercises.map((ex) => `
   };
 
 
+
+  const printPlanTemplate = (plan) => {
+    const planExs = planTemplateExercises.filter(pe => pe.plan_template_id === plan.id);
+    const date = new Date().toLocaleDateString("de-DE", {day:"2-digit",month:"long",year:"numeric"});
+    const html = `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"/><title>Behandlungsplan: ${plan.title}</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:"DM Sans",sans-serif;color:#102828;background:white;padding:24px 40px;font-size:13px}.header{text-align:center;padding-bottom:12px;margin-bottom:16px;border-bottom:1px solid #e0e0e0}.brand-name{font-size:22px;font-weight:700;letter-spacing:6px;color:#102828;margin-bottom:4px}.brand-sub{font-size:10px;letter-spacing:3px;color:#555;text-transform:uppercase}.plan-header{margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #e8e8e8}.plan-title{font-family:"Playfair Display",serif;font-size:22px;font-weight:700;color:#1E4A4B;margin-bottom:4px}.plan-note{font-size:13px;color:#555;margin-top:4px;font-style:italic}.plan-meta{font-size:10px;color:#aaa;margin-top:6px;letter-spacing:1px}.section-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#aaa;margin-bottom:12px}.exercise{display:flex;gap:14px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f0f0f0;page-break-inside:avoid}.exercise:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}.ex-img{width:72px;height:72px;border-radius:8px;object-fit:contain;background:#f7fbfb;flex-shrink:0;border:1px solid #e8f5f5;padding:3px}.ex-img-placeholder{width:72px;height:72px;border-radius:8px;background:#f7fbfb;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid #e8f5f5}.ex-body{flex:1;min-width:0}.ex-title{font-family:"Playfair Display",serif;font-size:14px;font-weight:700;color:#102828;margin-bottom:5px}.ex-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}.tag{font-size:9px;font-weight:600;padding:2px 8px;border-radius:20px;background:#f0f9f9;color:#3D8E8F}.tag-freq{background:#1E4A4B;color:white}.tag-diff-leicht{background:#e8f8f0;color:#2E7D32}.tag-diff-mittel{background:#fff3e0;color:#e65100}.tag-diff-schwer{background:#fde8e8;color:#c0392b}.ex-desc{font-size:11px;color:#444;line-height:1.6;margin-bottom:8px}.steps-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#3D8E8F;margin-bottom:7px}.step{display:flex;gap:8px;margin-bottom:4px;align-items:flex-start}.step-num{width:18px;height:18px;border-radius:50%;background:#5fb8b9;color:white;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}.step-text{font-size:11px;color:#333;line-height:1.5}.video-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 10px;background:#f7fbfb;border-radius:7px;border:1px solid #e0f0f0}.footer-divider{border:none;border-top:1px solid #e0e0e0;margin:14px 0 10px}.footer-note{font-size:10px;color:#aaa;text-align:center;line-height:1.7}@media print{body{padding:20px 28px}@page{margin:0.8cm}}</style></head><body>
+<div class="header"><div class="brand-name">F|T&nbsp;&nbsp;FUN&nbsp;&nbsp;DOG</div><div class="brand-sub">P&nbsp;H&nbsp;Y&nbsp;S&nbsp;I&nbsp;O&nbsp;T&nbsp;H&nbsp;E&nbsp;R&nbsp;A&nbsp;P&nbsp;I&nbsp;E&nbsp;&nbsp;&amp;&nbsp;&nbsp;O&nbsp;S&nbsp;T&nbsp;E&nbsp;O&nbsp;P&nbsp;A&nbsp;T&nbsp;H&nbsp;I&nbsp;E</div></div>
+<div class="plan-header">
+  <div class="plan-title">${plan.title}</div>
+  ${plan.note?`<div class="plan-note">${plan.note}</div>`:""}
+  <div class="plan-meta">B E H A N D L U N G S P L A N &nbsp;·&nbsp; ${date} &nbsp;·&nbsp; ${planExs.length} Übung${planExs.length!==1?"en":""}</div>
+</div>
+<div class="section-label">Ü B U N G E N</div>
+${planExs.map((pe,idx)=>{
+  const tmpl=templates.find(t=>t.id===pe.exercise_template_id);
+  if(!tmpl)return"";
+  return`<div class="exercise">
+${tmpl.image_url?`<img class="ex-img" src="${tmpl.image_url}" alt="${tmpl.title}"/>`:`<div class="ex-img-placeholder">🐾</div>`}
+<div class="ex-body">
+<div class="ex-title">${tmpl.title}</div>
+<div class="ex-tags">
+${(tmpl.categories||[]).map(c=>`<span class="tag">${c}</span>`).join("")}
+${tmpl.difficulty?`<span class="tag tag-diff-${tmpl.difficulty.toLowerCase()}">${tmpl.difficulty}</span>`:""}
+${pe.default_repeat_count?`<span class="tag tag-freq">${pe.default_repeat_count}× pro Woche</span>`:""}
+${pe.default_duration?`<span class="tag">${pe.default_duration}</span>`:""}
+</div>
+${tmpl.description?`<div class="ex-desc">${tmpl.description}</div>`:""}
+${tmpl.instructions&&tmpl.instructions.filter(Boolean).length>0?`<div class="steps-label">S C H R I T T &nbsp; F Ü R &nbsp; S C H R I T T</div>${tmpl.instructions.filter(Boolean).map((step,j)=>`<div class="step"><div class="step-num">${j+1}</div><div class="step-text">${step}</div></div>`).join("")}`:""}
+${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex-shrink:0" src="https://api.qrserver.com/v1/create-qr-code/?size=88x88&color=1E4A4B&bgcolor=f7fbfb&data=${encodeURIComponent(tmpl.video_url)}" alt="QR"/><div><div style="font-size:10px;color:#3D8E8F">Video zur Übung</div><a href="${tmpl.video_url}" style="font-size:9px;color:#3D8E8F;word-break:break-all">${tmpl.video_url}</a></div></div>`:""}
+</div></div>`;
+}).join("")}
+<div class="footer-divider"></div>
+<div class="footer-note">Fit Fun Dog · Tierphysiotherapie &amp; Osteopathie · www.fit-fun-dog.de · info@fit-fun-dog.de · 0159 / 04976681</div>
+</body></html>`;
+    const printWindow = window.open("about:blank","_blank");
+    if(printWindow){printWindow.document.open();printWindow.document.write(html);printWindow.document.close();printWindow.onload=()=>{printWindow.focus();printWindow.print();};setTimeout(()=>{try{printWindow.focus();printWindow.print();}catch(e){}},1200);}
+  };
 
   const handleLogout=async()=>{
     sessionStorage.removeItem("_tfpw");
@@ -1042,28 +1081,57 @@ ${patExercises.map((ex) => `
 
   // ── Streak & calendar logic ──
   const ownerExIds=ownerExs.map(e=>e.id);
-  const activeDates=new Set(
-    historyLogs.filter(l=>ownerExIds.includes(l.exercise_id)).map(l=>l.done_date)
-  );
-  if(doneCount>0)activeDates.add(today);
-  const calcStreak=()=>{
+
+  // Hilfsfunktion: Montag einer Woche als String für ein gegebenes Datum
+  const getMondayStr=(date)=>{
+    const d=new Date(date);
+    const day=d.getDay();
+    const diff=day===0?-6:1-day;
+    d.setDate(d.getDate()+diff);
+    return d.toISOString().split("T")[0];
+  };
+
+  // Für jede Übung: wie oft wurde sie in einer gegebenen Woche (Montag) erledigt?
+  const getDoneCountForWeek=(eid,mondayStr)=>{
+    const monday=new Date(mondayStr);
+    const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);
+    const sundayStr=sunday.toISOString().split("T")[0];
+    return historyLogs.filter(l=>l.exercise_id===eid&&l.done_date>=mondayStr&&l.done_date<=sundayStr).length;
+  };
+
+  // War eine Woche "erfolgreich"? = alle Übungen haben ihre repeat_count erreicht
+  const wasWeekSuccessful=(mondayStr)=>{
+    if(ownerExs.length===0)return false;
+    return ownerExs.every(ex=>getDoneCountForWeek(ex.id,mondayStr)>=(ex.repeat_count||1));
+  };
+
+  // Wochen-Streak: wie viele aufeinanderfolgende abgeschlossene Wochen (von aktueller Woche rückwärts)
+  const calcWeekStreak=()=>{
     let streak=0;
-    const d=new Date();
-    for(let i=0;i<28;i++){
-      const dateStr=d.toISOString().split("T")[0];
-      if(activeDates.has(dateStr)){streak++;}
-      else if(i===0&&doneCount===0){break;}
-      else if(i>0){break;}
-      d.setDate(d.getDate()-1);
+    const currentMonday=getMondayStr(new Date());
+    for(let i=0;i<16;i++){
+      const d=new Date(currentMonday);
+      d.setDate(d.getDate()-(i*7));
+      const mondayStr=d.toISOString().split("T")[0];
+      const isCurrentWeek=(mondayStr===currentMonday);
+      // Aktuelle Woche: prüfe ob schon alle erledigt (doneCount = totalCount)
+      const success=isCurrentWeek?(doneCount===totalCount&&totalCount>0):wasWeekSuccessful(mondayStr);
+      if(success){streak++;}
+      else if(i===0&&doneCount<totalCount){break;} // aktuelle Woche noch nicht voll
+      else{break;}
     }
     return streak;
   };
-  const streak=calcStreak();
-  const calendarDays=Array.from({length:28},(_,i)=>{
-    const d=new Date();
-    d.setDate(d.getDate()-(27-i));
-    const dateStr=d.toISOString().split("T")[0];
-    return{dateStr,isToday:dateStr===today,done:activeDates.has(dateStr)};
+  const streak=calcWeekStreak();
+
+  // Kalender: 16 Wochen-Kacheln (eine pro Woche)
+  const calendarWeeks=Array.from({length:16},(_,i)=>{
+    const d=new Date(getMondayStr(new Date()));
+    d.setDate(d.getDate()-(15-i)*7);
+    const mondayStr=d.toISOString().split("T")[0];
+    const isCurrentWeek=(getMondayStr(new Date())===mondayStr);
+    const success=isCurrentWeek?(doneCount===totalCount&&totalCount>0):wasWeekSuccessful(mondayStr);
+    return{mondayStr,isCurrentWeek,success};
   });
 
   const filteredOwnerExs=ownerExs.filter(ex=>{
@@ -1076,18 +1144,18 @@ ${patExercises.map((ex) => `
     const rOk=assignFilterRegions.length===0||(t2.target_regions||[]).some(r=>assignFilterRegions.includes(r));
     return cOk&&rOk;
   });
-  const filteredPatients=patients.filter(p=>
-    p.name.toLowerCase().includes(patientSearch.toLowerCase())||
-    p.owner.toLowerCase().includes(patientSearch.toLowerCase())||
-    (p.breed||"").toLowerCase().includes(patientSearch.toLowerCase())
-  );
-  const filteredAssignPatients=patients.filter(p=>
-    p.name.toLowerCase().includes(assignPatientSearch.toLowerCase())||
-    p.owner.toLowerCase().includes(assignPatientSearch.toLowerCase())
-  );
-  const filteredUsers=userEmails.filter(u=>
-    u.id!==ADMIN_ID&&u.email.toLowerCase().includes(userSearch.toLowerCase())
-  );
+  const filteredPatients=patients.filter(p=>{
+    const q=patientSearch.trim().toLowerCase();
+    return p.name.toLowerCase().includes(q)||p.owner.toLowerCase().includes(q)||(p.breed||"").toLowerCase().includes(q);
+  });
+  const filteredAssignPatients=patients.filter(p=>{
+    const q=assignPatientSearch.trim().toLowerCase();
+    return p.name.toLowerCase().includes(q)||p.owner.toLowerCase().includes(q);
+  });
+  const filteredUsers=userEmails.filter(u=>{
+    const q=userSearch.trim().toLowerCase();
+    return u.id!==ADMIN_ID&&u.email.toLowerCase().includes(q);
+  });
 
   const patLabel=(p)=>`${p.avatar||""} ${p.name} - ${p.breed} - ${p.owner}`.trim();
   const getUserEmail=(uid)=>userEmails.find(u=>u.id===uid)?.email||null;
@@ -1202,7 +1270,7 @@ ${patExercises.map((ex) => `
 
           {(()=>{
             const visiblePts=isAdmin&&ownerSearch
-              ?patients.filter(p=>p.name.toLowerCase().includes(ownerSearch.toLowerCase())||p.owner.toLowerCase().includes(ownerSearch.toLowerCase()))
+              ?patients.filter(p=>{const q=ownerSearch.trim().toLowerCase();return p.name.toLowerCase().includes(q)||p.owner.toLowerCase().includes(q);})
               :patients;
             if(isAdmin&&ownerSearch&&visiblePts.length===1&&ownerPatient?.id!==visiblePts[0].id){
               setOwnerPatient(visiblePts[0]);setFilterCats([]);setFilterRegions([]);
@@ -1267,24 +1335,30 @@ ${patExercises.map((ex) => `
                     {streak===1?t.streakDay:streak>1?t.streakDays:t.streakNone}
                   </div>
                 </div>
-                <div style={{marginTop:10,display:"flex",gap:4}}>
-                  {[0,1,2,3,4,5,6].map(i=>(
-                    <div key={i} style={{flex:1,height:4,borderRadius:99,background:i<(streak%7||7)?"rgba(255,255,255,0.75)":"rgba(255,255,255,0.2)"}}/>
+                <div style={{marginTop:10,display:"flex",gap:3}}>
+                  {Array.from({length:8}).map((_,i)=>(
+                    <div key={i} style={{flex:1,height:4,borderRadius:99,background:i<(streak%8||8)?"rgba(255,255,255,0.75)":"rgba(255,255,255,0.2)"}}/>
                   ))}
                 </div>
               </div>
             </div>
-            {/* ── 28-Tage Kalender ── */}
+            {/* ── 16-Wochen Kalender ── */}
             <div style={{background:PALE,borderRadius:14,marginBottom:14,overflow:"hidden",border:`1px solid ${LIGHT}`}}>
               <button className="btn" onClick={()=>setCalendarOpen(o=>!o)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",gap:4}}>
                 <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",letterSpacing:"0.8px",textTransform:"uppercase",fontWeight:600}}>{t.last28}</span>
                 <Icon name="chevdown" size={12} color={MID}/>
               </button>
               {calendarOpen&&(
-                <div style={{padding:"0 14px 12px",display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
-                  {calendarDays.map(({dateStr,isToday,done})=>(
-                    <div key={dateStr} style={{height:22,borderRadius:6,background:done?BRAND:isToday?ACCENT+"40":LIGHT,outline:isToday?`2px solid ${ACCENT}`:"none",outlineOffset:1}}/>
-                  ))}
+                <div style={{padding:"0 14px 12px"}}>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(8,1fr)",gap:4,marginBottom:6}}>
+                    {calendarWeeks.map(({mondayStr,isCurrentWeek,success})=>(
+                      <div key={mondayStr} style={{height:22,borderRadius:6,background:success?BRAND:isCurrentWeek?ACCENT+"40":LIGHT,outline:isCurrentWeek?`2px solid ${ACCENT}`:"none",outlineOffset:1}}/>
+                    ))}
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"#3D7070"}}>
+                    <span>vor 15 Wochen</span>
+                    <span>heute</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -1529,6 +1603,9 @@ ${patExercises.map((ex) => `
                           <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:ACCENT,marginTop:4}}>{planExs.length} Übung{planExs.length!==1?"en":""}</div>
                         </div>
                         <div style={{display:"flex",gap:5,flexShrink:0}}>
+                      <button className="btn" onClick={()=>printPlanTemplate(plan)} style={{background:"#E8F5E9",borderRadius:9,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",border:"none"}} title="Plan drucken">
+                        <Icon name="print" size={14} color="#2E7D32"/>
+                      </button>
                           <button className="btn" onClick={()=>{
                             const exItems=planExs.map(pe=>{
                               const tmpl=templates.find(t=>t.id===pe.exercise_template_id);
@@ -1574,57 +1651,144 @@ ${patExercises.map((ex) => `
 
           {practiceTab==="assign"&&(
             <div style={{padding:"16px 14px"}}>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK,marginBottom:12}}>Übung zuweisen</div>
-              <div style={{marginBottom:14}}>
-                <SL text="Patient suchen & auswählen"/>
-                <SearchInput value={assignPatientSearch} onChange={setAssignPatientSearch} placeholder="Name oder Besitzer..."/>
-                <CustomSelect value={selectedPatient?.id||""} onChange={e=>setSelectedPatient(patients.find(p=>p.id===e.target.value)||null)}>
-                  <option value="">{t.selectPatient}</option>
-                  {filteredAssignPatients.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
-                </CustomSelect>
-              </div>
-              {selectedPatient&&(<>
-                <div style={{display:"flex",gap:8,marginBottom:14}}>
-                  <button className="btn" onClick={()=>setSheet("addExercise")} style={{flex:1,background:DARK,color:"#E6F6F6",borderRadius:12,padding:"12px",fontSize:13,fontFamily:"'DM Sans',sans-serif",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-                    <Icon name="assign" size={16} color="#E6F6F6"/> Übung zuweisen
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK,marginBottom:12}}>Zuweisen</div>
+
+              {/* Sub-Tabs */}
+              <div style={{display:"flex",gap:6,marginBottom:16,background:"white",borderRadius:12,padding:4,boxShadow:"0 2px 12px rgba(95,184,185,0.08)"}}>
+                {[["exercises","Einzelne Übung"],["plans","Behandlungsplan"]].map(([tab,label])=>(
+                  <button key={tab} className="btn" onClick={()=>setAssignSubTab(tab)} style={{flex:1,padding:"9px 8px",borderRadius:9,background:assignSubTab===tab?BRAND:"transparent",color:assignSubTab===tab?"#102828":"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                    <Icon name={tab==="exercises"?"assign":"star"} size={13} color={assignSubTab===tab?"#102828":"#3D7070"}/>{label}
                   </button>
-                  <button className="iBtn" title="Übungsplan drucken" onClick={()=>printExercisePlan(selectedPatient)} style={{background:"#E8F5E9",width:44,height:44,borderRadius:12,flexShrink:0}}><Icon name="print" size={16} color="#2E7D32"/></button>
+                ))}
+              </div>
+
+              {/* Sub-Tab: Einzelne Übung */}
+              {assignSubTab==="exercises"&&(<>
+                <div style={{marginBottom:14}}>
+                  <SL text="Patient suchen & auswählen"/>
+                  <SearchInput value={assignPatientSearch} onChange={setAssignPatientSearch} placeholder="Name oder Besitzer..."/>
+                  <CustomSelect value={selectedPatient?.id||""} onChange={e=>setSelectedPatient(patients.find(p=>p.id===e.target.value)||null)}>
+                    <option value="">{t.selectPatient}</option>
+                    {filteredAssignPatients.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
+                  </CustomSelect>
                 </div>
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>{t.homeExercises(exForPatient(selectedPatient.id).length)}</div>
-                {exForPatient(selectedPatient.id).length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:ACCENT,textAlign:"center",padding:"12px 0"}}>{t.noExercisesYet}</div>}
-                <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                  {exForPatient(selectedPatient.id).map(ex=>{
-                    const rc=ex.repeat_count||1;
-                    const doneNow=getDoneCountThisWeek(ex.id);
-                    const fullyDone=doneNow>=rc;
-                    return(
-                      <div key={ex.id} className="card" style={{padding:"11px 13px",display:"flex",gap:10,alignItems:"center",borderLeft:`4px solid ${fullyDone?BRAND:"#E0E0E0"}`,opacity:fullyDone?0.75:1}}>
-                        {ex.image_url?<img src={ex.image_url} alt={ex.title} style={{width:38,height:38,borderRadius:8,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}/>
-                          :<div style={{width:38,height:38,borderRadius:8,background:fullyDone?BRAND+"20":LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}><Icon name="paw" size={17} color={fullyDone?BRAND:ACCENT}/></div>}
-                        <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}>
-                          <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:fullyDone?"#3D7070":"#102828",textDecoration:fullyDone?"line-through":"none"}}>{exT(ex,"title")}</div>
-                          <div style={{display:"flex",alignItems:"center",gap:5,marginTop:3}}>
-                            {Array.from({length:rc}).map((_,i)=>(
-                              <div key={i} style={{width:10,height:10,borderRadius:3,background:i<doneNow?BRAND:"#E0E0E0"}}/>
-                            ))}
-                            <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{doneNow}/{rc} · {ex.duration}</span>
-                          </div>
-                          {(()=>{const fb=getLatestFeedback(ex.id);return fb?(
-                            <div style={{marginTop:5,display:"flex",alignItems:"center",gap:6}}>
-                              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>● {t.painLabels[fb.pain_level]}</span>
-                              <button className="btn" onClick={e=>{e.stopPropagation();setViewFeedbackEx(ex);}} style={{display:"flex",alignItems:"center",gap:3,background:LIGHT,borderRadius:6,padding:"2px 8px",fontFamily:"'DM Sans',sans-serif",fontSize:10,fontWeight:600,color:"#3D7070",border:`1px solid #B8DFE0`}}>
-                                <Icon name="info" size={10} color="#3D7070"/> anzeigen
-                              </button>
+                {selectedPatient&&(<>
+                  <div style={{display:"flex",gap:8,marginBottom:14}}>
+                    <button className="btn" onClick={()=>setSheet("addExercise")} style={{flex:1,background:DARK,color:"#E6F6F6",borderRadius:12,padding:"12px",fontSize:13,fontFamily:"'DM Sans',sans-serif",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                      <Icon name="assign" size={16} color="#E6F6F6"/> Übung zuweisen
+                    </button>
+                    <button className="iBtn" title="Übungsplan drucken" onClick={()=>printExercisePlan(selectedPatient)} style={{background:"#E8F5E9",width:44,height:44,borderRadius:12,flexShrink:0}}><Icon name="print" size={16} color="#2E7D32"/></button>
+                  </div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>{t.homeExercises(exForPatient(selectedPatient.id).length)}</div>
+                  {exForPatient(selectedPatient.id).length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:ACCENT,textAlign:"center",padding:"12px 0"}}>{t.noExercisesYet}</div>}
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {exForPatient(selectedPatient.id).map(ex=>{
+                      const rc=ex.repeat_count||1;
+                      const doneNow=getDoneCountThisWeek(ex.id);
+                      const fullyDone=doneNow>=rc;
+                      return(
+                        <div key={ex.id} className="card" style={{padding:"11px 13px",display:"flex",gap:10,alignItems:"center",borderLeft:`4px solid ${fullyDone?BRAND:"#E0E0E0"}`,opacity:fullyDone?0.75:1}}>
+                          {ex.image_url?<img src={ex.image_url} alt={ex.title} style={{width:38,height:38,borderRadius:8,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}/>
+                            :<div style={{width:38,height:38,borderRadius:8,background:fullyDone?BRAND+"20":LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}><Icon name="paw" size={17} color={fullyDone?BRAND:ACCENT}/></div>}
+                          <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}>
+                            <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:fullyDone?"#3D7070":"#102828",textDecoration:fullyDone?"line-through":"none"}}>{exT(ex,"title")}</div>
+                            <div style={{display:"flex",alignItems:"center",gap:5,marginTop:3}}>
+                              {Array.from({length:rc}).map((_,i)=>(
+                                <div key={i} style={{width:10,height:10,borderRadius:3,background:i<doneNow?BRAND:"#E0E0E0"}}/>
+                              ))}
+                              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{doneNow}/{rc} · {ex.duration}</span>
                             </div>
-                          ):null;})()}
+                            {(()=>{const fb=getLatestFeedback(ex.id);return fb?(
+                              <div style={{marginTop:5,display:"flex",alignItems:"center",gap:6}}>
+                                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>● {t.painLabels[fb.pain_level]}</span>
+                                <button className="btn" onClick={e=>{e.stopPropagation();setViewFeedbackEx(ex);}} style={{display:"flex",alignItems:"center",gap:3,background:LIGHT,borderRadius:6,padding:"2px 8px",fontFamily:"'DM Sans',sans-serif",fontSize:10,fontWeight:600,color:"#3D7070",border:`1px solid #B8DFE0`}}>
+                                  <Icon name="info" size={10} color="#3D7070"/> anzeigen
+                                </button>
+                              </div>
+                            ):null;})()}
+                          </div>
+                          <button className="iBtn" onClick={()=>{setSheetData(ex);setSheet("confirmDeleteEx");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                         </div>
-                        <button className="iBtn" onClick={()=>{setSheetData(ex);setSheet("confirmDeleteEx");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                </>)}
+                {!selectedPatient&&<div className="card" style={{padding:24,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Bitte zuerst einen Patienten auswählen.</div>}
               </>)}
-              {!selectedPatient&&<div className="card" style={{padding:24,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Bitte zuerst einen Patienten auswählen.</div>}
+
+              {/* Sub-Tab: Behandlungsplan */}
+              {assignSubTab==="plans"&&(<>
+                <div style={{marginBottom:14}}>
+                  <SL text="Plan auswählen"/>
+                  {planTemplates.length===0?<div className="card" style={{padding:20,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Behandlungspläne erstellt.</div>:(
+                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                      {planTemplates.map(plan=>{
+                        const planExs=planTemplateExercises.filter(pe=>pe.plan_template_id===plan.id);
+                        return(
+                          <div key={plan.id} className="card" style={{padding:"13px 15px",cursor:"pointer",border:`2px solid ${planAssignState?.plan?.id===plan.id?BRAND:"transparent"}`,background:planAssignState?.plan?.id===plan.id?LIGHT:"white"}}
+                            onClick={()=>{
+                              const exItems=planExs.map(pe=>{
+                                const tmpl=templates.find(t=>t.id===pe.exercise_template_id);
+                                return{...pe,title:tmpl?.title||"",categories:tmpl?.categories||[],target_regions:tmpl?.target_regions||[],difficulty:tmpl?.difficulty||"Leicht",description:tmpl?.description||"",instructions:tmpl?.instructions||[],image_url:tmpl?.image_url||null,video_url:tmpl?.video_url||null,
+                                  title_en:tmpl?.title_en||null,description_en:tmpl?.description_en||null,instructions_en:tmpl?.instructions_en||null,
+                                  title_es:tmpl?.title_es||null,description_es:tmpl?.description_es||null,instructions_es:tmpl?.instructions_es||null,
+                                  duration:pe.default_duration||"",repeat_count:pe.default_repeat_count||1};
+                              });
+                              setPlanAssignState({plan,exercises:exItems});
+                              setPlanAssignPatient(null);setPlanAssignSearch("");
+                            }}>
+                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                              <div>
+                                <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#102828"}}>{plan.title}</div>
+                                {plan.note&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginTop:2}}>{plan.note}</div>}
+                                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:ACCENT,marginTop:3}}>{planExs.length} Übung{planExs.length!==1?"en":""}</div>
+                              </div>
+                              {planAssignState?.plan?.id===plan.id&&<Icon name="check" size={18} color={BRAND}/>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {planAssignState&&(<>
+                  <div style={{marginBottom:14}}>
+                    <SL text="Patient auswählen"/>
+                    <SearchInput value={planAssignSearch} onChange={setPlanAssignSearch} placeholder="Name oder Besitzer..."/>
+                    <CustomSelect value={planAssignPatient?.id||""} onChange={e=>setPlanAssignPatient(patients.find(p=>p.id===e.target.value)||null)}>
+                      <option value="">Patient auswählen...</option>
+                      {patients.filter(p=>{const q=planAssignSearch.trim().toLowerCase();return !planAssignSearch||p.name.toLowerCase().includes(q)||p.owner.toLowerCase().includes(q);}).map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
+                    </CustomSelect>
+                  </div>
+
+                  <div style={{marginBottom:14}}>
+                    <SL text="Übungen anpassen"/>
+                    <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                      {planAssignState.exercises.map((ex,idx)=>(
+                        <div key={idx} style={{background:PALE,borderRadius:10,padding:"8px 10px",border:`1.5px solid ${LIGHT}`}}>
+                          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828",marginBottom:6}}>{exT(ex,"title")}</div>
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <input value={ex.duration} onChange={e=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,duration:e.target.value}:x)}))} placeholder="Dauer..." style={{...inp,fontSize:16,padding:"4px 8px",flex:1}}/>
+                            <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
+                              <button className="btn" onClick={()=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,repeat_count:Math.max(1,(x.repeat_count||1)-1)}:x)}))} style={{width:22,height:22,borderRadius:5,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:DARK}}>−</button>
+                              <span style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:DARK,minWidth:20,textAlign:"center"}}>{ex.repeat_count||1}x</span>
+                              <button className="btn" onClick={()=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,repeat_count:Math.min(7,(x.repeat_count||1)+1)}:x)}))} style={{width:22,height:22,borderRadius:5,background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#102828"}}>+</button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button className="btn" disabled={saving||!planAssignPatient||planAssignState.exercises.length===0} onClick={assignPlanToPatient}
+                    style={{width:"100%",padding:"14px",borderRadius:12,background:(planAssignPatient&&planAssignState.exercises.length>0)?BRAND:"#B8DFE0",color:(planAssignPatient&&planAssignState.exercises.length>0)?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+                    {saving?t.saving:`${planAssignState.exercises.length} Übung${planAssignState.exercises.length!==1?"en":""} zuweisen`}
+                  </button>
+                </>)}
+
+                {!planAssignState&&planTemplates.length>0&&<div className="card" style={{marginTop:8,padding:20,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Plan antippen um zuzuweisen.</div>}
+              </>)}
             </div>
           )}
         </div>
@@ -2065,7 +2229,7 @@ ${patExercises.map((ex) => `
                 <SearchInput value={planAssignSearch} onChange={setPlanAssignSearch} placeholder="Name oder Besitzer..."/>
                 <CustomSelect value={planAssignPatient?.id||""} onChange={e=>setPlanAssignPatient(patients.find(p=>p.id===e.target.value)||null)}>
                   <option value="">Patient auswählen...</option>
-                  {patients.filter(p=>!planAssignSearch||p.name.toLowerCase().includes(planAssignSearch.toLowerCase())||p.owner.toLowerCase().includes(planAssignSearch.toLowerCase())).map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
+                  {patients.filter(p=>{const q=planAssignSearch.trim().toLowerCase();return !planAssignSearch||p.name.toLowerCase().includes(q)||p.owner.toLowerCase().includes(q);}).map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
                 </CustomSelect>
               </div>
 
