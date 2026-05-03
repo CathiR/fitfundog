@@ -94,15 +94,45 @@ const T = {
   de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", navAdmin:"Admin", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt.",
     plans:"Behandlungspläne", noPlans:"Noch keine Behandlungspläne erstellt.", noTemplates:"Noch keine Übungsvorlagen erstellt.", newExercise:"Neue Übung erstellen", editExercise:"Übung bearbeiten", addExercise:"Übung hinzufügen", printPlan:"Übungsplan drucken", searchPatient:"Patient suchen & auswählen", unknownExercise:"Unbekannte Übung", reminderActive:"Täglich aktiv — nur bei offenen Übungen", reminderInactive:"Erinnert dich täglich an deine Übungen", deleteAccount:"Konto löschen", deleteAccountConfirm:"Konto unwiderruflich löschen", deleting:"Wird gelöscht...", deleteWord:"LÖSCHEN", pwSecurityHint:"Aus Sicherheitsgründen bitte ein eigenes Passwort vergeben.", changePw:"Bitte Passwort ändern", feedbackPlaceholder:"Dein Feedback...", feedbackTitle:"Feedback geben", feedbackSub:"Dein Feedback hilft dabei die App weiterzuentwickeln.", feedbackSend:"Feedback senden", deleteAccountWarningTitle:"Achtung – diese Aktion ist unwiderruflich", deleteAccountWarningText:"Dein Konto und alle damit verbundenen Daten werden dauerhaft gelöscht. Deine Therapiedaten bleiben bei deiner Therapeutin erhalten.", deleteConfirmLabel:(word)=>`Zur Bestätigung "${word}" eingeben`,
     alertPwMin:"Passwort muss mindestens 6 Zeichen haben.", alertAddHomescreen:"Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.", alertNoPush:"Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.", alertPushBlocked:"Benachrichtigungen sind blockiert. Bitte erlaube sie in den iPhone-Einstellungen unter Mitteilungen → FitFunDog.", alertDeleteFail:"Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter info@fit-fun-dog.de zur manuellen Löschung.",
-    noAccount:"Kein Konto? Bitte wende dich an deine Therapeutin.", forgotPw:"Passwort vergessen?", resetSent:"Reset-Email gesendet – bitte Postfach prüfen.", adminTitle:"Admin", adminSub:"Einstellungen & App-Verwaltung", legalTitle:"Rechtliches", feedbackAppTitle:"Feedback zur App", feedbackAppSub:"Direkt an die Entwicklerin senden." },
+    noAccount:"Kein Konto? Bitte wende dich an deine Therapeutin.", forgotPw:"Passwort vergessen?", resetSent:"Reset-Email gesendet – bitte Postfach prüfen.", adminTitle:"Admin", adminSub:"Einstellungen & App-Verwaltung", legalTitle:"Rechtliches", feedbackAppTitle:"Feedback zur App", feedbackAppSub:"Direkt an die Entwicklerin senden.",
+    thisWeek:"Diese Woche", ofExercises:(n)=>`von ${n} Übungen`, allDoneShort:"Alle erledigt!", streakLabel:"Streak", streakDay:"Tag in Folge", streakDays:"Tage in Folge", streakNone:"Noch kein Streak", last28:"Letzte 28 Tage", thisWeekShort:"diese Woche",
+    reportSymptom:"Befund melden", reminders:"Erinnerungen", reminderTime:"Erinnerungszeit", reminderHint:"Die Erinnerung wird nur gesendet wenn noch Übungen offen sind.", reminderEnable:"Erinnerungen aktivieren", reminderDisable:"Erinnerungen deaktivieren", oclock:"Uhr",
+    iosNotInstalled:"Noch nicht als App installiert", iosInstallHint:"Für Erinnerungen muss die App auf dem Home-Bildschirm installiert sein.", iosInstallStep:"Safari → Teilen-Symbol → Zum Home-Bildschirm", iosInstallAfter:"Danach die App über das Icon öffnen und hier Erinnerungen aktivieren.",
+    greetMorning:"Guten Morgen", greetDay:"Guten Tag", greetEvening:"Guten Abend",
+    privacyLink:"Datenschutz", imprintLink:"Impressum", adminPreviewHint:"Vorschau — so sehen Ihre Kunden die App",
+    painLevel:"Schmerzlevel", commentOptional:"Kommentar (optional)", saveFinding:"Befund speichern",
+    painLabels:["","Kein Schmerz","Leicht","Mittel","Stark","Sehr stark"],
+    categories:["Regeneration","Balance","Kräftigung","Koordination","Mobilisation"],
+    targetRegions:["Ganzer Körper","Hinterhand","Vorderhand","Rumpf","Vorderpfoten","Rücken"],
+    difficulties:["Leicht","Mittel","Schwer"] },
   en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", navAdmin:"Admin", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress.",
     plans:"Treatment Plans", noPlans:"No treatment plans created yet.", noTemplates:"No exercise templates created yet.", newExercise:"New exercise", editExercise:"Edit exercise", addExercise:"Add exercise", printPlan:"Print plan", searchPatient:"Search & select patient", unknownExercise:"Unknown exercise", reminderActive:"Active daily — only when exercises are open", reminderInactive:"Reminds you daily of your exercises", deleteAccount:"Delete account", deleteAccountConfirm:"Permanently delete account", deleting:"Deleting...", deleteWord:"DELETE", pwSecurityHint:"For security reasons please set your own password.", changePw:"Please change password", feedbackPlaceholder:"Your feedback...", feedbackTitle:"Give feedback", feedbackSub:"Your feedback helps improve the app.", feedbackSend:"Send feedback", deleteAccountWarningTitle:"Warning – this action is irreversible", deleteAccountWarningText:"Your account and all associated data will be permanently deleted. Your therapy data will remain with your therapist.", deleteConfirmLabel:(word)=>`Type "${word}" to confirm`,
     alertPwMin:"Password must be at least 6 characters.", alertAddHomescreen:"Please add the app to your home screen first (Safari → Share → Add to Home Screen). Then open the app via the home screen icon and activate reminders again.", alertNoPush:"Your browser does not support push notifications. Please use Safari on iOS 16.4+ or Chrome on Android.", alertPushBlocked:"Notifications are blocked. Please allow them in iPhone Settings under Notifications → FitFunDog.", alertDeleteFail:"Your account cannot be deleted automatically. Please contact your therapist at info@fit-fun-dog.de for manual deletion.",
-    noAccount:"No account? Please contact your therapist.", forgotPw:"Forgot password?", resetSent:"Reset email sent – please check your inbox.", adminTitle:"Admin", adminSub:"Settings & App management", legalTitle:"Legal", feedbackAppTitle:"App feedback", feedbackAppSub:"Send directly to the developer." },
+    noAccount:"No account? Please contact your therapist.", forgotPw:"Forgot password?", resetSent:"Reset email sent – please check your inbox.", adminTitle:"Admin", adminSub:"Settings & App management", legalTitle:"Legal", feedbackAppTitle:"App feedback", feedbackAppSub:"Send directly to the developer.",
+    thisWeek:"This Week", ofExercises:(n)=>`of ${n} exercises`, allDoneShort:"All done!", streakLabel:"Streak", streakDay:"day in a row", streakDays:"days in a row", streakNone:"No streak yet", last28:"Last 28 days", thisWeekShort:"this week",
+    reportSymptom:"Report symptom", reminders:"Reminders", reminderTime:"Reminder time", reminderHint:"The reminder is only sent if exercises are still open.", reminderEnable:"Enable reminders", reminderDisable:"Disable reminders", oclock:"",
+    iosNotInstalled:"Not installed as app yet", iosInstallHint:"For reminders the app must be installed on the home screen.", iosInstallStep:"Safari → Share → Add to Home Screen", iosInstallAfter:"Then open the app via the icon and enable reminders here.",
+    greetMorning:"Good morning", greetDay:"Good afternoon", greetEvening:"Good evening",
+    privacyLink:"Privacy", imprintLink:"Imprint", adminPreviewHint:"Preview — this is how your clients see the app",
+    painLevel:"Pain level", commentOptional:"Comment (optional)", saveFinding:"Save report",
+    painLabels:["","No pain","Mild","Moderate","Severe","Very severe"],
+    categories:["Regeneration","Balance","Strengthening","Coordination","Mobilisation"],
+    targetRegions:["Whole body","Hindquarters","Forequarters","Core","Front paws","Back"],
+    difficulties:["Easy","Medium","Hard"] },
   es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", navAdmin:"Admin", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes para el entrenamiento", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento. Sin descanso suficiente, el sobreentrenamiento reemplaza al progreso.",
     plans:"Planes de tratamiento", noPlans:"Aún no hay planes de tratamiento.", noTemplates:"Aún no hay plantillas de ejercicios.", newExercise:"Nuevo ejercicio", editExercise:"Editar ejercicio", addExercise:"Añadir ejercicio", printPlan:"Imprimir plan", searchPatient:"Buscar y seleccionar paciente", unknownExercise:"Ejercicio desconocido", reminderActive:"Activo diariamente — solo si hay ejercicios pendientes", reminderInactive:"Te recuerda tus ejercicios cada día", deleteAccount:"Eliminar cuenta", deleteAccountConfirm:"Eliminar cuenta permanentemente", deleting:"Eliminando...", deleteWord:"ELIMINAR", pwSecurityHint:"Por seguridad, establece tu propia contraseña.", changePw:"Por favor cambia la contraseña", feedbackPlaceholder:"Tu comentario...", feedbackTitle:"Dar feedback", feedbackSub:"Tu feedback ayuda a mejorar la app.", feedbackSend:"Enviar feedback", deleteAccountWarningTitle:"Atención – esta acción es irreversible", deleteAccountWarningText:"Tu cuenta y todos los datos asociados serán eliminados permanentemente. Tus datos de terapia permanecerán con tu terapeuta.", deleteConfirmLabel:(word)=>`Escribe "${word}" para confirmar`,
     alertPwMin:"La contraseña debe tener al menos 6 caracteres.", alertAddHomescreen:"Por favor añade primero la app a tu pantalla de inicio (Safari → Compartir → Añadir a pantalla de inicio). Luego abre la app desde el icono y activa los recordatorios.", alertNoPush:"Tu navegador no admite notificaciones push. Usa Safari en iOS 16.4+ o Chrome en Android.", alertPushBlocked:"Las notificaciones están bloqueadas. Actívalas en Ajustes del iPhone en Notificaciones → FitFunDog.", alertDeleteFail:"Tu cuenta no puede eliminarse automáticamente. Contacta a tu terapeuta en info@fit-fun-dog.de para la eliminación manual.",
-    noAccount:"¿Sin cuenta? Contacta a tu terapeuta.", forgotPw:"¿Olvidaste tu contraseña?", resetSent:"Email enviado – revisa tu bandeja de entrada.", adminTitle:"Admin", adminSub:"Ajustes y gestión de la app", legalTitle:"Legal", feedbackAppTitle:"Feedback de la app", feedbackAppSub:"Enviar directamente a la desarrolladora." }
+    noAccount:"¿Sin cuenta? Contacta a tu terapeuta.", forgotPw:"¿Olvidaste tu contraseña?", resetSent:"Email enviado – revisa tu bandeja de entrada.", adminTitle:"Admin", adminSub:"Ajustes y gestión de la app", legalTitle:"Legal", feedbackAppTitle:"Feedback de la app", feedbackAppSub:"Enviar directamente a la desarrolladora.",
+    thisWeek:"Esta semana", ofExercises:(n)=>`de ${n} ejercicios`, allDoneShort:"¡Todo listo!", streakLabel:"Racha", streakDay:"día seguido", streakDays:"días seguidos", streakNone:"Sin racha aún", last28:"Últimos 28 días", thisWeekShort:"esta semana",
+    reportSymptom:"Reportar síntoma", reminders:"Recordatorios", reminderTime:"Hora del recordatorio", reminderHint:"El recordatorio solo se envía si aún hay ejercicios pendientes.", reminderEnable:"Activar recordatorios", reminderDisable:"Desactivar recordatorios", oclock:"",
+    iosNotInstalled:"Aún no instalada como app", iosInstallHint:"Para los recordatorios la app debe estar instalada en la pantalla de inicio.", iosInstallStep:"Safari → Compartir → Añadir a pantalla de inicio", iosInstallAfter:"Luego abre la app desde el icono y activa los recordatorios aquí.",
+    greetMorning:"Buenos días", greetDay:"Buenas tardes", greetEvening:"Buenas noches",
+    privacyLink:"Privacidad", imprintLink:"Aviso legal", adminPreviewHint:"Vista previa — así ven la app tus clientes",
+    painLevel:"Nivel de dolor", commentOptional:"Comentario (opcional)", saveFinding:"Guardar reporte",
+    painLabels:["","Sin dolor","Leve","Moderado","Fuerte","Muy fuerte"],
+    categories:["Regeneración","Equilibrio","Fortalecimiento","Coordinación","Movilización"],
+    targetRegions:["Cuerpo entero","Cuartos traseros","Cuartos delanteros","Núcleo","Patas delanteras","Espalda"],
+    difficulties:["Fácil","Medio","Difícil"] }
 };
 
 const TIPS = {
@@ -667,6 +697,19 @@ ${patExercises.map((ex) => `
 
   const isPWA=()=>window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true;
 
+  // Sprachabhängige Übungsfelder: gibt den übersetzten Wert zurück, fällt auf DE zurück
+  const exT=(ex,field)=>{
+    if(lang==="de")return ex[field];
+    const translated=ex[`${field}_${lang}`];
+    return (translated&&(Array.isArray(translated)?translated.length>0:translated.trim()!==""))?translated:ex[field];
+  };
+
+  // Kategorie/Region-Übersetzung: DE-Wert auf t.categories/t.targetRegions mappen
+  const DE_CATS=["Regeneration","Balance","Kräftigung","Koordination","Mobilisation"];
+  const DE_REGS=["Ganzer Körper","Hinterhand","Vorderhand","Rumpf","Vorderpfoten","Rücken"];
+  const tCat=(c)=>{const i=DE_CATS.indexOf(c);return i>=0?t.categories[i]:c;};
+  const tReg=(r)=>{const i=DE_REGS.indexOf(r);return i>=0?t.targetRegions[i]:r;};
+
   const checkPushStatus=async()=>{
     if(!("serviceWorker" in navigator)||!("PushManager" in window))return;
     try{
@@ -843,7 +886,11 @@ ${patExercises.map((ex) => `
       difficulty:selectedTemplate.difficulty,description:selectedTemplate.description,
       instructions:selectedTemplate.instructions,image_url:selectedTemplate.image_url||null,
       video_url:selectedTemplate.video_url||null,duration,repeat_count:repeatCount,
-      template_id:selectedTemplate.id||null
+      template_id:selectedTemplate.id||null,
+      title_en:selectedTemplate.title_en||null,description_en:selectedTemplate.description_en||null,
+      instructions_en:selectedTemplate.instructions_en||null,
+      title_es:selectedTemplate.title_es||null,description_es:selectedTemplate.description_es||null,
+      instructions_es:selectedTemplate.instructions_es||null
     }).select().single();
     if(!error&&data)setExercises(prev=>[...prev,data]);
     setSaving(false);closeSheet();
@@ -883,7 +930,9 @@ ${patExercises.map((ex) => `
         await supabase.from("exercises").update({
           title:fields.title,categories:fields.categories,target_regions:fields.target_regions,
           difficulty:fields.difficulty,description:fields.description,instructions:fields.instructions,
-          image_url:fields.image_url,video_url:fields.video_url
+          image_url:fields.image_url,video_url:fields.video_url,
+          title_en:data.title_en||null,description_en:data.description_en||null,instructions_en:data.instructions_en||null,
+          title_es:data.title_es||null,description_es:data.description_es||null,instructions_es:data.instructions_es||null
         }).eq("template_id",editTemplateData.id);
         // Reload exercises to reflect changes
         const{data:ed}=await supabase.from("exercises").select("*").order("created_at");
@@ -947,7 +996,11 @@ ${patExercises.map((ex) => `
       difficulty:ex.difficulty,description:ex.description,instructions:ex.instructions||[],
       image_url:ex.image_url||null,video_url:ex.video_url||null,
       duration:ex.duration||"",repeat_count:ex.repeat_count||1,
-      template_id:ex.exercise_template_id||null
+      template_id:ex.exercise_template_id||null,
+      title_en:ex.title_en||null,description_en:ex.description_en||null,
+      instructions_en:ex.instructions_en||null,
+      title_es:ex.title_es||null,description_es:ex.description_es||null,
+      instructions_es:ex.instructions_es||null
     }));
     const{data:newExercises,error}=await supabase.from("exercises").insert(rows).select();
     if(!error&&newExercises)setExercises(prev=>[...prev,...newExercises]);
@@ -977,7 +1030,6 @@ ${patExercises.map((ex) => `
 
   const getLatestFeedback=(eid)=>feedbacks.find(f=>f.exercise_id===eid)||null;
 
-  const PAIN_LABELS=["","Kein Schmerz","Leicht","Mittel","Stark","Sehr stark"];
   const PAIN_COLORS=["","#2E7D32","#8BC34A","#FF9800","#F44336","#B71C1C"];
   const ownerExs=ownerPatient?exForPatient(ownerPatient.id):[];
   const doneCount=ownerExs.filter(e=>isFullyDone(e)).length;
@@ -1118,7 +1170,7 @@ ${patExercises.map((ex) => `
             <>
               <div style={{background:BRAND+"18",border:`1.5px solid ${BRAND}`,borderRadius:12,padding:"10px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
                 <Icon name="info" size={15} color={BRAND}/>
-                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:MID}}>Vorschau — so sehen Ihre Kunden die App</span>
+                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:MID}}>{t.adminPreviewHint}</span>
               </div>
               <SearchInput value={ownerSearch} onChange={setOwnerSearch} placeholder="Besitzer oder Patient suchen..."/>
             </>
@@ -1137,7 +1189,7 @@ ${patExercises.map((ex) => `
           {/* Owner name greeting */}
           {ownerPatient&&(()=>{
             const h=new Date().getHours();
-            const greet=h<12?"Guten Morgen":h<18?"Guten Tag":"Guten Abend";
+            const greet=h<12?t.greetMorning:h<18?t.greetDay:t.greetEvening;
             return(
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK,marginBottom:12}}>
                 {greet}, {ownerPatient.owner}!
@@ -1172,7 +1224,7 @@ ${patExercises.map((ex) => `
               <div style={{background:`linear-gradient(135deg,#0F3D2E 0%,${DARK} 100%)`,borderRadius:16,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:12,boxShadow:"0 4px 16px rgba(30,74,75,0.3)"}}>
                 <div style={{fontSize:36,lineHeight:1,flexShrink:0}}>{ownerPatient.avatar||"🐕"}</div>
                 <div>
-                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#6EE7B7",marginBottom:2}}>Alle erledigt!</div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#6EE7B7",marginBottom:2}}>{t.allDoneShort}</div>
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#B8E8E8"}}>{ownerPatient.name} sagt Danke!</div>
                 </div>
                 <div style={{marginLeft:"auto",flexShrink:0}}>
@@ -1185,13 +1237,13 @@ ${patExercises.map((ex) => `
               {/* Tile 1: Wochenfortschritt */}
               <div style={{background:`linear-gradient(135deg,${DARK} 0%,${MID} 100%)`,borderRadius:16,padding:"16px 14px 14px",boxShadow:"0 4px 16px rgba(30,74,75,0.25)",display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:120}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:ACCENT,letterSpacing:"1px",textTransform:"uppercase"}}>Diese Woche</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:ACCENT,letterSpacing:"1px",textTransform:"uppercase"}}>{t.thisWeek}</div>
                   <div style={{fontSize:22,lineHeight:1}}>{ownerPatient.avatar||"🐕"}</div>
                 </div>
                 <div>
                   <div style={{fontFamily:"'Playfair Display',serif",fontSize:42,fontWeight:700,color:"white",lineHeight:1}}>{doneCount}</div>
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:allDone?"#6EE7B7":ACCENT,marginTop:3,fontWeight:allDone?700:400}}>
-                    {allDone?"Alle erledigt!":`von ${totalCount} Übungen`}
+                    {allDone?t.allDoneShort:t.ofExercises(totalCount)}
                   </div>
                 </div>
                 <div style={{marginTop:10,height:4,borderRadius:99,background:"rgba(255,255,255,0.15)"}}>
@@ -1202,14 +1254,14 @@ ${patExercises.map((ex) => `
               <div style={{background:`linear-gradient(135deg,${MID} 0%,${BRAND} 100%)`,borderRadius:16,padding:"16px 14px 14px",boxShadow:"0 4px 16px rgba(95,184,185,0.25)",display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:120}}>
                 <div style={{display:"flex",alignItems:"center",gap:5}}>
                   <Icon name="star" size={12} color="#FBBF24"/>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"#E6F6F6",letterSpacing:"1px",textTransform:"uppercase"}}>Streak</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"#E6F6F6",letterSpacing:"1px",textTransform:"uppercase"}}>{t.streakLabel}</div>
                 </div>
                 <div>
                   <div style={{fontFamily:"'Playfair Display',serif",fontSize:42,fontWeight:700,color:"white",lineHeight:1}}>
                     {streak>0?streak:"—"}
                   </div>
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#E6F6F6",marginTop:3}}>
-                    {streak===1?"Tag in Folge":streak>1?"Tage in Folge":"Noch kein Streak"}
+                    {streak===1?t.streakDay:streak>1?t.streakDays:t.streakNone}
                   </div>
                 </div>
                 <div style={{marginTop:10,display:"flex",gap:4}}>
@@ -1222,7 +1274,7 @@ ${patExercises.map((ex) => `
             {/* ── 28-Tage Kalender ── */}
             <div style={{background:PALE,borderRadius:14,marginBottom:14,overflow:"hidden",border:`1px solid ${LIGHT}`}}>
               <button className="btn" onClick={()=>setCalendarOpen(o=>!o)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",gap:4}}>
-                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",letterSpacing:"0.8px",textTransform:"uppercase",fontWeight:600}}>Letzte 28 Tage</span>
+                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",letterSpacing:"0.8px",textTransform:"uppercase",fontWeight:600}}>{t.last28}</span>
                 <Icon name="chevdown" size={12} color={MID}/>
               </button>
               {calendarOpen&&(
@@ -1252,9 +1304,9 @@ ${patExercises.map((ex) => `
                       {ex.image_url?<img src={ex.image_url} alt={ex.title} style={{width:50,height:50,borderRadius:12,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2}}/>
                         :<div style={{width:50,height:50,borderRadius:12,background:BRAND+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={22} color={BRAND}/></div>}
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600,lineHeight:1.3,textDecoration:fullyDone?"line-through":"none",color:fullyDone?ACCENT:"#102828",marginBottom:5}}>{ex.title}</div>
+                        <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600,lineHeight:1.3,textDecoration:fullyDone?"line-through":"none",color:fullyDone?ACCENT:"#102828",marginBottom:5}}>{exT(ex,"title")}</div>
                         <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:7}}>
-                          {(ex.categories||[]).slice(0,2).map(c=><span key={c} className="tag" style={{background:BRAND+"20",color:BRAND}}>{c}</span>)}
+                          {(ex.categories||[]).slice(0,2).map(c=><span key={c} className="tag" style={{background:BRAND+"20",color:BRAND}}>{tCat(c)}</span>)}
                           <span className="tag" style={{background:(difficultyColor[ex.difficulty]||BRAND)+"20",color:difficultyColor[ex.difficulty]||BRAND}}>{ex.difficulty}</span>
                           <span className="tag" style={{background:LIGHT,color:"#3D7070"}}>⏱ {ex.duration}</span>
                         </div>
@@ -1272,15 +1324,15 @@ ${patExercises.map((ex) => `
                               );
                             })}
                           </div>
-                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{doneNow}/{rc}× diese Woche</span>
+                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{doneNow}/{rc}× {t.thisWeekShort}</span>
                         </div>
                         {/* Feedback button + latest feedback indicator */}
                         <div style={{display:"flex",alignItems:"center",gap:6,marginTop:7}} onClick={e=>e.stopPropagation()}>
                           <button className="btn" onClick={e=>{e.stopPropagation();const fb=getLatestFeedback(ex.id);setFeedbackSheet(ex);setFeedbackPain(fb?.pain_level||0);setFeedbackComment(fb?.comment||"");}}
                             style={{display:"flex",alignItems:"center",gap:4,background:LIGHT,borderRadius:8,padding:"4px 10px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color:"#3D7070",border:`1px solid #B8DFE0`}}>
-                            <Icon name="info" size={12} color="#3D7070"/> Befund melden
+                            <Icon name="info" size={12} color="#3D7070"/> {t.reportSymptom}
                           </button>
-                          {(()=>{const fb=getLatestFeedback(ex.id);return fb?(<span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:PAIN_COLORS[fb.pain_level],fontWeight:600}}>● {PAIN_LABELS[fb.pain_level]}</span>):null;})()}
+                          {(()=>{const fb=getLatestFeedback(ex.id);return fb?(<span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:PAIN_COLORS[fb.pain_level],fontWeight:600}}>● {t.painLabels[fb.pain_level]}</span>):null;})()}
                         </div>
                       </div>
                     </div>
@@ -1312,37 +1364,37 @@ ${patExercises.map((ex) => `
                 <Icon name={pushEnabled?"bell":"belloff"} size={20} color={pushEnabled?BRAND:"#3D7070"}/>
               </div>
               <div style={{flex:1}}>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK}}>Erinnerungen</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK}}>{t.reminders}</div>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginTop:1}}>
-                  {pushEnabled?"Täglich aktiv — nur bei offenen Übungen":"Erinnert dich täglich an deine Übungen"}
+                  {pushEnabled?t.reminderActive:t.reminderInactive}
                 </div>
               </div>
             </div>
 
             {showIOSHint&&(
               <div style={{background:"#FFF8E1",border:"1.5px solid #FFB300",borderRadius:12,padding:"12px 14px",marginBottom:14}}>
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:"#E65100",marginBottom:4}}>Noch nicht als App installiert</div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:"#E65100",marginBottom:4}}>{t.iosNotInstalled}</div>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#5D4037",lineHeight:1.6}}>
-                  Für Erinnerungen muss die App auf dem Home-Bildschirm installiert sein.<br/>
-                  <strong>Safari → Teilen-Symbol → Zum Home-Bildschirm</strong><br/>
-                  Danach die App über das Icon öffnen und hier Erinnerungen aktivieren.
+                  {t.iosInstallHint}<br/>
+                  <strong>{t.iosInstallStep}</strong><br/>
+                  {t.iosInstallAfter}
                 </div>
               </div>
             )}
 
             {pushEnabled&&(
               <div style={{background:LIGHT,borderRadius:12,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:10}}>Erinnerungszeit</div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:10}}>{t.reminderTime}</div>
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,flex:1,background:"white",borderRadius:10,border:`1.5px solid ${BRAND}`,padding:"10px 14px"}}>
                     <Icon name="clock" size={16} color={BRAND}/>
                     <input type="time" value={pushTime} onChange={e=>updatePushTime(e.target.value)}
                       style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,fontWeight:600,color:DARK,border:"none",outline:"none",background:"transparent",WebkitTextFillColor:DARK,flex:1}}/>
                   </div>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070"}}>Uhr</div>
+                  {t.oclock&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070"}}>{t.oclock}</div>}
                 </div>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:ACCENT,marginTop:8}}>
-                  Die Erinnerung wird nur gesendet wenn noch Übungen offen sind.
+                  {t.reminderHint}
                 </div>
               </div>
             )}
@@ -1350,7 +1402,7 @@ ${patExercises.map((ex) => `
             <button className="btn" onClick={pushEnabled?disablePush:enablePush} disabled={pushLoading}
               style={{width:"100%",padding:"13px",borderRadius:12,background:pushEnabled?"#FFE8E8":BRAND,color:pushEnabled?"#C0392B":"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
               <Icon name={pushEnabled?"belloff":"bell"} size={16} color={pushEnabled?"#C0392B":"#102828"}/>
-              {pushLoading?"...":(pushEnabled?"Erinnerungen deaktivieren":"Erinnerungen aktivieren")}
+              {pushLoading?"...":(pushEnabled?t.reminderDisable:t.reminderEnable)}
             </button>
           </div>
             );
@@ -1359,17 +1411,17 @@ ${patExercises.map((ex) => `
         <div style={{padding:"4px 0 8px",display:"flex",flexDirection:"column",gap:8}}>
           <button className="btn" onClick={()=>{setAppFeedbackText("");setShowAppFeedback(true);}}
             style={{width:"100%",padding:"12px",borderRadius:12,background:LIGHT,color:MID,fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-            <Icon name="mail" size={15} color={MID}/>Feedback geben
+            <Icon name="mail" size={15} color={MID}/>{t.feedbackTitle}
           </button>
           <button className="btn" onClick={()=>{setDeleteConfirmText("");setShowDeleteAccount(true);}}
             style={{width:"100%",padding:"12px",borderRadius:12,background:"#FFF0F0",color:"#C0392B",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-            <Icon name="trash" size={15} color="#C0392B"/>Konto löschen
+            <Icon name="trash" size={15} color="#C0392B"/>{t.deleteAccount}
           </button>
         </div>
         {/* Legal links */}
         <div style={{textAlign:"center",padding:"8px 0 16px",display:"flex",justifyContent:"center",gap:20}}>
-          <a href="https://fit-fun-dog.de/datenschutzerklaerung/" target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",textDecoration:"none"}}>Datenschutz</a>
-          <a href="https://fit-fun-dog.de/impressum/" target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",textDecoration:"none"}}>Impressum</a>
+          <a href="https://fit-fun-dog.de/datenschutzerklaerung/" target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",textDecoration:"none"}}>{t.privacyLink}</a>
+          <a href="https://fit-fun-dog.de/impressum/" target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",textDecoration:"none"}}>{t.imprintLink}</a>
         </div>
       </div>
       )}
@@ -1547,7 +1599,7 @@ ${patExercises.map((ex) => `
                         {ex.image_url?<img src={ex.image_url} alt={ex.title} style={{width:38,height:38,borderRadius:8,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}/>
                           :<div style={{width:38,height:38,borderRadius:8,background:fullyDone?BRAND+"20":LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}><Icon name="paw" size={17} color={fullyDone?BRAND:ACCENT}/></div>}
                         <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}>
-                          <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:fullyDone?"#3D7070":"#102828",textDecoration:fullyDone?"line-through":"none"}}>{ex.title}</div>
+                          <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:fullyDone?"#3D7070":"#102828",textDecoration:fullyDone?"line-through":"none"}}>{exT(ex,"title")}</div>
                           <div style={{display:"flex",alignItems:"center",gap:5,marginTop:3}}>
                             {Array.from({length:rc}).map((_,i)=>(
                               <div key={i} style={{width:10,height:10,borderRadius:3,background:i<doneNow?BRAND:"#E0E0E0"}}/>
@@ -1556,7 +1608,7 @@ ${patExercises.map((ex) => `
                           </div>
                           {(()=>{const fb=getLatestFeedback(ex.id);return fb?(
                             <div style={{marginTop:5,display:"flex",alignItems:"center",gap:6}}>
-                              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>● {PAIN_LABELS[fb.pain_level]}</span>
+                              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>● {t.painLabels[fb.pain_level]}</span>
                               <button className="btn" onClick={e=>{e.stopPropagation();setViewFeedbackEx(ex);}} style={{display:"flex",alignItems:"center",gap:3,background:LIGHT,borderRadius:6,padding:"2px 8px",fontFamily:"'DM Sans',sans-serif",fontSize:10,fontWeight:600,color:"#3D7070",border:`1px solid #B8DFE0`}}>
                                 <Icon name="info" size={10} color="#3D7070"/> anzeigen
                               </button>
@@ -1631,14 +1683,14 @@ ${patExercises.map((ex) => `
       {selectedExercise&&(
         <div className="overlay" onClick={()=>setSelectedExercise(null)}>
           <div className="sheet" onClick={e=>e.stopPropagation()}>
-            <SheetHeader title={selectedExercise.title} onClose={()=>setSelectedExercise(null)}/>
+            <SheetHeader title={exT(selectedExercise,"title")} onClose={()=>setSelectedExercise(null)}/>
             <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
-              {(selectedExercise.categories||[]).map(c=><span key={c} className="tag" style={{background:BRAND+"20",color:BRAND}}>{c}</span>)}
-              {(selectedExercise.target_regions||[]).map(r=><span key={r} className="tag" style={{background:MID+"20",color:MID}}>{r}</span>)}
+              {(selectedExercise.categories||[]).map(c=><span key={c} className="tag" style={{background:BRAND+"20",color:BRAND}}>{tCat(c)}</span>)}
+              {(selectedExercise.target_regions||[]).map(r=><span key={r} className="tag" style={{background:MID+"20",color:MID}}>{tReg(r)}</span>)}
               <span className="tag" style={{background:(difficultyColor[selectedExercise.difficulty]||BRAND)+"20",color:difficultyColor[selectedExercise.difficulty]||BRAND}}>{selectedExercise.difficulty}</span>
             </div>
             {selectedExercise.image_url
-              ?<div style={{width:"100%",borderRadius:14,overflow:"hidden",marginBottom:16,background:LIGHT}}><img src={selectedExercise.image_url} alt={selectedExercise.title} style={{width:"100%",height:"auto",maxHeight:260,objectFit:"contain",display:"block"}}/></div>
+              ?<div style={{width:"100%",borderRadius:14,overflow:"hidden",marginBottom:16,background:LIGHT}}><img src={selectedExercise.image_url} alt={exT(selectedExercise,"title")} style={{width:"100%",height:"auto",maxHeight:260,objectFit:"contain",display:"block"}}/></div>
               :<div style={{background:LIGHT,borderRadius:14,height:110,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}><Icon name="paw" size={48} color={ACCENT}/></div>}
             <div style={{display:"flex",gap:9,marginBottom:16}}>
               <div style={{flex:1,background:PALE,borderRadius:10,padding:"12px",textAlign:"center"}}>
@@ -1652,12 +1704,12 @@ ${patExercises.map((ex) => `
                 </a>
               )}
             </div>
-            {selectedExercise.description&&<div style={{marginBottom:16}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,marginBottom:6,color:"#102828"}}>{t.description}</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:DARK,lineHeight:1.7}}>{selectedExercise.description}</div></div>}
-            {selectedExercise.instructions?.length>0&&(
+            {exT(selectedExercise,"description")&&<div style={{marginBottom:16}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,marginBottom:6,color:"#102828"}}>{t.description}</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:DARK,lineHeight:1.7}}>{exT(selectedExercise,"description")}</div></div>}
+            {(exT(selectedExercise,"instructions")||[]).length>0&&(
               <div style={{marginBottom:20}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,marginBottom:10,color:"#102828"}}>{t.step}</div>
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                  {selectedExercise.instructions.map((step,i)=>(
+                  {(exT(selectedExercise,"instructions")||[]).map((step,i)=>(
                     <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
                       <div style={{width:22,height:22,borderRadius:"50%",background:BRAND,color:"#102828",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontFamily:"'DM Sans',sans-serif",fontWeight:700,flexShrink:0}}>{i+1}</div>
                       <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:DARK,lineHeight:1.6,paddingTop:2}}>{step}</div>
@@ -2020,7 +2072,7 @@ ${patExercises.map((ex) => `
                   <div style={{display:"flex",flexDirection:"column",gap:5}}>
                     {planAssignState.exercises.map((ex,idx)=>(
                       <div key={idx} style={{background:PALE,borderRadius:10,padding:"8px 10px",border:`1.5px solid ${LIGHT}`}}>
-                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828",marginBottom:6}}>{ex.title}</div>
+                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828",marginBottom:6}}>{exT(ex,"title")}</div>
                         <div style={{display:"flex",alignItems:"center",gap:6}}>
                           <input value={ex.duration} onChange={e=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,duration:e.target.value}:x)}))} placeholder="Dauer..." style={{...inp,fontSize:16,padding:"4px 8px",flex:1}}/>
                           <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
@@ -2064,7 +2116,7 @@ ${patExercises.map((ex) => `
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:fb.comment?8:0}}>
                         <div style={{display:"flex",alignItems:"center",gap:8}}>
                           <span style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>{fb.pain_level}</span>
-                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>{PAIN_LABELS[fb.pain_level]}</span>
+                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>{t.painLabels[fb.pain_level]}</span>
                         </div>
                         <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{new Date(fb.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}</span>
                       </div>
@@ -2082,25 +2134,25 @@ ${patExercises.map((ex) => `
       {feedbackSheet&&(
         <div className="overlay" onClick={()=>{setFeedbackSheet(null);setFeedbackPain(0);setFeedbackComment("");}}>
           <div className="sheet" onClick={e=>e.stopPropagation()}>
-            <SheetHeader title="Befund melden" onClose={()=>{setFeedbackSheet(null);setFeedbackPain(0);setFeedbackComment("");}}/>
-            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:16}}>{feedbackSheet.title}</div>
+            <SheetHeader title={t.reportSymptom} onClose={()=>{setFeedbackSheet(null);setFeedbackPain(0);setFeedbackComment("");}}/>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:16}}>{exT(feedbackSheet,"title")}</div>
             <div style={{marginBottom:18}}>
-              <SL text="Schmerzlevel"/>
+              <SL text={t.painLevel}/>
               <div style={{display:"flex",gap:8,marginTop:4}}>
                 {[1,2,3,4,5].map(n=>(
                   <button key={n} className="btn" onClick={()=>setFeedbackPain(n)} style={{flex:1,padding:"12px 0",borderRadius:10,border:`2px solid ${feedbackPain===n?PAIN_COLORS[n]:"#B8DFE0"}`,background:feedbackPain===n?PAIN_COLORS[n]+"18":"white",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
                     <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:feedbackPain===n?PAIN_COLORS[n]:DARK}}>{n}</span>
-                    <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,fontWeight:600,color:feedbackPain===n?PAIN_COLORS[n]:"#3D7070",textAlign:"center",lineHeight:1.2}}>{PAIN_LABELS[n]}</span>
+                    <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,fontWeight:600,color:feedbackPain===n?PAIN_COLORS[n]:"#3D7070",textAlign:"center",lineHeight:1.2}}>{t.painLabels[n]}</span>
                   </button>
                 ))}
               </div>
             </div>
             <div style={{marginBottom:18}}>
-              <SL text="Kommentar (optional)"/>
-              <textarea value={feedbackComment} onChange={e=>setFeedbackComment(e.target.value)} rows={3} placeholder="z.B. Hund hat gezittert, Übung abgebrochen..." style={{...inp,resize:"vertical"}}/>
+              <SL text={t.commentOptional}/>
+              <textarea value={feedbackComment} onChange={e=>setFeedbackComment(e.target.value)} rows={3} placeholder={t.feedbackPlaceholder} style={{...inp,resize:"vertical"}}/>
             </div>
             <button className="btn" onClick={saveFeedback} disabled={saving||feedbackPain===0} style={{width:"100%",padding:"14px",borderRadius:12,background:feedbackPain>0?BRAND:"#B8DFE0",color:feedbackPain>0?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
-              {saving?"Wird gespeichert...":"Befund speichern"}
+              {saving?t.saving:t.saveFinding}
             </button>
           </div>
         </div>
@@ -2110,7 +2162,7 @@ ${patExercises.map((ex) => `
       {showAppFeedback&&(
         <div className="overlay" onClick={()=>setShowAppFeedback(false)}>
           <div className="sheet" onClick={e=>e.stopPropagation()}>
-            <SheetHeader title="Feedback geben" onClose={()=>setShowAppFeedback(false)}/>
+            <SheetHeader title={t.feedbackTitle} onClose={()=>setShowAppFeedback(false)}/>
             <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:14}}>
               Dein Feedback hilft dabei die App weiterzuentwickeln. Was funktioniert gut, was könnte besser sein?
             </div>
@@ -2129,7 +2181,7 @@ ${patExercises.map((ex) => `
       {showDeleteAccount&&(
         <div className="overlay" onClick={()=>setShowDeleteAccount(false)}>
           <div className="sheet" onClick={e=>e.stopPropagation()}>
-            <SheetHeader title="Konto löschen" onClose={()=>setShowDeleteAccount(false)}/>
+            <SheetHeader title={t.deleteAccount} onClose={()=>setShowDeleteAccount(false)}/>
             <div style={{background:"#FFF0F0",borderRadius:12,padding:"14px 16px",marginBottom:16}}>
               <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#C0392B",marginBottom:6}}>Achtung – diese Aktion ist unwiderruflich</div>
               <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#5D4037",lineHeight:1.6}}>
