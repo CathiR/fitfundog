@@ -100,7 +100,7 @@ const T = {
     iosNotInstalled:"Noch nicht als App installiert", iosInstallHint:"Für Erinnerungen muss die App auf dem Home-Bildschirm installiert sein.", iosInstallStep:"Safari → Teilen-Symbol → Zum Home-Bildschirm", iosInstallAfter:"Danach die App über das Icon öffnen und hier Erinnerungen aktivieren.",
     greetMorning:"Guten Morgen", greetDay:"Guten Tag", greetEvening:"Guten Abend",
     privacyLink:"Datenschutz", imprintLink:"Impressum", adminPreviewHint:"Vorschau — so sehen Ihre Kunden die App",
-    painLevel:"Schmerzlevel", commentOptional:"Kommentar (optional)", saveFinding:"Befund speichern",
+    painLevel:"Schmerzlevel", commentOptional:"Kommentar (optional)", saveFinding:"Befund speichern", save:"Speichern", newPasswordPh:"Neues Passwort...",
     painLabels:["","Kein Schmerz","Leicht","Mittel","Stark","Sehr stark"],
     categories:["Regeneration","Balance","Kräftigung","Koordination","Mobilisation"],
     targetRegions:["Ganzer Körper","Hinterhand","Vorderhand","Rumpf","Vorderpfoten","Rücken"],
@@ -114,7 +114,7 @@ const T = {
     iosNotInstalled:"Not installed as app yet", iosInstallHint:"For reminders the app must be installed on the home screen.", iosInstallStep:"Safari → Share → Add to Home Screen", iosInstallAfter:"Then open the app via the icon and enable reminders here.",
     greetMorning:"Good morning", greetDay:"Good afternoon", greetEvening:"Good evening",
     privacyLink:"Privacy", imprintLink:"Imprint", adminPreviewHint:"Preview — this is how your clients see the app",
-    painLevel:"Pain level", commentOptional:"Comment (optional)", saveFinding:"Save report",
+    painLevel:"Pain level", commentOptional:"Comment (optional)", saveFinding:"Save report", save:"Save", newPasswordPh:"New password...",
     painLabels:["","No pain","Mild","Moderate","Severe","Very severe"],
     categories:["Regeneration","Balance","Strengthening","Coordination","Mobilisation"],
     targetRegions:["Whole body","Hindquarters","Forequarters","Core","Front paws","Back"],
@@ -128,7 +128,7 @@ const T = {
     iosNotInstalled:"Aún no instalada como app", iosInstallHint:"Para los recordatorios la app debe estar instalada en la pantalla de inicio.", iosInstallStep:"Safari → Compartir → Añadir a pantalla de inicio", iosInstallAfter:"Luego abre la app desde el icono y activa los recordatorios aquí.",
     greetMorning:"Buenos días", greetDay:"Buenas tardes", greetEvening:"Buenas noches",
     privacyLink:"Privacidad", imprintLink:"Aviso legal", adminPreviewHint:"Vista previa — así ven la app tus clientes",
-    painLevel:"Nivel de dolor", commentOptional:"Comentario (opcional)", saveFinding:"Guardar reporte",
+    painLevel:"Nivel de dolor", commentOptional:"Comentario (opcional)", saveFinding:"Guardar reporte", save:"Guardar", newPasswordPh:"Nueva contraseña...",
     painLabels:["","Sin dolor","Leve","Moderado","Fuerte","Muy fuerte"],
     categories:["Regeneración","Equilibrio","Fortalecimiento","Coordinación","Movilización"],
     targetRegions:["Cuerpo entero","Cuartos traseros","Cuartos delanteros","Núcleo","Patas delanteras","Espalda"],
@@ -147,9 +147,10 @@ const PAUSE = {
   es:[{icon:"rest",title:"Por qué el Descanso es Importante",text:"El descanso es parte activa del desarrollo muscular."},{icon:"clock",title:"Duración del Descanso",items:["Grupos pequeños: 24 horas","Grupos grandes: 48–96 horas","Nunca entrenar el mismo grupo dos días consecutivos"]},{icon:"info",title:"Señales de Fatiga",items:["Temblor muscular","Jadeo o chasquido","Pérdida de concentración","Ejecución descuidada"]},{icon:"rest",title:"Descanso Entre Series",text:"Pausas cortas ayudan a mantener la concentración."},{icon:"assign",title:"Ritmo de Entrenamiento",items:["Día 1: Entrenamiento","Día 2: Descanso","Día 3: Entrenamiento"]}]
 };
 
-const FilterDropdown = ({ label, icon, options, selected, onChange, color = BRAND }) => {
+const FilterDropdown = ({ label, icon, options, selected, onChange, color = BRAND, labelFn }) => {
   const [open, setOpen] = useState(false);
   const count = selected.length;
+  const display = (opt) => labelFn ? labelFn(opt) : opt;
   return (
     <div style={{ position:"relative", flex:1 }} onClick={e=>e.stopPropagation()}>
       <button onClick={()=>setOpen(o=>!o)} style={{ width:"100%", padding:"9px 12px", borderRadius:10, border:`1.5px solid ${count>0?color:"#B8DFE0"}`, background:count>0?color+"15":"white", display:"flex", alignItems:"center", gap:6, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:count>0?color:"#3D7070" }}>
@@ -158,7 +159,7 @@ const FilterDropdown = ({ label, icon, options, selected, onChange, color = BRAN
       </button>
       {open&&(<div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"white", borderRadius:12, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:30, overflow:"hidden", border:`1px solid ${LIGHT}` }}>
         {selected.length>0&&<button onClick={()=>{onChange([]);setOpen(false);}} style={{ width:"100%", padding:"9px 14px", textAlign:"left", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:"#C0392B", background:"#FFF5F5", cursor:"pointer", border:"none", borderBottom:`1px solid ${LIGHT}` }}>Auswahl aufheben</button>}
-        {options.map(opt=>{const active=selected.includes(opt);return(<button key={opt} onClick={()=>onChange(active?selected.filter(s=>s!==opt):[...selected,opt])} style={{ width:"100%", padding:"10px 14px", textAlign:"left", fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:active?600:400, color:active?color:"#102828", background:active?color+"10":"white", cursor:"pointer", border:"none", borderBottom:`1px solid ${LIGHT}`, display:"flex", alignItems:"center", gap:8 }}><div style={{ width:16,height:16,borderRadius:4,border:`2px solid ${active?color:"#B8DFE0"}`,background:active?color:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>{active&&<Icon name="check" size={10} color="white"/>}</div>{opt}</button>);})}
+        {options.map(opt=>{const active=selected.includes(opt);return(<button key={opt} onClick={()=>onChange(active?selected.filter(s=>s!==opt):[...selected,opt])} style={{ width:"100%", padding:"10px 14px", textAlign:"left", fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:active?600:400, color:active?color:"#102828", background:active?color+"10":"white", cursor:"pointer", border:"none", borderBottom:`1px solid ${LIGHT}`, display:"flex", alignItems:"center", gap:8 }}><div style={{ width:16,height:16,borderRadius:4,border:`2px solid ${active?color:"#B8DFE0"}`,background:active?color:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>{active&&<Icon name="check" size={10} color="white"/>}</div>{display(opt)}</button>);})}
       </div>)}
     </div>
   );
@@ -707,8 +708,10 @@ ${patExercises.map((ex) => `
   // Kategorie/Region-Übersetzung: DE-Wert auf t.categories/t.targetRegions mappen
   const DE_CATS=["Regeneration","Balance","Kräftigung","Koordination","Mobilisation"];
   const DE_REGS=["Ganzer Körper","Hinterhand","Vorderhand","Rumpf","Vorderpfoten","Rücken"];
+  const DE_DIFFS=["Leicht","Mittel","Schwer"];
   const tCat=(c)=>{const i=DE_CATS.indexOf(c);return i>=0?t.categories[i]:c;};
   const tReg=(r)=>{const i=DE_REGS.indexOf(r);return i>=0?t.targetRegions[i]:r;};
+  const tDiff=(d)=>{const i=DE_DIFFS.indexOf(d);return i>=0?t.difficulties[i]:d;};
 
   const checkPushStatus=async()=>{
     if(!("serviceWorker" in navigator)||!("PushManager" in window))return;
@@ -1177,11 +1180,11 @@ ${patExercises.map((ex) => `
           )}
           {mustChangePassword&&(
             <div style={{background:"#FFF8E1",border:"1.5px solid #FFB300",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#E65100",marginBottom:6,display:"flex",alignItems:"center",gap:8}}><Icon name="lock" size={16} color="#E65100"/>Bitte Passwort ändern</div>
-              <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#5D4037",marginBottom:10}}>Aus Sicherheitsgründen bitte ein eigenes Passwort vergeben.</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#E65100",marginBottom:6,display:"flex",alignItems:"center",gap:8}}><Icon name="lock" size={16} color="#E65100"/>{t.changePw}</div>
+              <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#5D4037",marginBottom:10}}>{t.pwSecurityHint}</div>
               <div style={{display:"flex",gap:8}}>
-                <div style={{position:"relative",flex:1}}><input type={showNewPw?"text":"password"} value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Neues Passwort..." style={{...inp,width:"100%",paddingRight:42}}/><button onClick={()=>setShowNewPw(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:"#3D7070"}}>{showNewPw?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
-                <button className="btn" onClick={changePassword} disabled={saving||!newPassword} style={{background:newPassword?BRAND:"#B8DFE0",color:"#102828",borderRadius:9,padding:"8px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,flexShrink:0}}>{saving?"...":"Speichern"}</button>
+                <div style={{position:"relative",flex:1}}><input type={showNewPw?"text":"password"} value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder={t.newPasswordPh} style={{...inp,width:"100%",paddingRight:42}}/><button onClick={()=>setShowNewPw(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:"#3D7070"}}>{showNewPw?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
+                <button className="btn" onClick={changePassword} disabled={saving||!newPassword} style={{background:newPassword?BRAND:"#B8DFE0",color:"#102828",borderRadius:9,padding:"8px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,flexShrink:0}}>{saving?"...":t.save}</button>
               </div>
             </div>
           )}
@@ -1287,8 +1290,8 @@ ${patExercises.map((ex) => `
             </div>
 
             <div style={{display:"flex",gap:8,marginBottom:12}}>
-              <FilterDropdown label={t.filterCategory} icon="filter" options={CATEGORIES} selected={filterCats} onChange={setFilterCats} color={BRAND}/>
-              <FilterDropdown label={t.filterRegion} icon="target" options={TARGET_REGIONS} selected={filterRegions} onChange={setFilterRegions} color={MID}/>
+              <FilterDropdown label={t.filterCategory} icon="filter" options={CATEGORIES} selected={filterCats} onChange={setFilterCats} color={BRAND} labelFn={tCat}/>
+              <FilterDropdown label={t.filterRegion} icon="target" options={TARGET_REGIONS} selected={filterRegions} onChange={setFilterRegions} color={MID} labelFn={tReg}/>
             </div>
 
             {filteredOwnerExs.length===0&&<div className="card" style={{padding:20,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>{t.noExercises}</div>}
@@ -1307,7 +1310,7 @@ ${patExercises.map((ex) => `
                         <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600,lineHeight:1.3,textDecoration:fullyDone?"line-through":"none",color:fullyDone?ACCENT:"#102828",marginBottom:5}}>{exT(ex,"title")}</div>
                         <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:7}}>
                           {(ex.categories||[]).slice(0,2).map(c=><span key={c} className="tag" style={{background:BRAND+"20",color:BRAND}}>{tCat(c)}</span>)}
-                          <span className="tag" style={{background:(difficultyColor[ex.difficulty]||BRAND)+"20",color:difficultyColor[ex.difficulty]||BRAND}}>{ex.difficulty}</span>
+                          <span className="tag" style={{background:(difficultyColor[ex.difficulty]||BRAND)+"20",color:difficultyColor[ex.difficulty]||BRAND}}>{tDiff(ex.difficulty)}</span>
                           <span className="tag" style={{background:LIGHT,color:"#3D7070"}}>⏱ {ex.duration}</span>
                         </div>
                         {/* Repeat checkboxes */}
@@ -1687,7 +1690,7 @@ ${patExercises.map((ex) => `
             <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
               {(selectedExercise.categories||[]).map(c=><span key={c} className="tag" style={{background:BRAND+"20",color:BRAND}}>{tCat(c)}</span>)}
               {(selectedExercise.target_regions||[]).map(r=><span key={r} className="tag" style={{background:MID+"20",color:MID}}>{tReg(r)}</span>)}
-              <span className="tag" style={{background:(difficultyColor[selectedExercise.difficulty]||BRAND)+"20",color:difficultyColor[selectedExercise.difficulty]||BRAND}}>{selectedExercise.difficulty}</span>
+              <span className="tag" style={{background:(difficultyColor[selectedExercise.difficulty]||BRAND)+"20",color:difficultyColor[selectedExercise.difficulty]||BRAND}}>{tDiff(selectedExercise.difficulty)}</span>
             </div>
             {selectedExercise.image_url
               ?<div style={{width:"100%",borderRadius:14,overflow:"hidden",marginBottom:16,background:LIGHT}}><img src={selectedExercise.image_url} alt={exT(selectedExercise,"title")} style={{width:"100%",height:"auto",maxHeight:260,objectFit:"contain",display:"block"}}/></div>
