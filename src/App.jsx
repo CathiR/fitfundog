@@ -99,7 +99,7 @@ const T = {
     reportSymptom:"Befund melden", reminders:"Erinnerungen", reminderTime:"Erinnerungszeit", reminderHint:"Die Erinnerung wird nur gesendet wenn noch Übungen offen sind.", reminderEnable:"Erinnerungen aktivieren", reminderDisable:"Erinnerungen deaktivieren", oclock:"Uhr",
     iosNotInstalled:"Noch nicht als App installiert", iosInstallHint:"Für Erinnerungen muss die App auf dem Home-Bildschirm installiert sein.", iosInstallStep:"Safari → Teilen-Symbol → Zum Home-Bildschirm", iosInstallAfter:"Danach die App über das Icon öffnen und hier Erinnerungen aktivieren.",
     greetMorning:"Guten Morgen", greetDay:"Guten Tag", greetEvening:"Guten Abend",
-    privacyLink:"Datenschutz", imprintLink:"Impressum", adminPreviewHint:"Vorschau — so sehen Ihre Kunden die App",
+    privacyLink:"Datenschutz", imprintLink:"Impressum", adminPreviewHint:"Vorschau — so sehen Ihre Kunden die App", bookAppointment:"Termin buchen",
     painLevel:"Schmerzlevel", commentOptional:"Kommentar (optional)", saveFinding:"Befund speichern", save:"Speichern", newPasswordPh:"Neues Passwort...",
     painLabels:["","Kein Schmerz","Leicht","Mittel","Stark","Sehr stark"],
     categories:["Regeneration","Balance","Kräftigung","Koordination","Mobilisation"],
@@ -113,7 +113,7 @@ const T = {
     reportSymptom:"Report symptom", reminders:"Reminders", reminderTime:"Reminder time", reminderHint:"The reminder is only sent if exercises are still open.", reminderEnable:"Enable reminders", reminderDisable:"Disable reminders", oclock:"",
     iosNotInstalled:"Not installed as app yet", iosInstallHint:"For reminders the app must be installed on the home screen.", iosInstallStep:"Safari → Share → Add to Home Screen", iosInstallAfter:"Then open the app via the icon and enable reminders here.",
     greetMorning:"Good morning", greetDay:"Good afternoon", greetEvening:"Good evening",
-    privacyLink:"Privacy", imprintLink:"Imprint", adminPreviewHint:"Preview — this is how your clients see the app",
+    privacyLink:"Privacy", imprintLink:"Imprint", adminPreviewHint:"Preview — this is how your clients see the app", bookAppointment:"Book appointment",
     painLevel:"Pain level", commentOptional:"Comment (optional)", saveFinding:"Save report", save:"Save", newPasswordPh:"New password...",
     painLabels:["","No pain","Mild","Moderate","Severe","Very severe"],
     categories:["Regeneration","Balance","Strengthening","Coordination","Mobilisation"],
@@ -127,7 +127,7 @@ const T = {
     reportSymptom:"Reportar síntoma", reminders:"Recordatorios", reminderTime:"Hora del recordatorio", reminderHint:"El recordatorio solo se envía si aún hay ejercicios pendientes.", reminderEnable:"Activar recordatorios", reminderDisable:"Desactivar recordatorios", oclock:"",
     iosNotInstalled:"Aún no instalada como app", iosInstallHint:"Para los recordatorios la app debe estar instalada en la pantalla de inicio.", iosInstallStep:"Safari → Compartir → Añadir a pantalla de inicio", iosInstallAfter:"Luego abre la app desde el icono y activa los recordatorios aquí.",
     greetMorning:"Buenos días", greetDay:"Buenas tardes", greetEvening:"Buenas noches",
-    privacyLink:"Privacidad", imprintLink:"Aviso legal", adminPreviewHint:"Vista previa — así ven la app tus clientes",
+    privacyLink:"Privacidad", imprintLink:"Aviso legal", adminPreviewHint:"Vista previa — así ven la app tus clientes", bookAppointment:"Reservar cita",
     painLevel:"Nivel de dolor", commentOptional:"Comentario (opcional)", saveFinding:"Guardar reporte", save:"Guardar", newPasswordPh:"Nueva contraseña...",
     painLabels:["","Sin dolor","Leve","Moderado","Fuerte","Muy fuerte"],
     categories:["Regeneración","Equilibrio","Fortalecimiento","Coordinación","Movilización"],
@@ -416,6 +416,22 @@ export default function App() {
     });
     return()=>subscription.unsubscribe();
   },[]);
+
+  // ── Automatischer Reload beim Wochenwechsel wenn App in Vordergrund kommt ──
+  useEffect(()=>{
+    let lastWeekStart=getWeekStart();
+    const handleVisibility=()=>{
+      if(document.visibilityState==="visible"&&session){
+        const currentWeekStart=getWeekStart();
+        if(currentWeekStart!==lastWeekStart){
+          lastWeekStart=currentWeekStart;
+          loadAll(session.user.id);
+        }
+      }
+    };
+    document.addEventListener("visibilitychange",handleVisibility);
+    return()=>document.removeEventListener("visibilitychange",handleVisibility);
+  },[session]);
 
   async function loadAll(userId) {
     setLoading(true);
@@ -1490,15 +1506,17 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             style={{width:"100%",padding:"12px",borderRadius:12,background:LIGHT,color:MID,fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
             <Icon name="mail" size={15} color={MID}/>{t.feedbackTitle}
           </button>
-          <button className="btn" onClick={()=>{setDeleteConfirmText("");setShowDeleteAccount(true);}}
-            style={{width:"100%",padding:"12px",borderRadius:12,background:"#FFF0F0",color:"#C0392B",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-            <Icon name="trash" size={15} color="#C0392B"/>{t.deleteAccount}
-          </button>
         </div>
-        {/* Legal links */}
-        <div style={{textAlign:"center",padding:"8px 0 16px",display:"flex",justifyContent:"center",gap:20}}>
+        {/* Termin buchen */}
+        <a href="https://fit-fun-dog-Termin-online-vereinbaren.as.me/" target="_blank"
+          style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:"13px",borderRadius:12,background:DARK,color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,textDecoration:"none",boxSizing:"border-box",marginBottom:8}}>
+          <Icon name="clock" size={16} color="white"/>{t.bookAppointment}
+        </a>
+        {/* Legal + Konto löschen links */}
+        <div style={{textAlign:"center",padding:"8px 0 16px",display:"flex",justifyContent:"center",gap:20,flexWrap:"wrap"}}>
           <a href="https://fit-fun-dog.de/datenschutzerklaerung/" target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",textDecoration:"none"}}>{t.privacyLink}</a>
           <a href="https://fit-fun-dog.de/impressum/" target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",textDecoration:"none"}}>{t.imprintLink}</a>
+          <button onClick={()=>{setDeleteConfirmText("");setShowDeleteAccount(true);}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#aaa",padding:0,textDecoration:"none"}}>{t.deleteAccount}</button>
         </div>
       </div>
       )}
@@ -1609,7 +1627,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                           <button className="btn" onClick={()=>{
                             const exItems=planExs.map(pe=>{
                               const tmpl=templates.find(t=>t.id===pe.exercise_template_id);
-                              return{...pe,title:tmpl?.title||"",categories:tmpl?.categories||[],target_regions:tmpl?.target_regions||[],difficulty:tmpl?.difficulty||"Leicht",description:tmpl?.description||"",instructions:tmpl?.instructions||[],image_url:tmpl?.image_url||null,video_url:tmpl?.video_url||null,duration:pe.default_duration||"",repeat_count:pe.default_repeat_count||1};
+                              return{...pe,title:tmpl?.title||"",categories:tmpl?.categories||[],target_regions:tmpl?.target_regions||[],difficulty:tmpl?.difficulty||"Leicht",description:tmpl?.description||"",instructions:tmpl?.instructions||[],image_url:tmpl?.image_url||null,video_url:tmpl?.video_url||null,
+                                title_en:tmpl?.title_en||null,description_en:tmpl?.description_en||null,instructions_en:tmpl?.instructions_en||null,
+                                title_es:tmpl?.title_es||null,description_es:tmpl?.description_es||null,instructions_es:tmpl?.instructions_es||null,
+                                duration:pe.default_duration||"",repeat_count:pe.default_repeat_count||1};
                             });
                             setPlanAssignState({plan,exercises:exItems});
                             setPlanAssignPatient(null);setPlanAssignSearch("");
