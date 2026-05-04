@@ -351,6 +351,65 @@ export default function App() {
   const [planAssignState,setPlanAssignState]=useState(null);
   const [planAssignPatient,setPlanAssignPatient]=useState(null);
   const [planAssignSearch,setPlanAssignSearch]=useState("");
+  const [planAssignDone,setPlanAssignDone]=useState(null); // {patient, plan} nach erfolgreicher Zuweisung
+  const [mailTemplate,setMailTemplate]=useState({subject:"Deine Heimübungen für {{patient}} – jetzt direkt auf deinem Handy",body:`Liebe/r {{besitzer}},
+
+es war schön, euch heute in der Praxis zu haben. Damit {{patient}} auch zu Hause optimal weiterarbeiten kann, habe ich ab sofort etwas Besonderes für euch:
+
+Ich nutze jetzt FitFunDog – meine eigene App für Heimübungen, die ich gemeinsam mit einer Entwicklerin speziell für meine Praxis aufgebaut habe. Dort findest du alle zugewiesenen Übungen für {{patient}}, mit Beschreibung, Schritt-für-Schritt-Anleitung und Video – immer griffbereit auf deinem Handy.
+
+
+DEINE ZUGANGSDATEN ZUR ERSTANMELDUNG
+-------------------------------------
+Link:
+https://fitfundog.vercel.app
+
+E-Mail:   {{email}}
+Passwort: {{email}}
+
+Beim ersten Login wirst du gebeten, ein eigenes Passwort zu vergeben.
+
+
+SO INSTALLIERST DU DIE APP AUF DEINEM HOMESCREEN
+--------------------------------------------------
+Die App funktioniert direkt im Browser (Safari / Chrome / Mozilla & Co) – du musst nichts herunterladen. Für den besten Komfort empfehle ich dir, sie wie eine richtige App zu installieren:
+
+iPhone (Safari):
+  1. Öffne in Safari:
+     https://fitfundog.vercel.app
+  2. Tippe unten auf das Teilen-Symbol (Quadrat mit Pfeil)
+  3. Wähle „Zum Home-Bildschirm" und bestätige
+  4. Die App erscheint wie jede andere App auf deinem Homescreen
+
+Android (Chrome):
+  1. Öffne in Chrome:
+     https://fitfundog.vercel.app
+  2. Tippe oben rechts auf die drei Punkte
+  3. Wähle „Zum Startbildschirm hinzufügen" und bestätige
+
+
+WAS DICH IN DER APP ERWARTET
+------------------------------
+* Alle Übungen für {{patient}} mit Anleitung und Video (wird nach und nach noch ergänzt)
+* Abhaken, wenn eine Übung erledigt ist
+* Dein persönlicher Fortschritt auf einen Blick
+* Erinnerungen per Push-Benachrichtigung (optional aktivierbar)
+* Direktes Feedback zu den Übungen möglich
+
+
+EIN EHRLICHES WORT ZUM SCHLUSS
+--------------------------------
+Die App ist frisch gestartet und wächst noch. Ich entwickle sie kontinuierlich weiter – und dein Feedback ist dabei Gold wert. Was fehlt dir? Was könntest du dir noch wünschen? Du kannst mir direkt in der App unter Profil → Feedback senden schreiben, oder einfach auf diese Mail antworten.
+
+Ich freue mich, dass ich {{patient}} jetzt auch zwischen unseren Terminen so gut begleiten kann.
+
+Bis zum nächsten Termin und liebe Grüße,
+
+Claudia Kucharzak-Riedel
+Fit Fun Dog – Tierphysiotherapie & Osteopathie für Tiere
+www.fit-fun-dog.de`});
+  const [mailTemplateSaving,setMailTemplateSaving]=useState(false);
+  const [mailTemplateLoaded,setMailTemplateLoaded]=useState(false);
   const [assignSubTab,setAssignSubTab]=useState("exercises");
   const [langOpen,setLangOpen]=useState(false);
   const [filterCats,setFilterCats]=useState([]);
@@ -458,6 +517,13 @@ export default function App() {
       setUserEmails(ue||[]);
       setPlanTemplates(ptd||[]);
       setPlanTemplateExercises(pte||[]);
+
+      // Mail-Vorlage laden
+      const{data:settingsData}=await supabase.from("settings").select("value").eq("key","plan_mail_template").maybeSingle();
+      if(settingsData?.value){
+        try{const parsed=JSON.parse(settingsData.value);setMailTemplate(parsed);}catch(e){}
+      }
+      setMailTemplateLoaded(true);
 
       // Find owner's patient by userId
       let ownerPat=null;
@@ -1061,8 +1127,30 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       instructions_es:ex.instructions_es||null
     }));
     const{data:newExercises,error}=await supabase.from("exercises").insert(rows).select();
-    if(!error&&newExercises)setExercises(prev=>[...prev,...newExercises]);
-    setSaving(false);setPlanAssignState(null);setPlanAssignPatient(null);setPlanAssignSearch("");closeSheet();
+    if(!error&&newExercises){
+      setExercises(prev=>[...prev,...newExercises]);
+      setPlanAssignDone({patient:planAssignPatient,plan:planAssignState.plan});
+    }
+    setSaving(false);setPlanAssignState(null);setPlanAssignPatient(null);setPlanAssignSearch("");
+  };
+
+  const saveMailTemplate=async()=>{
+    setMailTemplateSaving(true);
+    await supabase.from("settings").upsert({key:"plan_mail_template",value:JSON.stringify(mailTemplate)});
+    setMailTemplateSaving(false);
+  };
+
+  const openPlanMail=(patient,plan)=>{
+    const email=getUserEmail(patient.user_id)||"";
+    const subject=(mailTemplate.subject||"")
+      .replace(/\{\{patient\}\}/g,patient.name||"")
+      .replace(/\{\{besitzer\}\}/g,patient.owner||"")
+      .replace(/\{\{email\}\}/g,email);
+    const body=(mailTemplate.body||"")
+      .replace(/\{\{patient\}\}/g,patient.name||"")
+      .replace(/\{\{besitzer\}\}/g,patient.owner||"")
+      .replace(/\{\{email\}\}/g,email);
+    window.location.href=`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   const saveFeedback=async()=>{
@@ -1558,6 +1646,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       </div>
                       <div style={{display:"flex",gap:5}}>
                         <button className="iBtn" title="Übungsplan drucken" onClick={()=>printExercisePlan(p)} style={{background:"#E8F5E9"}}><Icon name="print" size={14} color="#2E7D32"/></button>
+                        {userEmail&&<button className="iBtn" title="Plan-Info per Mail senden" onClick={()=>openPlanMail(p,null)} style={{background:"#E3F2FD"}}><Icon name="mail" size={14} color="#1565C0"/></button>}
                         <button className="iBtn" onClick={()=>{setEditPatientData({...p});setEditAccountMode(p.user_id?"existing":"none");setResetEmailSent(false);setSheet("editPatient");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
                         <button className="iBtn" onClick={()=>{setSheetData(p);setSheet("confirmDeletePt");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                       </div>
@@ -1624,20 +1713,6 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       <button className="btn" onClick={()=>printPlanTemplate(plan)} style={{background:"#E8F5E9",borderRadius:9,width:34,height:34,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",border:"none"}} title="Plan drucken">
                         <Icon name="print" size={14} color="#2E7D32"/>
                       </button>
-                          <button className="btn" onClick={()=>{
-                            const exItems=planExs.map(pe=>{
-                              const tmpl=templates.find(t=>t.id===pe.exercise_template_id);
-                              return{...pe,title:tmpl?.title||"",categories:tmpl?.categories||[],target_regions:tmpl?.target_regions||[],difficulty:tmpl?.difficulty||"Leicht",description:tmpl?.description||"",instructions:tmpl?.instructions||[],image_url:tmpl?.image_url||null,video_url:tmpl?.video_url||null,
-                                title_en:tmpl?.title_en||null,description_en:tmpl?.description_en||null,instructions_en:tmpl?.instructions_en||null,
-                                title_es:tmpl?.title_es||null,description_es:tmpl?.description_es||null,instructions_es:tmpl?.instructions_es||null,
-                                duration:pe.default_duration||"",repeat_count:pe.default_repeat_count||1};
-                            });
-                            setPlanAssignState({plan,exercises:exItems});
-                            setPlanAssignPatient(null);setPlanAssignSearch("");
-                            setSheet("assignPlan");
-                          }} style={{background:DARK,color:"white",borderRadius:9,padding:"6px 12px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",gap:5,cursor:"pointer",border:"none"}}>
-                            <Icon name="assign" size={12} color="white"/> Zuweisen
-                          </button>
                           <button className="iBtn" onClick={()=>{
                             setEditPlanData({...plan});
                             const draft=planExs.map(pe=>({exercise_template_id:pe.exercise_template_id,default_duration:pe.default_duration||"",default_repeat_count:pe.default_repeat_count||1,sort_order:pe.sort_order}));
@@ -1699,6 +1774,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       <Icon name="assign" size={16} color="#E6F6F6"/> Übung zuweisen
                     </button>
                     <button className="iBtn" title="Übungsplan drucken" onClick={()=>printExercisePlan(selectedPatient)} style={{background:"#E8F5E9",width:44,height:44,borderRadius:12,flexShrink:0}}><Icon name="print" size={16} color="#2E7D32"/></button>
+                    <button className="iBtn" title="Plan-Info per Mail senden" onClick={()=>openPlanMail(selectedPatient)} disabled={!getUserEmail(selectedPatient.user_id)} style={{background:getUserEmail(selectedPatient.user_id)?"#E3F2FD":"#F5F5F5",width:44,height:44,borderRadius:12,flexShrink:0,opacity:getUserEmail(selectedPatient.user_id)?1:0.4}}><Icon name="mail" size={16} color={getUserEmail(selectedPatient.user_id)?"#1565C0":"#aaa"}/></button>
                   </div>
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>{t.homeExercises(exForPatient(selectedPatient.id).length)}</div>
                   {exForPatient(selectedPatient.id).length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:ACCENT,textAlign:"center",padding:"12px 0"}}>{t.noExercisesYet}</div>}
@@ -1739,76 +1815,115 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
               {/* Sub-Tab: Behandlungsplan */}
               {assignSubTab==="plans"&&(<>
+                {/* 1. Patient suchen & auswählen */}
                 <div style={{marginBottom:14}}>
-                  <SL text="Plan auswählen"/>
-                  {planTemplates.length===0?<div className="card" style={{padding:20,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Behandlungspläne erstellt.</div>:(
-                    <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                      {planTemplates.map(plan=>{
-                        const planExs=planTemplateExercises.filter(pe=>pe.plan_template_id===plan.id);
-                        return(
-                          <div key={plan.id} className="card" style={{padding:"13px 15px",cursor:"pointer",border:`2px solid ${planAssignState?.plan?.id===plan.id?BRAND:"transparent"}`,background:planAssignState?.plan?.id===plan.id?LIGHT:"white"}}
-                            onClick={()=>{
-                              const exItems=planExs.map(pe=>{
-                                const tmpl=templates.find(t=>t.id===pe.exercise_template_id);
-                                return{...pe,title:tmpl?.title||"",categories:tmpl?.categories||[],target_regions:tmpl?.target_regions||[],difficulty:tmpl?.difficulty||"Leicht",description:tmpl?.description||"",instructions:tmpl?.instructions||[],image_url:tmpl?.image_url||null,video_url:tmpl?.video_url||null,
-                                  title_en:tmpl?.title_en||null,description_en:tmpl?.description_en||null,instructions_en:tmpl?.instructions_en||null,
-                                  title_es:tmpl?.title_es||null,description_es:tmpl?.description_es||null,instructions_es:tmpl?.instructions_es||null,
-                                  duration:pe.default_duration||"",repeat_count:pe.default_repeat_count||1};
-                              });
-                              setPlanAssignState({plan,exercises:exItems});
-                              setPlanAssignPatient(null);setPlanAssignSearch("");
-                            }}>
-                            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                              <div>
-                                <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#102828"}}>{plan.title}</div>
-                                {plan.note&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginTop:2}}>{plan.note}</div>}
-                                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:ACCENT,marginTop:3}}>{planExs.length} Übung{planExs.length!==1?"en":""}</div>
-                              </div>
-                              {planAssignState?.plan?.id===plan.id&&<Icon name="check" size={18} color={BRAND}/>}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                  <SL text="Patient suchen & auswählen"/>
+                  <SearchInput value={planAssignSearch} onChange={val=>{setPlanAssignSearch(val);setPlanAssignPatient(null);}} placeholder="Name oder Besitzer..."/>
+                  <CustomSelect value={planAssignPatient?.id||""} onChange={e=>{setPlanAssignPatient(patients.find(p=>p.id===e.target.value)||null);setPlanAssignState(null);}}>
+                    <option value="">Patient auswählen...</option>
+                    {patients.filter(p=>{const q=planAssignSearch.trim().toLowerCase();return !planAssignSearch||p.name.toLowerCase().includes(q)||p.owner.toLowerCase().includes(q);}).map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
+                  </CustomSelect>
                 </div>
 
-                {planAssignState&&(<>
+                {planAssignPatient&&(<>
+                  {/* 2. Plan auswählen */}
                   <div style={{marginBottom:14}}>
-                    <SL text="Patient auswählen"/>
-                    <SearchInput value={planAssignSearch} onChange={setPlanAssignSearch} placeholder="Name oder Besitzer..."/>
-                    <CustomSelect value={planAssignPatient?.id||""} onChange={e=>setPlanAssignPatient(patients.find(p=>p.id===e.target.value)||null)}>
-                      <option value="">Patient auswählen...</option>
-                      {patients.filter(p=>{const q=planAssignSearch.trim().toLowerCase();return !planAssignSearch||p.name.toLowerCase().includes(q)||p.owner.toLowerCase().includes(q);}).map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
-                    </CustomSelect>
+                    <SL text="Plan auswählen"/>
+                    {planTemplates.length===0
+                      ?<div className="card" style={{padding:16,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Behandlungspläne erstellt.</div>
+                      :<div style={{display:"flex",flexDirection:"column",gap:6}}>
+                        {planTemplates.map(plan=>{
+                          const planExs=planTemplateExercises.filter(pe=>pe.plan_template_id===plan.id);
+                          return(
+                            <div key={plan.id} className="card" style={{padding:"11px 13px",cursor:"pointer",border:`2px solid ${planAssignState?.plan?.id===plan.id?BRAND:"transparent"}`,background:planAssignState?.plan?.id===plan.id?LIGHT:"white"}}
+                              onClick={()=>{
+                                const exItems=planExs.map(pe=>{
+                                  const tmpl=templates.find(t=>t.id===pe.exercise_template_id);
+                                  return{...pe,title:tmpl?.title||"",categories:tmpl?.categories||[],target_regions:tmpl?.target_regions||[],difficulty:tmpl?.difficulty||"Leicht",description:tmpl?.description||"",instructions:tmpl?.instructions||[],image_url:tmpl?.image_url||null,video_url:tmpl?.video_url||null,
+                                    title_en:tmpl?.title_en||null,description_en:tmpl?.description_en||null,instructions_en:tmpl?.instructions_en||null,
+                                    title_es:tmpl?.title_es||null,description_es:tmpl?.description_es||null,instructions_es:tmpl?.instructions_es||null,
+                                    duration:pe.default_duration||"",repeat_count:pe.default_repeat_count||1};
+                                });
+                                if(planAssignState?.plan?.id===plan.id){setPlanAssignState(null);}
+                                else{setPlanAssignState({plan,exercises:exItems});}
+                              }}>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                <div>
+                                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#102828"}}>{plan.title}</div>
+                                  {plan.note&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",marginTop:2}}>{plan.note}</div>}
+                                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:ACCENT,marginTop:2}}>{planExs.length} Übung{planExs.length!==1?"en":""}</div>
+                                </div>
+                                {planAssignState?.plan?.id===plan.id&&<Icon name="check" size={16} color={BRAND}/>}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    }
                   </div>
 
-                  <div style={{marginBottom:14}}>
-                    <SL text="Übungen anpassen"/>
-                    <div style={{display:"flex",flexDirection:"column",gap:5}}>
-                      {planAssignState.exercises.map((ex,idx)=>(
-                        <div key={idx} style={{background:PALE,borderRadius:10,padding:"8px 10px",border:`1.5px solid ${LIGHT}`}}>
-                          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828",marginBottom:6}}>{exT(ex,"title")}</div>
-                          <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <input value={ex.duration} onChange={e=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,duration:e.target.value}:x)}))} placeholder="Dauer..." style={{...inp,fontSize:16,padding:"4px 8px",flex:1}}/>
-                            <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
-                              <button className="btn" onClick={()=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,repeat_count:Math.max(1,(x.repeat_count||1)-1)}:x)}))} style={{width:22,height:22,borderRadius:5,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:DARK}}>−</button>
-                              <span style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:DARK,minWidth:20,textAlign:"center"}}>{ex.repeat_count||1}x</span>
-                              <button className="btn" onClick={()=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,repeat_count:Math.min(7,(x.repeat_count||1)+1)}:x)}))} style={{width:22,height:22,borderRadius:5,background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#102828"}}>+</button>
+                  {/* 3. Übungen anpassen (wenn Plan gewählt) */}
+                  {planAssignState&&planAssignState.exercises.length>0&&(
+                    <div style={{marginBottom:14}}>
+                      <SL text="Übungen anpassen"/>
+                      <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                        {planAssignState.exercises.map((ex,idx)=>(
+                          <div key={idx} style={{background:PALE,borderRadius:10,padding:"8px 10px",border:`1.5px solid ${LIGHT}`}}>
+                            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828",marginBottom:6}}>{exT(ex,"title")}</div>
+                            <div style={{display:"flex",alignItems:"center",gap:6}}>
+                              <input value={ex.duration} onChange={e=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,duration:e.target.value}:x)}))} placeholder="Dauer..." style={{...inp,fontSize:16,padding:"4px 8px",flex:1}}/>
+                              <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
+                                <button className="btn" onClick={()=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,repeat_count:Math.max(1,(x.repeat_count||1)-1)}:x)}))} style={{width:22,height:22,borderRadius:5,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:DARK}}>−</button>
+                                <span style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:DARK,minWidth:20,textAlign:"center"}}>{ex.repeat_count||1}x</span>
+                                <button className="btn" onClick={()=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,repeat_count:Math.min(7,(x.repeat_count||1)+1)}:x)}))} style={{width:22,height:22,borderRadius:5,background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#102828"}}>+</button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
+                  )}
+
+                  {/* 4. Zuweisen + Drucken Buttons */}
+                  <div style={{display:"flex",gap:8,marginBottom:14}}>
+                    <button className="btn" disabled={saving||!planAssignState||planAssignState.exercises.length===0} onClick={assignPlanToPatient}
+                      style={{flex:1,padding:"12px",borderRadius:12,background:planAssignState?.exercises.length>0?BRAND:"#B8DFE0",color:planAssignState?.exercises.length>0?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                      <Icon name="assign" size={15} color={planAssignState?.exercises.length>0?"#102828":"#7ECBCC"}/>
+                      {saving?t.saving:planAssignState?`${planAssignState.exercises.length} Übung${planAssignState.exercises.length!==1?"en":""} zuweisen`:"Plan zuweisen"}
+                    </button>
+                    <button className="iBtn" title="Heimübungen drucken" onClick={()=>printExercisePlan(planAssignPatient)} style={{background:"#E8F5E9",width:44,height:44,borderRadius:12,flexShrink:0}}><Icon name="print" size={16} color="#2E7D32"/></button>
+                    <button className="iBtn" title="Plan-Info per Mail senden" onClick={()=>openPlanMail(planAssignPatient)} disabled={!getUserEmail(planAssignPatient.user_id)} style={{background:getUserEmail(planAssignPatient.user_id)?"#E3F2FD":"#F5F5F5",width:44,height:44,borderRadius:12,flexShrink:0,opacity:getUserEmail(planAssignPatient.user_id)?1:0.4}}><Icon name="mail" size={16} color={getUserEmail(planAssignPatient.user_id)?"#1565C0":"#aaa"}/></button>
                   </div>
 
-                  <button className="btn" disabled={saving||!planAssignPatient||planAssignState.exercises.length===0} onClick={assignPlanToPatient}
-                    style={{width:"100%",padding:"14px",borderRadius:12,background:(planAssignPatient&&planAssignState.exercises.length>0)?BRAND:"#B8DFE0",color:(planAssignPatient&&planAssignState.exercises.length>0)?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
-                    {saving?t.saving:`${planAssignState.exercises.length} Übung${planAssignState.exercises.length!==1?"en":""} zuweisen`}
-                  </button>
+                  {/* 5. Aktuelle Heimübungen des Patienten */}
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>{t.homeExercises(exForPatient(planAssignPatient.id).length)}</div>
+                  {exForPatient(planAssignPatient.id).length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:ACCENT,textAlign:"center",padding:"12px 0"}}>{t.noExercisesYet}</div>}
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {exForPatient(planAssignPatient.id).map(ex=>{
+                      const rc=ex.repeat_count||1;
+                      const doneNow=getDoneCountThisWeek(ex.id);
+                      const fullyDone=doneNow>=rc;
+                      return(
+                        <div key={ex.id} className="card" style={{padding:"11px 13px",display:"flex",gap:10,alignItems:"center",borderLeft:`4px solid ${fullyDone?BRAND:"#E0E0E0"}`,opacity:fullyDone?0.75:1}}>
+                          {ex.image_url?<img src={ex.image_url} alt={ex.title} style={{width:38,height:38,borderRadius:8,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}/>
+                            :<div style={{width:38,height:38,borderRadius:8,background:fullyDone?BRAND+"20":LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}><Icon name="paw" size={17} color={fullyDone?BRAND:ACCENT}/></div>}
+                          <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}>
+                            <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:fullyDone?"#3D7070":"#102828",textDecoration:fullyDone?"line-through":"none"}}>{exT(ex,"title")}</div>
+                            <div style={{display:"flex",alignItems:"center",gap:5,marginTop:3}}>
+                              {Array.from({length:rc}).map((_,i)=>(
+                                <div key={i} style={{width:10,height:10,borderRadius:3,background:i<doneNow?BRAND:"#E0E0E0"}}/>
+                              ))}
+                              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{doneNow}/{rc} · {ex.duration}</span>
+                            </div>
+                          </div>
+                          <button className="iBtn" onClick={()=>{setSheetData(ex);setSheet("confirmDeleteEx");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </>)}
 
-                {!planAssignState&&planTemplates.length>0&&<div className="card" style={{marginTop:8,padding:20,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Plan antippen um zuzuweisen.</div>}
+                {!planAssignPatient&&<div className="card" style={{padding:24,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Bitte zuerst einen Patienten auswählen.</div>}
               </>)}
             </div>
           )}
@@ -1820,6 +1935,24 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         <div style={{maxWidth:480,margin:"0 auto",padding:"16px 14px 80px"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:DARK,marginBottom:4}}>Admin</div>
           <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:20}}>Einstellungen & App-Verwaltung</div>
+
+          {/* Mail-Vorlage */}
+          <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:4}}>Plan-Mail Vorlage</div>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginBottom:14}}>Wird beim Versenden nach Plan-Zuweisung verwendet. Platzhalter: <code style={{background:"#D0ECF0",borderRadius:4,padding:"1px 5px",fontSize:11,color:"#1E4A4B"}}>{"{{patient}}"}</code>, <code style={{background:"#D0ECF0",borderRadius:4,padding:"1px 5px",fontSize:11,color:"#1E4A4B"}}>{"{{besitzer}}"}</code> und <code style={{background:"#D0ECF0",borderRadius:4,padding:"1px 5px",fontSize:11,color:"#1E4A4B"}}>{"{{email}}"}</code></div>
+            <div style={{marginBottom:10}}>
+              <SL text="Betreff"/>
+              <input value={mailTemplate.subject} onChange={e=>setMailTemplate(p=>({...p,subject:e.target.value}))} style={{...inp,marginBottom:0}} placeholder="Betreff..."/>
+            </div>
+            <div style={{marginBottom:14}}>
+              <SL text="Mailtext"/>
+              <textarea value={mailTemplate.body} onChange={e=>setMailTemplate(p=>({...p,body:e.target.value}))} rows={7} style={{...inp,resize:"vertical"}} placeholder="Mailtext..."/>
+            </div>
+            <button className="btn" onClick={saveMailTemplate} disabled={mailTemplateSaving}
+              style={{width:"100%",padding:"12px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+              <Icon name="check" size={16} color="#102828"/>{mailTemplateSaving?"Wird gespeichert...":"Vorlage speichern"}
+            </button>
+          </div>
 
           {/* Feedback */}
           <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
@@ -2239,51 +2372,42 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         </div>
       )}
 
-      {/* SHEET: ASSIGN PLAN TO PATIENT */}
-      {sheet==="assignPlan"&&planAssignState&&(
-        <div className="overlay" onClick={closeSheet}>
+      {/* SHEET: PLAN ZUGEWIESEN – MAIL SENDEN */}
+      {planAssignDone&&(
+        <div className="overlay" onClick={()=>{setPlanAssignDone(null);closeSheet();}}>
           <div className="sheet" onClick={e=>e.stopPropagation()}>
-            <SheetHeader title={`Plan: ${planAssignState.plan.title}`} onClose={closeSheet}/>
-            <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              <div>
-                <SL text="Patient auswählen"/>
-                <SearchInput value={planAssignSearch} onChange={setPlanAssignSearch} placeholder="Name oder Besitzer..."/>
-                <CustomSelect value={planAssignPatient?.id||""} onChange={e=>setPlanAssignPatient(patients.find(p=>p.id===e.target.value)||null)}>
-                  <option value="">Patient auswählen...</option>
-                  {patients.filter(p=>{const q=planAssignSearch.trim().toLowerCase();return !planAssignSearch||p.name.toLowerCase().includes(q)||p.owner.toLowerCase().includes(q);}).map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
-                </CustomSelect>
+            <SheetHeader title="Plan erfolgreich zugewiesen" onClose={()=>{setPlanAssignDone(null);closeSheet();}}/>
+            <div style={{background:"#E8F5E9",borderRadius:12,padding:"14px 16px",marginBottom:18,display:"flex",alignItems:"center",gap:12}}>
+              <div style={{width:36,height:36,borderRadius:10,background:"#2E7D32"+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <Icon name="check" size={20} color="#2E7D32"/>
               </div>
-
-              {planAssignState.exercises.length>0&&(
-                <div>
-                  <SL text="Übungen anpassen"/>
-                  <div style={{display:"flex",flexDirection:"column",gap:5}}>
-                    {planAssignState.exercises.map((ex,idx)=>(
-                      <div key={idx} style={{background:PALE,borderRadius:10,padding:"8px 10px",border:`1.5px solid ${LIGHT}`}}>
-                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828",marginBottom:6}}>{exT(ex,"title")}</div>
-                        <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          <input value={ex.duration} onChange={e=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,duration:e.target.value}:x)}))} placeholder="Dauer..." style={{...inp,fontSize:16,padding:"4px 8px",flex:1}}/>
-                          <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
-                            <button className="btn" onClick={()=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,repeat_count:Math.max(1,(x.repeat_count||1)-1)}:x)}))} style={{width:22,height:22,borderRadius:5,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:DARK}}>−</button>
-                            <span style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:DARK,minWidth:20,textAlign:"center"}}>{ex.repeat_count||1}x</span>
-                            <button className="btn" onClick={()=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,repeat_count:Math.min(7,(x.repeat_count||1)+1)}:x)}))} style={{width:22,height:22,borderRadius:5,background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#102828"}}>+</button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {planAssignState.exercises.length===0&&(
-                <div style={{background:LIGHT,borderRadius:10,padding:"14px",textAlign:"center",fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070"}}>Dieser Plan enthält noch keine Übungen.</div>
-              )}
-
-              <button className="btn" disabled={saving||!planAssignPatient||planAssignState.exercises.length===0} onClick={assignPlanToPatient}
-                style={{width:"100%",padding:"14px",borderRadius:12,background:(planAssignPatient&&planAssignState.exercises.length>0)?BRAND:"#B8DFE0",color:(planAssignPatient&&planAssignState.exercises.length>0)?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
-                {saving?t.saving:`${planAssignState.exercises.length} Übung${planAssignState.exercises.length!==1?"en":""} zuweisen`}
-              </button>
+              <div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#2E7D32"}}>Zugewiesen!</div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginTop:2}}>{planAssignDone.plan.title} → {planAssignDone.patient.name}</div>
+              </div>
             </div>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:DARK,marginBottom:18}}>
+              Möchtest du {planAssignDone.patient.owner} per Mail informieren, dass der neue Plan verfügbar ist?
+            </div>
+            {getUserEmail(planAssignDone.patient.user_id)?(
+              <>
+                <div style={{background:PALE,borderRadius:10,padding:"10px 14px",marginBottom:14,border:`1.5px solid ${LIGHT}`}}>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",marginBottom:3}}>Mail wird gesendet an</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,color:DARK}}>{getUserEmail(planAssignDone.patient.user_id)}</div>
+                </div>
+                <a href={`mailto:${getUserEmail(planAssignDone.patient.user_id)}?subject=${encodeURIComponent((mailTemplate.subject||"").replace(/\{\{patient\}\}/g,planAssignDone.patient.name||"").replace(/\{\{besitzer\}\}/g,planAssignDone.patient.owner||"").replace(/\{\{email\}\}/g,getUserEmail(planAssignDone.patient.user_id)||""))}&body=${encodeURIComponent((mailTemplate.body||"").replace(/\{\{patient\}\}/g,planAssignDone.patient.name||"").replace(/\{\{besitzer\}\}/g,planAssignDone.patient.owner||"").replace(/\{\{email\}\}/g,getUserEmail(planAssignDone.patient.user_id)||""))}`}
+                  onClick={()=>setTimeout(()=>{setPlanAssignDone(null);closeSheet();},500)}
+                  style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:"14px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,textDecoration:"none",boxSizing:"border-box",marginBottom:10}}>
+                  <Icon name="mail" size={17} color="#102828"/> Mail öffnen
+                </a>
+              </>
+            ):(
+              <div style={{background:"#FFF3E0",borderRadius:10,padding:"12px 14px",marginBottom:14,fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#E65100"}}>Diesem Patienten ist kein Mail-Account zugeordnet.</div>
+            )}
+            <button className="btn" onClick={()=>{setPlanAssignDone(null);closeSheet();}}
+              style={{width:"100%",padding:"13px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:14}}>
+              Überspringen
+            </button>
           </div>
         </div>
       )}
