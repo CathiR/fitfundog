@@ -455,6 +455,7 @@ www.fit-fun-dog.de`});
   const [showNewPw,setShowNewPw]=useState(false);
   const [showPasswordChange,setShowPasswordChange]=useState(false);
   const [newPassword,setNewPassword]=useState("");
+  const suppressAuthEvents=useRef(false);
 
   // ── Handle Android back button – close sheet/exercise instead of app ──
   useEffect(()=>{
@@ -490,6 +491,7 @@ www.fit-fun-dog.de`});
         setOwnerPatient(null);setSelectedPatient(null);
         setLoading(true);
       } else if(event==="SIGNED_IN"&&s){
+        if(suppressAuthEvents.current)return;
         setIsRecoveryMode(false);
         setSession(s);
         loadAll(s.user.id);
@@ -970,20 +972,22 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     if(newAccountMode==="existing"){
       userId=selectedExistingUserId||null;
     }else if(newAccountMode==="new"&&newPatient.ownerEmail&&newPatient.ownerPassword){
+      suppressAuthEvents.current=true;
       const{data:sd,error:se}=await supabase.auth.signUp({
         email:newPatient.ownerEmail,password:newPatient.ownerPassword,
         options:{data:{must_change_password:newPatient.ownerPassword===newPatient.ownerEmail}}
       });
-      if(se){alert("Account-Fehler: "+se.message);setSaving(false);return;}
+      if(se){alert("Account-Fehler: "+se.message);setSaving(false);suppressAuthEvents.current=false;return;}
       userId=sd?.user?.id||null;
       // Re-login als Admin – warten bis Session gesetzt ist
       const storedPw=sessionStorage.getItem("_tfpw");
       const therapistEmail=ps.therapist_email||practice.therapist_email;
       if(storedPw&&therapistEmail){
         const{error:reErr}=await supabase.auth.signInWithPassword({email:therapistEmail,password:storedPw});
-        if(reErr){alert("Re-Login fehlgeschlagen. Bitte neu einloggen.");setSaving(false);return;}
+        if(reErr){alert("Re-Login fehlgeschlagen. Bitte neu einloggen.");setSaving(false);suppressAuthEvents.current=false;return;}
         await new Promise(r=>setTimeout(r,400));
       }
+      suppressAuthEvents.current=false;
     }
     const{data,error}=await supabase.from("patients").insert({
       name:newPatient.name,breed:newPatient.breed,age:newPatient.age,
@@ -1001,18 +1005,20 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     const{id,_newUserId,ownerEmail,ownerPassword,...fields}=editPatientData;
     // Neuen Account anlegen falls editAccountMode === "new"
     if(editAccountMode==="new"&&ownerEmail&&ownerPassword){
+      suppressAuthEvents.current=true;
       const{data:sd,error:se}=await supabase.auth.signUp({
         email:ownerEmail,password:ownerPassword,
         options:{data:{must_change_password:ownerPassword===ownerEmail}}
       });
-      if(se){alert("Account-Fehler: "+se.message);setSaving(false);return;}
+      if(se){alert("Account-Fehler: "+se.message);setSaving(false);suppressAuthEvents.current=false;return;}
       fields.user_id=sd?.user?.id||null;
       const storedPw=sessionStorage.getItem("_tfpw");
       if(storedPw&&practice.therapist_email){
         const{error:reErr}=await supabase.auth.signInWithPassword({email:practice.therapist_email,password:storedPw});
-        if(reErr){alert("Re-Login fehlgeschlagen. Bitte neu einloggen.");setSaving(false);return;}
+        if(reErr){alert("Re-Login fehlgeschlagen. Bitte neu einloggen.");setSaving(false);suppressAuthEvents.current=false;return;}
         await new Promise(r=>setTimeout(r,400));
       }
+      suppressAuthEvents.current=false;
     } else if(_newUserId!==undefined){
       fields.user_id=_newUserId||null;
     }
