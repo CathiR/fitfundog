@@ -469,6 +469,18 @@ www.fit-fun-dog.de`});
     return()=>window.removeEventListener("popstate",handleBack);
   },[selectedExercise,sheet]);
 
+  // ── Practice-Settings vorab laden (für LoginScreen vor Auth) ──
+  useEffect(()=>{
+    supabase.from("practice_settings").select("*").eq("slug",PRACTICE_SLUG).maybeSingle().then(({data:ps})=>{
+      if(ps){
+        setPractice(ps);
+        BRAND=ps.color_brand||BRAND;
+        DARK=ps.color_dark||DARK;
+        MID=ps.color_mid||MID;
+      }
+    });
+  },[]);
+
   // ── Auth: load data with userId directly from session ──
   useEffect(()=>{
     supabase.auth.getSession().then(({data:{session:s}})=>{
@@ -1768,10 +1780,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       <div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>
                         {(tmpl.categories||[]).map(c=><span key={c} className="tag" style={{background:BRAND+"18",color:BRAND}}>{c}</span>)}
                         <span className="tag" style={{background:(difficultyColor[tmpl.difficulty]||BRAND)+"18",color:difficultyColor[tmpl.difficulty]||BRAND}}>{tmpl.difficulty}</span>
+                        {tmpl.is_starter&&<span className="tag" style={{background:"#F0F0F0",color:"#888"}}>Vorlage</span>}
                       </div>
                     </div>
                     <div style={{display:"flex",gap:5}}>
-                      <button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setPropagateTemplateUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
+                      {!tmpl.is_starter&&<button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setPropagateTemplateUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>}
                       <button className="iBtn" onClick={()=>{setSheetData(tmpl);setSheet("confirmDeleteTmpl");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                     </div>
                   </div>
