@@ -1324,10 +1324,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   });
   const filteredUsers=userEmails.filter(u=>{
     const q=userSearch.trim().toLowerCase();
-    return u.id!==practice.admin_user_id&&u.email.toLowerCase().includes(q);
+    return u.id!==practice.admin_user_id&&(u.email||"").toLowerCase().includes(q);
   });
 
-  const patLabel=(p)=>`${p.avatar||""} ${p.name} - ${p.breed} - ${p.owner}`.trim();
+  const patLabel=(p)=>`${p.avatar||""} ${p.name||""} - ${p.breed||""} - ${p.owner||""}`.trim();
   const getUserEmail=(uid)=>userEmails.find(u=>u.id===uid)?.email||null;
 
   const inp={width:"100%",padding:"11px 14px",borderRadius:10,border:"1.5px solid #B8DFE0",fontSize:16,fontFamily:"'DM Sans',sans-serif",outline:"none",background:"white",color:"#102828",WebkitTextFillColor:"#102828",boxSizing:"border-box"};
@@ -1913,7 +1913,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   <SearchInput value={planAssignSearch} onChange={val=>{setPlanAssignSearch(val);setPlanAssignPatient(null);}} placeholder="Name oder Besitzer..."/>
                   <CustomSelect value={planAssignPatient?.id||""} onChange={e=>{setPlanAssignPatient(patients.find(p=>p.id===e.target.value)||null);setPlanAssignState(null);}}>
                     <option value="">Patient auswählen...</option>
-                    {patients.filter(p=>{const q=planAssignSearch.trim().toLowerCase();return !planAssignSearch||p.name.toLowerCase().includes(q)||p.owner.toLowerCase().includes(q);}).map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
+                    {patients.filter(p=>{const q=planAssignSearch.trim().toLowerCase();return !planAssignSearch||(p.name||"").toLowerCase().includes(q)||(p.owner||"").toLowerCase().includes(q);}).map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
                   </CustomSelect>
                 </div>
 
