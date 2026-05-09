@@ -1316,11 +1316,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   });
   const filteredPatients=patients.filter(p=>{
     const q=patientSearch.trim().toLowerCase();
-    return p.name.toLowerCase().includes(q)||p.owner.toLowerCase().includes(q)||(p.breed||"").toLowerCase().includes(q);
+    return (p.name||"").toLowerCase().includes(q)||(p.owner||"").toLowerCase().includes(q)||(p.breed||"").toLowerCase().includes(q);
   });
   const filteredAssignPatients=patients.filter(p=>{
     const q=assignPatientSearch.trim().toLowerCase();
-    return p.name.toLowerCase().includes(q)||p.owner.toLowerCase().includes(q);
+    return (p.name||"").toLowerCase().includes(q)||(p.owner||"").toLowerCase().includes(q);
   });
   const filteredUsers=userEmails.filter(u=>{
     const q=userSearch.trim().toLowerCase();
@@ -1440,7 +1440,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
           {(()=>{
             const visiblePts=isAdmin&&ownerSearch
-              ?patients.filter(p=>{const q=ownerSearch.trim().toLowerCase();return p.name.toLowerCase().includes(q)||p.owner.toLowerCase().includes(q);})
+              ?patients.filter(p=>{const q=ownerSearch.trim().toLowerCase();return (p.name||"").toLowerCase().includes(q)||(p.owner||"").toLowerCase().includes(q);})
               :patients;
             if(isAdmin&&ownerSearch&&visiblePts.length===1&&ownerPatient?.id!==visiblePts[0].id){
               setOwnerPatient(visiblePts[0]);setFilterCats([]);setFilterRegions([]);
