@@ -1024,11 +1024,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     }
     const{data,error}=await supabase.from("patients").update(fields).eq("id",id).select().single();
     if(error){alert("Fehler: "+error.message);setSaving(false);return;}
-    if(data){
-      setPatients(prev=>prev.map(p=>p.id===data.id?data:p).sort((a,b)=>a.name.localeCompare(b.name)));
-      if(ownerPatient?.id===data.id)setOwnerPatient(data);
-      if(selectedPatient?.id===data.id)setSelectedPatient(data);
-    }
+    await loadAll(practice.admin_user_id||session?.user?.id);
     setSaving(false);closeSheet();
   };
 
