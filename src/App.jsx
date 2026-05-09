@@ -1,19 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./supabase";
 
-document.title = "Fit Fun Dog";
-document.querySelectorAll("link[rel*='icon']").forEach(el => el.remove());
-const fav = document.createElement("link");
-fav.rel = "icon"; fav.type = "image/png"; fav.href = "/favicon.png?v=4";
-document.head.appendChild(fav);
+// Praxis-Slug aus Umgebungsvariable (wird pro Vercel-Deployment gesetzt)
+// Fallback: "fitfundog" für lokale Entwicklung und bestehende Deployments
+const PRACTICE_SLUG = import.meta.env.VITE_PRACTICE_SLUG || "fitfundog";
+
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
-const ADMIN_ID = "1bed901d-005a-496e-bf8e-5d55804e6f72";
 const VAPID_PUBLIC_KEY = "BPOAPZ3DeTf-FL_rmbeEufuh-bhAEH-zrUR-TPTsRVfNCotxh_jJ-7A5AHu9pWNyM24HxX_E5Ls1dy4Mt82b1F4";
-const THERAPIST_EMAIL = "fitfundog@freenet.de";
-const BRAND = "#5fb8b9", DARK = "#1E4A4B", MID = "#3D8E8F";
+let BRAND = "#5fb8b9", DARK = "#1E4A4B", MID = "#3D8E8F";
 const LIGHT = "#E6F6F6", PALE = "#F3FBFB", ACCENT = "#8FD4D5";
-const LOGO_URL = "https://tkgwdmntglzfeulpgfpw.supabase.co/storage/v1/object/public/exercise-images/Logo%20Fit%20Fun%20Dog-Vektor%20ws.png";
+const ICON_BASE = "https://tkgwdmntglzfeulpgfpw.supabase.co/storage/v1/object/public/app-icons/";
 const CATEGORIES = ["Regeneration", "Balance", "Kräftigung", "Koordination", "Mobilisation"];
 const TARGET_REGIONS = ["Ganzer Körper", "Hinterhand", "Vorderhand", "Rumpf", "Vorderpfoten", "Rücken"];
 const EMPTY_PATIENT = { name: "", breed: "", age: "", owner: "", condition: "", avatar: "🐕", ownerEmail: "", ownerPassword: "" };
@@ -182,7 +179,7 @@ const InfoCard = ({ icon, title, text, items }) => (
   </div>
 );
 
-const LoginScreen = () => {
+const LoginScreen = ({practice,onLogin}) => {
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
   const [loading,setLoading]=useState(false);
@@ -195,15 +192,15 @@ const LoginScreen = () => {
     setLoading(true);setError("");
     const{error:err}=await supabase.auth.signInWithPassword({email,password});
     if(err)setError("Login fehlgeschlagen. Bitte Email und Passwort prüfen.");
-    else if(email===THERAPIST_EMAIL)sessionStorage.setItem("_tfpw",password);
+    else if(email===practice.therapist_email)sessionStorage.setItem("_tfpw",password);
     setLoading(false);
   };
   return(
     <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${DARK} 0%,#2A7A7B 60%,${BRAND} 100%)`,display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
       <div style={{width:"100%",maxWidth:360}}>
         <div style={{textAlign:"center",marginBottom:32}}>
-          <img src={LOGO_URL} alt="Fit Fun Dog" style={{height:65,objectFit:"contain",marginBottom:10}}/>
-          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:ACCENT,letterSpacing:"1.5px",textTransform:"uppercase"}}>Tierphysiotherapie & Osteopathie</div>
+          <img src={practice.logo_url||"/favicon.png"} alt={practice.practice_name} style={{height:65,objectFit:"contain",marginBottom:10}}/>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:ACCENT,letterSpacing:"1.5px",textTransform:"uppercase"}}>{practice.practice_subtitle||""}</div>
         </div>
         <div style={{background:"white",borderRadius:22,padding:"28px 24px",boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:DARK,marginBottom:4}}>Willkommen zurück</div>
@@ -221,8 +218,8 @@ const LoginScreen = () => {
         </div>
         <div style={{textAlign:"center",marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.4)"}}>Kein Konto? Bitte wende dich an deine Therapeutin.</div>
         <div style={{textAlign:"center",marginTop:16,display:"flex",justifyContent:"center",gap:20}}>
-          <a href="https://fit-fun-dog.de/datenschutzerklaerung/" target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",textDecoration:"none"}}>Datenschutz</a>
-          <a href="https://fit-fun-dog.de/impressum/" target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",textDecoration:"none"}}>Impressum</a>
+          <a href={practice.privacy_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",textDecoration:"none"}}>Datenschutz</a>
+          <a href={practice.imprint_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",textDecoration:"none"}}>Impressum</a>
         </div>
       </div>
     </div>
@@ -255,8 +252,8 @@ const PasswordResetScreen = ({ onDone }) => {
     <div style={{ minHeight:"100vh", background:`linear-gradient(160deg,${DARK} 0%,#2A7A7B 60%,${BRAND} 100%)`, display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
       <div style={{ width:"100%", maxWidth:360 }}>
         <div style={{ textAlign:"center", marginBottom:32 }}>
-          <img src={LOGO_URL} alt="Fit Fun Dog" style={{ height:65, objectFit:"contain", marginBottom:10 }}/>
-          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:ACCENT, letterSpacing:"1.5px", textTransform:"uppercase" }}>Tierphysiotherapie & Osteopathie</div>
+          <img src={practice.logo_url||"/favicon.png"} alt={practice.practice_name} style={{ height:65, objectFit:"contain", marginBottom:10 }}/>
+          <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, color:ACCENT, letterSpacing:"1.5px", textTransform:"uppercase" }}></div>
         </div>
         <div style={{ background:"white", borderRadius:22, padding:"28px 24px", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
           {success ? (
@@ -300,7 +297,33 @@ export default function App() {
     if(sessionStorage.getItem("_recovery")==="1")return true;
     return window.location.hash.includes("type=recovery");
   });
-  const isAdmin=session?.user?.id===ADMIN_ID;
+
+  // Praxis-Einstellungen – dynamisch aus practice_settings
+  const [practice,setPractice]=useState({
+    practice_name:"FitFunDog",
+    practice_subtitle:"Tierphysiotherapie",
+    logo_url:"",
+    logo_dark_url:"",
+    color_brand:"#5fb8b9",
+    color_dark:"#1E4A4B",
+    color_mid:"#3D8E8F",
+    website_url:"",
+    contact_email:"",
+    contact_phone:"",
+    booking_url:"",
+    privacy_url:"",
+    imprint_url:"",
+    feedback_email_dev:"",
+    app_url:"",
+    therapist_email:"",
+    icon_folder:"",
+    icon_default:"icon-1",
+    admin_user_id:null,
+  });
+  const [practiceIcons,setPracticeIcons]=useState([]);
+  const [practiceSaving,setPracticeSaving]=useState(false);
+
+  const isAdmin=!!(practice.admin_user_id&&session?.user?.id===practice.admin_user_id);
 
   const [view,setView]=useState("owner");
   const [practiceTab,setPracticeTab]=useState("patients");
@@ -496,7 +519,7 @@ www.fit-fun-dog.de`});
     setLoading(true);
     const uid=userId;
     try{
-      const [{data:pd},{data:ed},{data:ld},{data:td},{data:ue},{data:hl},{data:fb},{data:ptd},{data:pte}]=await Promise.all([
+      const [{data:pd},{data:ed},{data:ld},{data:td},{data:ue},{data:hl},{data:fb},{data:ptd},{data:pte},{data:ps},{data:pi}]=await Promise.all([
         supabase.from("patients").select("*").order("name"),
         supabase.from("exercises").select("*").order("created_at"),
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
@@ -505,8 +528,30 @@ www.fit-fun-dog.de`});
         supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-111);return d.toISOString().split("T")[0];})()),
         supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false}),
         supabase.from("plan_templates").select("*").order("created_at"),
-        supabase.from("plan_template_exercises").select("*").order("sort_order")
+        supabase.from("plan_template_exercises").select("*").order("sort_order"),
+        supabase.from("practice_settings").select("*").eq("slug",PRACTICE_SLUG).maybeSingle(),
+        supabase.from("practice_icons").select("*").order("icon_key"),
       ]);
+
+      // Praxis-Einstellungen anwenden
+      if(ps){
+        setPractice(ps);
+        setPracticeIcons(pi||[]);
+        // Farben global setzen (für dynamische Komponenten außerhalb React)
+        BRAND=ps.color_brand||BRAND;
+        DARK=ps.color_dark||DARK;
+        MID=ps.color_mid||MID;
+        // Browser-Tab-Titel + Favicon
+        document.title=ps.practice_name||"FitFunDog";
+        document.querySelectorAll("link[rel*='icon']").forEach(el=>el.remove());
+        const fav=document.createElement("link");
+        fav.rel="icon";fav.type="image/png";
+        // Icon: persönliche Wahl des Users wenn gesetzt, sonst Praxis-Default
+        const userIconKey=localStorage.getItem(`preferred_icon_${uid}`)||ps.icon_default||"icon-1";
+        const userIcon=( pi||[]).find(i=>i.icon_key===userIconKey);
+        fav.href=userIcon?`${ICON_BASE}${ps.icon_folder}/${userIcon.filename}`:(ps.logo_url||"/favicon.png");
+        document.head.appendChild(fav);
+      }
       const pl=pd||[];
       setPatients(pl);
       setExercises(ed||[]);
@@ -527,7 +572,7 @@ www.fit-fun-dog.de`});
 
       // Find owner's patient by userId
       let ownerPat=null;
-      if(uid&&uid!==ADMIN_ID){
+      if(uid&&ps&&uid!==ps.admin_user_id){
         ownerPat=pl.find(p=>p.user_id===uid)||pl[0]||null;
       } else {
         ownerPat=pl[0]||null;
@@ -535,7 +580,7 @@ www.fit-fun-dog.de`});
       setOwnerPatient(ownerPat);
       setSelectedPatient(prev=>prev?pl.find(p=>p.id===prev.id)||null:null);
 
-      if(uid&&uid!==ADMIN_ID){
+      if(uid&&ps&&uid!==ps.admin_user_id){
         const{data:{user}}=await supabase.auth.getUser();
         if(user?.user_metadata?.must_change_password)setMustChangePassword(true);
       }
@@ -631,17 +676,17 @@ www.fit-fun-dog.de`});
 
 <!-- HEADER -->
 <div class="header">
-  <img class="logo" src="${LOGO_BLACK}" alt="Fit Fun Dog"/>
-  <div class="brand-name">F|T&nbsp;&nbsp;FUN&nbsp;&nbsp;DOG</div>
-  <div class="brand-sub">P&nbsp;H&nbsp;Y&nbsp;S&nbsp;I&nbsp;O&nbsp;T&nbsp;H&nbsp;E&nbsp;R&nbsp;A&nbsp;P&nbsp;I&nbsp;E&nbsp;&nbsp;&amp;&nbsp;&nbsp;O&nbsp;S&nbsp;T&nbsp;E&nbsp;O&nbsp;P&nbsp;A&nbsp;T&nbsp;H&nbsp;I&nbsp;E&nbsp;&nbsp;F&Uuml;&nbsp;R&nbsp;&nbsp;T&nbsp;I&nbsp;E&nbsp;R&nbsp;E</div>
+  <img class="logo" src="${practice.logo_dark_url||practice.logo_url||''}" alt="${practice.practice_name}" style="height:52px;object-fit:contain;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;"/>
+  <div class="brand-name">${PRACTICE_SLUG==="fitfundog"?"F|T&nbsp;&nbsp;FUN&nbsp;&nbsp;DOG":practice.practice_name}</div>
+  <div class="brand-sub">${PRACTICE_SLUG==="fitfundog"?"P&nbsp;H&nbsp;Y&nbsp;S&nbsp;I&nbsp;O&nbsp;T&nbsp;H&nbsp;E&nbsp;R&nbsp;A&nbsp;P&nbsp;I&nbsp;E&nbsp;&nbsp;&amp;&nbsp;&nbsp;O&nbsp;S&nbsp;T&nbsp;E&nbsp;O&nbsp;P&nbsp;A&nbsp;T&nbsp;H&nbsp;I&nbsp;E&nbsp;&nbsp;F&Uuml;&nbsp;R&nbsp;&nbsp;T&nbsp;I&nbsp;E&nbsp;R&nbsp;E":(practice.practice_subtitle||"")}</div>
 </div>
 
 <!-- META ROW: contact left, patient right -->
 <div class="meta-row">
   <div class="contact-block">
-    <div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3D8E8F" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><a href="https://www.fit-fun-dog.de" target="_blank" style="color:#555;text-decoration:none">www.fit-fun-dog.de</a></div>
-    <div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3D8E8F" stroke-width="2.5" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><a href="mailto:info@fit-fun-dog.de" style="color:#555;text-decoration:none">info@fit-fun-dog.de</a></div>
-    <div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3D8E8F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span style="color:#555;text-decoration:none">0159 / 04976681</span></div>
+    <div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3D8E8F" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><a href="${practice.website_url}" target="_blank" style="color:#555;text-decoration:none">${practice.website_url?.replace(/^https?:\/\//,"")}</a></div>
+    <div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3D8E8F" stroke-width="2.5" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><a href="mailto:${practice.contact_email}" style="color:#555;text-decoration:none">${practice.contact_email}</a></div>
+    ${practice.contact_phone?`<div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3D8E8F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span style="color:#555">${practice.contact_phone}</span></div>`:""}
   </div>
   <div class="patient-block">
     <div class="patient-label">P&nbsp;A&nbsp;T&nbsp;I&nbsp;E&nbsp;N&nbsp;T</div>
@@ -710,7 +755,7 @@ ${patExercises.map((ex) => `
   </div>
 </div>
 
-<div class="print-footer"><span>Fit Fun Dog · Tierphysiotherapie &amp; Osteopathie · www.fit-fun-dog.de</span><span>info@fit-fun-dog.de · 0159 / 04976681</span></div>
+<div class="print-footer"><span>${PRACTICE_SLUG==="fitfundog"?"Fit Fun Dog · Tierphysiotherapie &amp; Osteopathie · www.fit-fun-dog.de":practice.practice_name+" · "+(practice.practice_subtitle||"")+" · "+(practice.website_url||"").replace(/^https?:\/\//,"")}</span><span>${PRACTICE_SLUG==="fitfundog"?"info@fit-fun-dog.de · 0159 / 04976681":(practice.contact_email||"")+(practice.contact_phone?" · "+practice.contact_phone:"")}</span></div>
 </body></html>`;
 
     // Open new window and write HTML directly - avoids blob: URL in print header
@@ -759,7 +804,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 </div></div>`;
 }).join("")}
 <div class="footer-divider"></div>
-<div class="footer-note">Fit Fun Dog · Tierphysiotherapie &amp; Osteopathie · www.fit-fun-dog.de · info@fit-fun-dog.de · 0159 / 04976681</div>
+<div class="footer-note">${PRACTICE_SLUG==="fitfundog"?"Fit Fun Dog · Tierphysiotherapie &amp; Osteopathie · www.fit-fun-dog.de · info@fit-fun-dog.de · 0159 / 04976681":practice.practice_name+" · "+(practice.practice_subtitle||"")+" · "+(practice.website_url||"").replace(/^https?:\/\//,"")+" · "+(practice.contact_email||"")+(practice.contact_phone?" · "+practice.contact_phone:"")}</div>
 </body></html>`;
     const printWindow = window.open("about:blank","_blank");
     if(printWindow){printWindow.document.open();printWindow.document.write(html);printWindow.document.close();printWindow.onload=()=>{printWindow.focus();printWindow.print();};setTimeout(()=>{try{printWindow.focus();printWindow.print();}catch(e){}},1200);}
@@ -915,6 +960,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const addPatient=async()=>{
     if(!newPatient.name)return;
     setSaving(true);
+
+    // practice_id direkt aus DB holen – nicht aus State (könnte noch nicht gesetzt sein)
+    const{data:ps,error:psErr}=await supabase.from("practice_settings").select("id,admin_user_id,therapist_email").eq("slug",PRACTICE_SLUG).maybeSingle();
+    if(psErr||!ps){alert("Fehler: Praxis-Einstellungen konnten nicht geladen werden.");setSaving(false);return;}
+    const practiceId=ps.id;
+
     let userId=null;
     if(newAccountMode==="existing"){
       userId=selectedExistingUserId||null;
@@ -925,15 +976,22 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       });
       if(se){alert("Account-Fehler: "+se.message);setSaving(false);return;}
       userId=sd?.user?.id||null;
+      // Re-login als Admin – warten bis Session gesetzt ist
       const storedPw=sessionStorage.getItem("_tfpw");
-      if(storedPw)await supabase.auth.signInWithPassword({email:THERAPIST_EMAIL,password:storedPw});
+      const therapistEmail=ps.therapist_email||practice.therapist_email;
+      if(storedPw&&therapistEmail){
+        const{error:reErr}=await supabase.auth.signInWithPassword({email:therapistEmail,password:storedPw});
+        if(reErr){alert("Re-Login fehlgeschlagen. Bitte neu einloggen.");setSaving(false);return;}
+        await new Promise(r=>setTimeout(r,400));
+      }
     }
     const{data,error}=await supabase.from("patients").insert({
       name:newPatient.name,breed:newPatient.breed,age:newPatient.age,
-      owner:newPatient.owner,condition:newPatient.condition,avatar:newPatient.avatar,user_id:userId
+      owner:newPatient.owner,condition:newPatient.condition,avatar:newPatient.avatar,user_id:userId,
+      practice_id:practiceId
     }).select().single();
     if(error){alert("Fehler: "+error.message);setSaving(false);return;}
-    await loadAll(ADMIN_ID);
+    await loadAll(ps.admin_user_id||session?.user?.id);
     setSaving(false);setNewPatient(EMPTY_PATIENT);closeSheet();
   };
 
@@ -950,7 +1008,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       if(se){alert("Account-Fehler: "+se.message);setSaving(false);return;}
       fields.user_id=sd?.user?.id||null;
       const storedPw=sessionStorage.getItem("_tfpw");
-      if(storedPw)await supabase.auth.signInWithPassword({email:THERAPIST_EMAIL,password:storedPw});
+      if(storedPw&&practice.therapist_email){
+        const{error:reErr}=await supabase.auth.signInWithPassword({email:practice.therapist_email,password:storedPw});
+        if(reErr){alert("Re-Login fehlgeschlagen. Bitte neu einloggen.");setSaving(false);return;}
+        await new Promise(r=>setTimeout(r,400));
+      }
     } else if(_newUserId!==undefined){
       fields.user_id=_newUserId||null;
     }
@@ -977,7 +1039,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       await supabase.auth.signOut();
     }catch(e){
       // Fallback: just sign out and inform user to contact therapist
-      alert("Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter fitfundog@freenet.de zur manuellen Löschung.");
+      alert(`Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter ${practice.contact_email} zur manuellen Löschung.`);
       await supabase.auth.signOut();
     }
     setSaving(false);
@@ -1014,7 +1076,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       title_en:selectedTemplate.title_en||null,description_en:selectedTemplate.description_en||null,
       instructions_en:selectedTemplate.instructions_en||null,
       title_es:selectedTemplate.title_es||null,description_es:selectedTemplate.description_es||null,
-      instructions_es:selectedTemplate.instructions_es||null
+      instructions_es:selectedTemplate.instructions_es||null,
+      practice_id:practice.id
     }).select().single();
     if(!error&&data)setExercises(prev=>[...prev,data]);
     setSaving(false);closeSheet();
@@ -1032,7 +1095,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const addTemplate=async()=>{
     if(!newTemplate.title)return;
     setSaving(true);
-    const{data,error}=await supabase.from("exercise_templates").insert({...newTemplate,instructions:newTemplate.instructions.filter(Boolean)}).select().single();
+    const{data,error}=await supabase.from("exercise_templates").insert({...newTemplate,instructions:newTemplate.instructions.filter(Boolean),practice_id:practice.id}).select().single();
     if(!error&&data)setTemplates(prev=>[...prev,data]);
     setSaving(false);setNewTemplate(EMPTY_TEMPLATE);closeSheet();
   };
@@ -1077,14 +1140,14 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const addPlanTemplate=async()=>{
     if(!newPlan.title)return;
     setSaving(true);
-    const{data:planData,error:planErr}=await supabase.from("plan_templates").insert({title:newPlan.title,note:newPlan.note||null}).select().single();
+    const{data:planData,error:planErr}=await supabase.from("plan_templates").insert({title:newPlan.title,note:newPlan.note||null,practice_id:practice.id}).select().single();
     if(planErr||!planData){alert("Fehler: "+(planErr?.message||"Unbekannt"));setSaving(false);return;}
     // insert exercises
     if(planExerciseDraft.length>0){
-      const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:planData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,sort_order:i}));
+      const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:planData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,sort_order:i,practice_id:practice.id}));
       await supabase.from("plan_template_exercises").insert(rows);
     }
-    await loadAll(ADMIN_ID);
+    await loadAll(practice.admin_user_id||session?.user?.id);
     setSaving(false);setNewPlan(EMPTY_PLAN);setPlanExerciseDraft([]);setSelectedPlanTemplate(null);closeSheet();
   };
 
@@ -1095,10 +1158,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     // Replace exercises: delete old, insert new
     await supabase.from("plan_template_exercises").delete().eq("plan_template_id",editPlanData.id);
     if(planExerciseDraft.length>0){
-      const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:editPlanData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,sort_order:i}));
+      const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:editPlanData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,sort_order:i,practice_id:practice.id}));
       await supabase.from("plan_template_exercises").insert(rows);
     }
-    await loadAll(ADMIN_ID);
+    await loadAll(practice.admin_user_id||session?.user?.id);
     setSaving(false);setEditPlanData(null);setPlanExerciseDraft([]);setSelectedPlanTemplate(null);closeSheet();
   };
 
@@ -1124,7 +1187,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       title_en:ex.title_en||null,description_en:ex.description_en||null,
       instructions_en:ex.instructions_en||null,
       title_es:ex.title_es||null,description_es:ex.description_es||null,
-      instructions_es:ex.instructions_es||null
+      instructions_es:ex.instructions_es||null,
+      practice_id:practice.id
     }));
     const{data:newExercises,error}=await supabase.from("exercises").insert(rows).select();
     if(!error&&newExercises){
@@ -1258,7 +1322,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   });
   const filteredUsers=userEmails.filter(u=>{
     const q=userSearch.trim().toLowerCase();
-    return u.id!==ADMIN_ID&&u.email.toLowerCase().includes(q);
+    return u.id!==practice.admin_user_id&&u.email.toLowerCase().includes(q);
   });
 
   const patLabel=(p)=>`${p.avatar||""} ${p.name} - ${p.breed} - ${p.owner}`.trim();
@@ -1268,9 +1332,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const SL=({text})=><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>{text}</div>;
   const SheetHeader=({title,onClose})=>(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:"#102828"}}>{title}</div><button onClick={onClose} style={{background:LIGHT,borderRadius:"50%",width:32,height:32,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="close" size={14} color="#3D7070"/></button></div>);
 
-  if(authLoading)return <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${DARK},${BRAND})`,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={LOGO_URL} alt="" style={{height:60,objectFit:"contain"}}/></div>;
+  if(authLoading)return <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${DARK},${BRAND})`,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={practice.logo_url||"/favicon.png"} alt="" style={{height:60,objectFit:"contain"}}/></div>;
   if(isRecoveryMode)return <PasswordResetScreen onDone={()=>{sessionStorage.removeItem("_recovery");setIsRecoveryMode(false);window.location.hash="";}} />;
-  if(!session)return <LoginScreen/>;
+  if(!session)return <LoginScreen practice={practice||{logo_url:"",practice_name:"",practice_subtitle:"",therapist_email:"",privacy_url:"",imprint_url:""}}/>;
   if(loading)return <div style={{minHeight:"100vh",background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}><Icon name="paw" size={48} color={BRAND}/><div style={{fontFamily:"'DM Sans',sans-serif",color:"#3D7070"}}>Wird geladen...</div></div>;
 
   return (
@@ -1306,10 +1370,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         <div style={{maxWidth:480,margin:"0 auto"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 16px 10px"}}>
             <div style={{display:"flex",alignItems:"center",gap:10}}>
-              <img src={LOGO_URL} alt="Fit Fun Dog" style={{height:36,objectFit:"contain"}}/>
+              <img src={practice.logo_url||"/favicon.png"} alt={practice.practice_name} style={{height:36,objectFit:"contain"}}/>
               <div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#E6F6F6",lineHeight:1.1}}>Fit Fun Dog</div>
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,color:ACCENT,letterSpacing:"0.3px"}}>Tierphysiotherapie & Osteopathie</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#E6F6F6",lineHeight:1.1}}>{practice.practice_name}</div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,color:ACCENT,letterSpacing:"0.3px"}}>{practice.practice_subtitle||""}</div>
               </div>
             </div>
             <div style={{display:"flex",gap:6,alignItems:"center"}}>
@@ -1595,15 +1659,41 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             <Icon name="mail" size={15} color={MID}/>{t.feedbackTitle}
           </button>
         </div>
+        {/* App-Icon Auswahl für Besitzer */}
+        {practiceIcons.length>0&&(
+          <div className="card" style={{padding:"14px 16px",marginBottom:10}}>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:"#3D7070",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>{t.chooseIcon||"App-Icon wählen"}</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              {practiceIcons.map(icon=>{
+                const currentKey=localStorage.getItem(`preferred_icon_${session?.user?.id}`)||practice.icon_default||"icon-1";
+                return(
+                  <div key={icon.icon_key} onClick={()=>{
+                    localStorage.setItem(`preferred_icon_${session?.user?.id}`,icon.icon_key);
+                    // Favicon sofort aktualisieren
+                    document.querySelectorAll("link[rel*='icon']").forEach(el=>el.remove());
+                    const fav=document.createElement("link");
+                    fav.rel="icon";fav.type="image/png";
+                    fav.href=`${ICON_BASE}${practice.icon_folder}/${icon.filename}`;
+                    document.head.appendChild(fav);
+                    // Re-render triggern
+                    setPracticeIcons(p=>[...p]);
+                  }} style={{cursor:"pointer",borderRadius:12,overflow:"hidden",border:`3px solid ${currentKey===icon.icon_key?practice.color_brand||BRAND:"transparent"}`,width:56,height:56}}>
+                    <img src={`${ICON_BASE}${practice.icon_folder}/${icon.filename}`} alt={icon.label} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {/* Termin buchen */}
-        <a href="https://fit-fun-dog-Termin-online-vereinbaren.as.me/" target="_blank"
+        <a href={practice.booking_url||"#"} target="_blank"
           style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:"13px",borderRadius:12,background:DARK,color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,textDecoration:"none",boxSizing:"border-box",marginBottom:8}}>
           <Icon name="clock" size={16} color="white"/>{t.bookAppointment}
         </a>
         {/* Legal + Konto löschen links */}
         <div style={{textAlign:"center",padding:"8px 0 16px",display:"flex",justifyContent:"center",gap:20,flexWrap:"wrap"}}>
-          <a href="https://fit-fun-dog.de/datenschutzerklaerung/" target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",textDecoration:"none"}}>{t.privacyLink}</a>
-          <a href="https://fit-fun-dog.de/impressum/" target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",textDecoration:"none"}}>{t.imprintLink}</a>
+          <a href={practice.privacy_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",textDecoration:"none"}}>{t.privacyLink}</a>
+          <a href={practice.imprint_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",textDecoration:"none"}}>{t.imprintLink}</a>
           <button onClick={()=>{setDeleteConfirmText("");setShowDeleteAccount(true);}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#aaa",padding:0,textDecoration:"none"}}>{t.deleteAccount}</button>
         </div>
       </div>
@@ -1936,6 +2026,71 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:DARK,marginBottom:4}}>Admin</div>
           <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:20}}>Einstellungen & App-Verwaltung</div>
 
+          {/* Praxis-Einstellungen */}
+          <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:4}}>Praxis-Einstellungen</div>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginBottom:14}}>Änderungen werden nach dem nächsten Laden wirksam.</div>
+            {[
+              {label:"Praxisname",field:"practice_name"},
+              {label:"Untertitel",field:"practice_subtitle"},
+              {label:"Logo-URL (hell)",field:"logo_url"},
+              {label:"Logo-URL (dunkel / Druck)",field:"logo_dark_url"},
+              {label:"Website",field:"website_url"},
+              {label:"Kontakt-E-Mail",field:"contact_email"},
+              {label:"Telefon",field:"contact_phone"},
+              {label:"Termin-Buchungslink",field:"booking_url"},
+              {label:"Datenschutz-URL",field:"privacy_url"},
+              {label:"Impressum-URL",field:"imprint_url"},
+              {label:"App-URL",field:"app_url"},
+              {label:"Therapeutin-E-Mail (Login)",field:"therapist_email"},
+              {label:"Entwicklerin-E-Mail (Feedback)",field:"feedback_email_dev"},
+            ].map(({label,field})=>(
+              <div key={field} style={{marginBottom:10}}>
+                <SL text={label}/>
+                <input value={practice[field]||""} onChange={e=>setPractice(p=>({...p,[field]:e.target.value}))} style={{...inp,marginBottom:0}} placeholder={label+"..."}/>
+              </div>
+            ))}
+            <div style={{marginBottom:10}}>
+              <SL text="Primärfarbe (Hex)"/>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <input value={practice.color_brand||""} onChange={e=>setPractice(p=>({...p,color_brand:e.target.value}))} style={{...inp,marginBottom:0,flex:1}} placeholder="#5fb8b9"/>
+                <div style={{width:32,height:32,borderRadius:8,background:practice.color_brand||BRAND,border:"1.5px solid #B8DFE0",flexShrink:0}}/>
+              </div>
+            </div>
+            <div style={{marginBottom:10}}>
+              <SL text="Dunkelfarbe (Hex)"/>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <input value={practice.color_dark||""} onChange={e=>setPractice(p=>({...p,color_dark:e.target.value}))} style={{...inp,marginBottom:0,flex:1}} placeholder="#1E4A4B"/>
+                <div style={{width:32,height:32,borderRadius:8,background:practice.color_dark||DARK,border:"1.5px solid #B8DFE0",flexShrink:0}}/>
+              </div>
+            </div>
+
+            {/* PWA-Icon Auswahl */}
+            {practiceIcons.length>0&&(
+              <div style={{marginBottom:14}}>
+                <SL text="Standard App-Icon (PWA)"/>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:4}}>
+                  {practiceIcons.map(icon=>(
+                    <div key={icon.icon_key} onClick={()=>setPractice(p=>({...p,icon_default:icon.icon_key}))}
+                      style={{cursor:"pointer",borderRadius:12,overflow:"hidden",border:`3px solid ${practice.icon_default===icon.icon_key?practice.color_brand||BRAND:"transparent"}`,width:64,height:64}}>
+                      <img src={`${ICON_BASE}${practice.icon_folder}/${icon.filename}`} alt={icon.label} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <button className="btn" onClick={async()=>{
+              setPracticeSaving(true);
+              const{admin_user_id,...fields}=practice;
+              await supabase.from("practice_settings").update(fields).eq("admin_user_id",admin_user_id);
+              setPracticeSaving(false);
+            }} disabled={practiceSaving}
+              style={{width:"100%",padding:"12px",borderRadius:12,background:practice.color_brand||BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+              <Icon name="check" size={16} color="#102828"/>{practiceSaving?"Wird gespeichert...":"Einstellungen speichern"}
+            </button>
+          </div>
+
           {/* Mail-Vorlage */}
           <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:4}}>Plan-Mail Vorlage</div>
@@ -1968,11 +2123,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:12}}>Rechtliches</div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              <a href="https://fit-fun-dog.de/datenschutzerklaerung/" target="_blank"
+              <a href={practice.privacy_url||"#"} target="_blank"
                 style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:BRAND,textDecoration:"none",display:"flex",alignItems:"center",gap:8}}>
                 <Icon name="info" size={15} color={BRAND}/>Datenschutzerklärung
               </a>
-              <a href="https://fit-fun-dog.de/impressum/" target="_blank"
+              <a href={practice.imprint_url||"#"} target="_blank"
                 style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:BRAND,textDecoration:"none",display:"flex",alignItems:"center",gap:8}}>
                 <Icon name="info" size={15} color={BRAND}/>Impressum
               </a>
@@ -2480,7 +2635,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             </div>
             <textarea value={appFeedbackText} onChange={e=>setAppFeedbackText(e.target.value)} rows={5}
               placeholder="Dein Feedback..." style={{...inp,resize:"vertical",marginBottom:14}}/>
-            <a href={isAdmin?`mailto:catharinariedel@freenet.de?subject=FitFunDog App-Feedback&body=${encodeURIComponent(appFeedbackText)}`:`mailto:info@fit-fun-dog.de?subject=FitFunDog Feedback&body=${encodeURIComponent(appFeedbackText)}`}
+            <a href={isAdmin?`mailto:${practice.feedback_email_dev}?subject=${practice.practice_name} App-Feedback&body=${encodeURIComponent(appFeedbackText)}`:`mailto:${practice.contact_email}?subject=${practice.practice_name} Feedback&body=${encodeURIComponent(appFeedbackText)}`}
               onClick={()=>setTimeout(()=>setShowAppFeedback(false),500)}
               style={{display:"block",width:"100%",padding:"14px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,textAlign:"center",textDecoration:"none",boxSizing:"border-box"}}>
               Feedback senden
