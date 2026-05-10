@@ -1077,9 +1077,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       if(userExerciseIds.length>0){
         await supabase.from("exercise_logs").delete().in("exercise_id",userExerciseIds);
       }
-      // patient.user_id auf NULL setzen damit FK-Constraint beim Auth-User-Delete nicht blockiert
-      await supabase.from("patients").update({user_id:null}).eq("user_id",session.user.id);
-      // Delete the auth user via edge function
+      // Delete the auth user via edge function (nullsetzt patients.user_id intern)
       const{data,error}=await supabase.functions.invoke("delete-user",{body:{user_id:session.user.id}});
       if(error)throw error;
       if(data?.error)throw new Error(data.error.message||"Unbekannter Fehler");
