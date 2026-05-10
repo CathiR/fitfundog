@@ -1070,12 +1070,15 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     if(!session?.user?.id)return;
     setSaving(true);
     try{
-      // Delete all user data
+      // Delete push subscriptions
       await supabase.from("push_subscriptions").delete().eq("user_id",session.user.id);
-      await supabase.from("exercise_logs").delete().eq("user_id",session.user.id);
-      // Delete the auth user via admin function
+      // Delete exercise_logs via exercise_ids (exercise_logs hat keine user_id Spalte)
+      const userExerciseIds=exercises.filter(e=>e.user_id===session.user.id).map(e=>e.id);
+      if(userExerciseIds.length>0){
+        await supabase.from("exercise_logs").delete().in("exercise_id",userExerciseIds);
+      }
+      // Delete the auth user via edge function
       const{data,error}=await supabase.functions.invoke("delete-user",{body:{user_id:session.user.id}});
-      console.log("delete-user response:",data,error);
       if(error)throw error;
       if(data?.error)throw new Error(data.error.message||"Unbekannter Fehler");
       await supabase.auth.signOut();
