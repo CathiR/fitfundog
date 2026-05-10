@@ -491,11 +491,10 @@ www.fit-fun-dog.de`});
 
   // ── Practice-Settings + Auth gemeinsam laden ──
   useEffect(()=>{
-    const init=async()=>{
-      const[{data:ps},{data:{session:s}}]=await Promise.all([
-        supabase.from("practice_settings").select("*").eq("slug",PRACTICE_SLUG).maybeSingle(),
-        supabase.auth.getSession()
-      ]);
+    Promise.all([
+      supabase.from("practice_settings").select("*").eq("slug",PRACTICE_SLUG).maybeSingle(),
+      supabase.auth.getSession()
+    ]).then(([{data:ps},{data:{session:s}}])=>{
       if(ps){
         setPractice(ps);
         BRAND=ps.color_brand||BRAND;
@@ -505,8 +504,7 @@ www.fit-fun-dog.de`});
       setSession(s);
       setAuthLoading(false);
       if(s) loadAll(s.user.id);
-    };
-    init();
+    });
     const{data:{subscription}}=supabase.auth.onAuthStateChange((event,s)=>{
       if(event==="PASSWORD_RECOVERY"){
         sessionStorage.setItem("_recovery","1");
