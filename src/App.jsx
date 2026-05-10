@@ -385,6 +385,7 @@ export default function App() {
   const [editPatientData,setEditPatientData]=useState(null);
   const [newTemplate,setNewTemplate]=useState(EMPTY_TEMPLATE);
   const [editTemplateData,setEditTemplateData]=useState(null);
+  const [viewTemplateData,setViewTemplateData]=useState(null);
   const [propagateTemplateUpdate,setPropagateTemplateUpdate]=useState(false);
   const EMPTY_PLAN={title:"",note:""};
   const [newPlan,setNewPlan]=useState(EMPTY_PLAN);
@@ -1768,7 +1769,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
                 {templates.map(tmpl=>(
-                  <div key={tmpl.id} className="card" style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>
+                  <div key={tmpl.id} className="card" style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center",cursor:"pointer"}} onClick={()=>setViewTemplateData(tmpl)}>
                     {tmpl.image_url?<img src={tmpl.image_url} alt={tmpl.title} style={{width:42,height:42,borderRadius:9,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2}}/>
                       :<div style={{width:42,height:42,borderRadius:9,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={18} color={ACCENT}/></div>}
                     <div style={{flex:1,minWidth:0}}>
@@ -1779,7 +1780,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                         {tmpl.is_starter&&<span className="tag" style={{background:"#F0F0F0",color:"#888"}}>Vorlage</span>}
                       </div>
                     </div>
-                    <div style={{display:"flex",gap:5}}>
+                    <div style={{display:"flex",gap:5}} onClick={e=>e.stopPropagation()}>
                       {!tmpl.is_starter&&<button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setPropagateTemplateUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>}
                       <button className="iBtn" onClick={()=>{setSheetData(tmpl);setSheet("confirmDeleteTmpl");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                     </div>
@@ -2447,6 +2448,34 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 {saving?t.saving:"Änderungen speichern"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SHEET: ÜBUNG ANSEHEN */}
+      {viewTemplateData&&(
+        <div className="overlay" onClick={()=>setViewTemplateData(null)}>
+          <div className="sheet" onClick={e=>e.stopPropagation()} style={{maxHeight:"85vh",overflowY:"auto"}}>
+            <SheetHeader title={viewTemplateData.title} onClose={()=>setViewTemplateData(null)}/>
+            {viewTemplateData.image_url&&<img src={viewTemplateData.image_url} alt={viewTemplateData.title} style={{width:"100%",borderRadius:12,objectFit:"cover",maxHeight:200,marginBottom:14}}/>}
+            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+              {(viewTemplateData.categories||[]).map(c=><span key={c} className="tag" style={{background:BRAND+"18",color:BRAND}}>{c}</span>)}
+              {viewTemplateData.difficulty&&<span className="tag" style={{background:(difficultyColor[viewTemplateData.difficulty]||BRAND)+"18",color:difficultyColor[viewTemplateData.difficulty]||BRAND}}>{viewTemplateData.difficulty}</span>}
+              {viewTemplateData.is_starter&&<span className="tag" style={{background:"#F0F0F0",color:"#888"}}>Vorlage</span>}
+            </div>
+            {viewTemplateData.description&&<p style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:14,lineHeight:1.5}}>{viewTemplateData.description}</p>}
+            {viewTemplateData.video_url&&<a href={viewTemplateData.video_url} target="_blank" style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,fontFamily:"'DM Sans',sans-serif",fontSize:13,color:BRAND,textDecoration:"none"}}><Icon name="video" size={16} color={BRAND}/>Video ansehen</a>}
+            {(viewTemplateData.instructions||[]).filter(Boolean).length>0&&(
+              <div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",textTransform:"uppercase",letterSpacing:".7px",marginBottom:10}}>Schritt für Schritt</div>
+                {viewTemplateData.instructions.filter(Boolean).map((step,i)=>(
+                  <div key={i} style={{display:"flex",gap:10,marginBottom:10,alignItems:"flex-start"}}>
+                    <div style={{width:24,height:24,borderRadius:"50%",background:BRAND,color:"#102828",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,flexShrink:0}}>{i+1}</div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#102828",lineHeight:1.5,paddingTop:2}}>{step}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
