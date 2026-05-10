@@ -1074,13 +1074,14 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       await supabase.from("push_subscriptions").delete().eq("user_id",session.user.id);
       await supabase.from("exercise_logs").delete().eq("user_id",session.user.id);
       // Delete the auth user via admin function
-      const{error}=await supabase.functions.invoke("delete-user",{body:{user_id:session.user.id}});
+      const{data,error}=await supabase.functions.invoke("delete-user",{body:{user_id:session.user.id}});
+      console.log("delete-user response:",data,error);
       if(error)throw error;
+      if(data?.error)throw new Error(data.error.message||"Unbekannter Fehler");
       await supabase.auth.signOut();
     }catch(e){
-      // Fallback: just sign out and inform user to contact therapist
+      console.error("deleteAccount error:",e);
       alert(`Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter ${practice.contact_email} zur manuellen Löschung.`);
-      await supabase.auth.signOut();
     }
     setSaving(false);
   };
