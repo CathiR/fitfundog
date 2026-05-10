@@ -552,7 +552,7 @@ www.fit-fun-dog.de`});
     setLoading(true);
     const uid=userId;
     try{
-      const [{data:pd},{data:ed},{data:ld},{data:td},{data:ue},{data:hl},{data:fb},{data:ptd},{data:pte},{data:ps},{data:pi}]=await Promise.all([
+      const [{data:pd},{data:ed},{data:ld},{data:td},{data:ue},{data:hl},{data:fb},{data:ptd},{data:pte},{data:ps}]=await Promise.all([
         supabase.from("patients").select("*").order("name"),
         supabase.from("exercises").select("*").order("created_at"),
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
@@ -563,8 +563,10 @@ www.fit-fun-dog.de`});
         supabase.from("plan_templates").select("*").order("created_at"),
         supabase.from("plan_template_exercises").select("*").order("sort_order"),
         supabase.from("practice_settings").select("*").eq("slug",PRACTICE_SLUG).maybeSingle(),
-        supabase.from("practice_icons").select("*").order("icon_key"),
       ]);
+      // Icons nach practice_settings laden damit wir admin_user_id kennen
+      const adminId=ps?.admin_user_id||uid;
+      const {data:pi}=await supabase.from("practice_icons").select("*").eq("admin_user_id",adminId).order("icon_key");
 
       // Praxis-Einstellungen anwenden
       if(ps){
@@ -1692,32 +1694,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             <Icon name="mail" size={15} color={MID}/>{t.feedbackTitle}
           </button>
         </div>
-        {/* App-Icon Auswahl für Besitzer */}
-        {practiceIcons.length>0&&(
-          <div className="card" style={{padding:"14px 16px",marginBottom:10}}>
-            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:"#3D7070",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>{t.chooseIcon||"App-Icon wählen"}</div>
-            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-              {practiceIcons.map(icon=>{
-                const currentKey=localStorage.getItem(`preferred_icon_${session?.user?.id}`)||practice.icon_default||"icon-1";
-                return(
-                  <div key={icon.icon_key} onClick={()=>{
-                    localStorage.setItem(`preferred_icon_${session?.user?.id}`,icon.icon_key);
-                    // Favicon sofort aktualisieren
-                    document.querySelectorAll("link[rel*='icon']").forEach(el=>el.remove());
-                    const fav=document.createElement("link");
-                    fav.rel="icon";fav.type="image/png";
-                    fav.href=`${ICON_BASE}${practice.icon_folder}/${icon.filename}`;
-                    document.head.appendChild(fav);
-                    // Re-render triggern
-                    setPracticeIcons(p=>[...p]);
-                  }} style={{cursor:"pointer",borderRadius:12,overflow:"hidden",border:`3px solid ${currentKey===icon.icon_key?practice.color_brand||BRAND:"transparent"}`,width:56,height:56}}>
-                    <img src={`${ICON_BASE}${practice.icon_folder}/${icon.filename}`} alt={icon.label} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
+
         {/* Termin buchen */}
         <a href={practice.booking_url||"#"} target="_blank"
           style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:"13px",borderRadius:12,background:DARK,color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,textDecoration:"none",boxSizing:"border-box",marginBottom:8}}>
@@ -2099,20 +2076,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </div>
             </div>
 
-            {/* PWA-Icon Auswahl */}
-            {practiceIcons.length>0&&(
-              <div style={{marginBottom:14}}>
-                <SL text="Standard App-Icon (PWA)"/>
-                <div style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:4}}>
-                  {practiceIcons.map(icon=>(
-                    <div key={icon.icon_key} onClick={()=>setPractice(p=>({...p,icon_default:icon.icon_key}))}
-                      style={{cursor:"pointer",borderRadius:12,overflow:"hidden",border:`3px solid ${practice.icon_default===icon.icon_key?practice.color_brand||BRAND:"transparent"}`,width:64,height:64}}>
-                      <img src={`${ICON_BASE}${practice.icon_folder}/${icon.filename}`} alt={icon.label} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+
 
             <button className="btn" onClick={async()=>{
               setPracticeSaving(true);
