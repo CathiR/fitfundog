@@ -2457,14 +2457,24 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         <div className="overlay" onClick={()=>setViewTemplateData(null)}>
           <div className="sheet" onClick={e=>e.stopPropagation()} style={{maxHeight:"85vh",overflowY:"auto"}}>
             <SheetHeader title={viewTemplateData.title} onClose={()=>setViewTemplateData(null)}/>
-            {viewTemplateData.image_url&&<img src={viewTemplateData.image_url} alt={viewTemplateData.title} style={{width:"100%",borderRadius:12,objectFit:"cover",maxHeight:200,marginBottom:14}}/>}
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
               {(viewTemplateData.categories||[]).map(c=><span key={c} className="tag" style={{background:BRAND+"18",color:BRAND}}>{c}</span>)}
+              {(viewTemplateData.target_regions||[]).map(r=><span key={r} className="tag" style={{background:MID+"18",color:MID}}>{r}</span>)}
               {viewTemplateData.difficulty&&<span className="tag" style={{background:(difficultyColor[viewTemplateData.difficulty]||BRAND)+"18",color:difficultyColor[viewTemplateData.difficulty]||BRAND}}>{viewTemplateData.difficulty}</span>}
               {viewTemplateData.is_starter&&<span className="tag" style={{background:"#F0F0F0",color:"#888"}}>Vorlage</span>}
             </div>
-            {viewTemplateData.description&&<p style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:14,lineHeight:1.5}}>{viewTemplateData.description}</p>}
+            {viewTemplateData.image_url&&(
+              <div style={{borderRadius:14,overflow:"hidden",background:LIGHT,marginBottom:16}}>
+                <img src={viewTemplateData.image_url} alt={viewTemplateData.title} style={{width:"100%",objectFit:"contain",display:"block"}}/>
+              </div>
+            )}
             {viewTemplateData.video_url&&<a href={viewTemplateData.video_url} target="_blank" style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,fontFamily:"'DM Sans',sans-serif",fontSize:13,color:BRAND,textDecoration:"none"}}><Icon name="video" size={16} color={BRAND}/>Video ansehen</a>}
+            {viewTemplateData.description&&(
+              <div style={{marginBottom:16}}>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#102828",marginBottom:6}}>Beschreibung</div>
+                <p style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",lineHeight:1.6,margin:0}}>{viewTemplateData.description}</p>
+              </div>
+            )}
             {(viewTemplateData.instructions||[]).filter(Boolean).length>0&&(
               <div>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",textTransform:"uppercase",letterSpacing:".7px",marginBottom:10}}>Schritt für Schritt</div>
