@@ -217,10 +217,10 @@ const LoginScreen = ({practice,onLogin}) => {
           }
         </div>
         <div style={{textAlign:"center",marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.4)"}}>Kein Konto? Bitte wende dich an deine Therapeutin.</div>
-        <div style={{textAlign:"center",marginTop:16,display:"flex",justifyContent:"center",gap:20}}>
-          <a href={practice.privacy_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",textDecoration:"none"}}>Datenschutz</a>
-          <a href={practice.imprint_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",textDecoration:"none"}}>Impressum</a>
-        </div>
+        {(practice.privacy_url||practice.imprint_url)&&<div style={{textAlign:"center",marginTop:16,display:"flex",justifyContent:"center",gap:20}}>
+          {practice.privacy_url&&<a href={practice.privacy_url} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",textDecoration:"none"}}>Datenschutz</a>}
+          {practice.imprint_url&&<a href={practice.imprint_url} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",textDecoration:"none"}}>Impressum</a>}
+        </div>}
       </div>
     </div>
   );
@@ -489,21 +489,18 @@ www.fit-fun-dog.de`});
     return()=>window.removeEventListener("popstate",handleBack);
   },[selectedExercise,sheet]);
 
-  // ── Practice-Settings vorab laden (für LoginScreen vor Auth) ──
+  // ── Practice-Settings + Auth gemeinsam laden ──
   useEffect(()=>{
-    supabase.from("practice_settings").select("*").eq("slug",PRACTICE_SLUG).maybeSingle().then(({data:ps})=>{
+    Promise.all([
+      supabase.from("practice_settings").select("*").eq("slug",PRACTICE_SLUG).maybeSingle(),
+      supabase.auth.getSession()
+    ]).then(([{data:ps},{data:{session:s}}])=>{
       if(ps){
         setPractice(ps);
         BRAND=ps.color_brand||BRAND;
         DARK=ps.color_dark||DARK;
         MID=ps.color_mid||MID;
       }
-    });
-  },[]);
-
-  // ── Auth: load data with userId directly from session ──
-  useEffect(()=>{
-    supabase.auth.getSession().then(({data:{session:s}})=>{
       setSession(s);
       setAuthLoading(false);
       if(s) loadAll(s.user.id);
