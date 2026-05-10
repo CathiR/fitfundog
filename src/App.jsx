@@ -299,9 +299,29 @@ export default function App() {
   });
 
   // Praxis-Einstellungen – dynamisch aus practice_settings
-  const [practice,setPractice]=useState({
+  const [practice,setPractice]=useState(PRACTICE_SLUG==="fitfundog"?{
     practice_name:"FitFunDog",
     practice_subtitle:"Tierphysiotherapie",
+    logo_url:"https://tkgwdmntglzfeulpgfpw.supabase.co/storage/v1/object/public/exercise-images/Logo%20Fit%20Fun%20Dog-Vektor%20ws.png",
+    logo_dark_url:"",
+    color_brand:"#5fb8b9",
+    color_dark:"#1E4A4B",
+    color_mid:"#3D8E8F",
+    website_url:"https://www.fit-fun-dog.de",
+    contact_email:"",
+    contact_phone:"",
+    booking_url:"",
+    privacy_url:"https://www.fit-fun-dog.de/datenschutz",
+    imprint_url:"https://www.fit-fun-dog.de/impressum/",
+    feedback_email_dev:"",
+    app_url:"",
+    therapist_email:"fitfundog@freenet.de",
+    icon_folder:"fitfundog",
+    icon_default:"icon-1",
+    admin_user_id:null,
+  }:{
+    practice_name:"",
+    practice_subtitle:"",
     logo_url:"",
     logo_dark_url:"",
     color_brand:"#5fb8b9",
