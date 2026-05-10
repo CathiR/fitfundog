@@ -553,7 +553,7 @@ www.fit-fun-dog.de`});
     setLoading(true);
     const uid=userId;
     try{
-      const [{data:pd},{data:ed},{data:ld},{data:td},{data:ue},{data:hl},{data:fb},{data:ptd},{data:pte},{data:ps}]=await Promise.all([
+      const [{data:pd},{data:ed},{data:ld},{data:td},{data:ue},{data:hl},{data:fb},{data:ps}]=await Promise.all([
         supabase.from("patients").select("*").order("name"),
         supabase.from("exercises").select("*").order("created_at"),
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
@@ -561,9 +561,13 @@ www.fit-fun-dog.de`});
         supabase.rpc("get_user_emails"),
         supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-111);return d.toISOString().split("T")[0];})()),
         supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false}),
-        supabase.from("plan_templates").select("*").order("created_at"),
-        supabase.from("plan_template_exercises").select("*").order("sort_order"),
         supabase.from("practice_settings").select("*").eq("slug",PRACTICE_SLUG).maybeSingle(),
+      ]);
+      // Plan-Queries explizit nach practice_id filtern – ps.id erst hier bekannt
+      const practiceId=ps?.id;
+      const [{data:ptd},{data:pte}]=await Promise.all([
+        supabase.from("plan_templates").select("*").eq("practice_id",practiceId).order("created_at"),
+        supabase.from("plan_template_exercises").select("*").eq("practice_id",practiceId).order("sort_order"),
       ]);
       // Icons nach practice_settings laden damit wir admin_user_id kennen
       const adminId=ps?.admin_user_id||uid;
