@@ -8,14 +8,46 @@ const PRACTICE_SLUG = import.meta.env.VITE_PRACTICE_SLUG || "fitfundog";
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
 const VAPID_PUBLIC_KEY = "BPOAPZ3DeTf-FL_rmbeEufuh-bhAEH-zrUR-TPTsRVfNCotxh_jJ-7A5AHu9pWNyM24HxX_E5Ls1dy4Mt82b1F4";
-let BRAND = "#5fb8b9", DARK = "#1E4A4B", MID = "#3D8E8F";
-const LIGHT = "#E6F6F6", PALE = "#F3FBFB", ACCENT = "#8FD4D5";
+// ── Color derivation ──
+const hexToHsl=(hex)=>{
+  let r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;
+  const max=Math.max(r,g,b),min=Math.min(r,g,b);let h,s,l=(max+min)/2;
+  if(max===min){h=s=0;}else{const d=max-min;s=l>0.5?d/(2-max-min):d/(max+min);
+    switch(max){case r:h=((g-b)/d+(g<b?6:0))/6;break;case g:h=((b-r)/d+2)/6;break;case b:h=((r-g)/d+4)/6;break;}}
+  return[Math.round(h*360),Math.round(s*100),Math.round(l*100)];
+};
+const hslToHex=(h,s,l)=>{s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return"#"+[f(0),f(8),f(4)].map(x=>Math.round(x*255).toString(16).padStart(2,"0")).join("");};
+const deriveColors=(hex)=>{
+  if(!hex||!/^#[0-9a-fA-F]{6}$/.test(hex))hex="#5fb8b9";
+  const[h,s,l]=hexToHsl(hex);
+  return{
+    dark:hslToHex(h,Math.min(s+10,100),Math.max(l-30,10)),
+    mid:hslToHex(h,Math.min(s+5,100),Math.max(l-12,15)),
+    light:hslToHex(h,Math.max(s-20,15),Math.min(l+30,94)),
+    pale:hslToHex(h,Math.max(s-30,8),Math.min(l+38,97)),
+    accent:hslToHex(h,Math.max(s-10,20),Math.min(l+15,82)),
+    navBg:hslToHex(h,Math.min(s+5,100),Math.max(l-22,15)),
+    border:hslToHex(h,Math.max(s-15,20),Math.min(l+20,88)),
+    muted:hslToHex(h,Math.max(s-20,15),Math.max(l-15,25)),
+    disabled:hslToHex(h,Math.max(s-30,10),Math.min(l+18,85)),
+  };
+};
+let BRAND="#5fb8b9",DARK="#1E4A4B",MID="#3D8E8F";
+let LIGHT="#E6F6F6",PALE="#F3FBFB",ACCENT="#8FD4D5";
+let NAV_BG="#2A6364",BORDER="#B8DFE0",MUTED="#3D7070",DISABLED="#7ECBCC";
+const applyColors=(brand)=>{
+  if(!brand||!/^#[0-9a-fA-F]{6}$/.test(brand))return;
+  const c=deriveColors(brand);
+  BRAND=brand;DARK=c.dark;MID=c.mid;LIGHT=c.light;PALE=c.pale;ACCENT=c.accent;
+  NAV_BG=c.navBg;BORDER=c.border;MUTED=c.muted;DISABLED=c.disabled;
+};
 const ICON_BASE = "https://tkgwdmntglzfeulpgfpw.supabase.co/storage/v1/object/public/app-icons/";
 const CATEGORIES = ["Regeneration", "Balance", "Kräftigung", "Koordination", "Mobilisation"];
 const TARGET_REGIONS = ["Ganzer Körper", "Hinterhand", "Vorderhand", "Rumpf", "Vorderpfoten", "Rücken"];
 const EMPTY_PATIENT = { name: "", breed: "", age: "", owner: "", condition: "", avatar: "🐕", ownerEmail: "", ownerPassword: "" };
 const EMPTY_TEMPLATE = { title: "", categories: [], target_regions: [], difficulty: "Leicht", description: "", instructions: [""], image_url: "", video_url: "" };
-const difficultyColor = { "Leicht": BRAND, "Mittel": MID, "Schwer": "#C0392B" };
+const getDifficultyColor=()=>({"Leicht":BRAND,"Mittel":MID,"Schwer":"#C0392B"});
+let difficultyColor=getDifficultyColor();
 
 // ── SearchInput OUTSIDE App to prevent focus loss on re-render ──
 const SearchInput = ({ value, onChange, placeholder }) => (
@@ -24,9 +56,9 @@ const SearchInput = ({ value, onChange, placeholder }) => (
       value={value}
       onChange={e => onChange(e.target.value)}
       placeholder={placeholder || "Suchen..."}
-      style={{ width: "100%", padding: "11px 14px 11px 36px", borderRadius: 12, border: "1.5px solid #B8DFE0", fontSize: 16, fontFamily: "'DM Sans',sans-serif", outline: "none", background: "white", color: "#102828", WebkitTextFillColor: "#102828", boxSizing: "border-box" }}
+      style={{ width: "100%", padding: "11px 14px 11px 36px", borderRadius: 12, border: `1.5px solid ${BORDER}`, fontSize: 16, fontFamily: "'DM Sans',sans-serif", outline: "none", background: "white", color: "#102828", WebkitTextFillColor: "#102828", boxSizing: "border-box" }}
     />
-    <svg style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3D7070" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <svg style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
   </div>
 );
 
@@ -38,7 +70,7 @@ const CustomSelect = ({ value, onChange, children, style = {} }) => (
       onChange={onChange}
       style={{
         width: "100%", padding: "12px 40px 12px 14px", borderRadius: 12,
-        border: `1.5px solid #B8DFE0`, fontSize: 15, fontFamily: "'DM Sans',sans-serif",
+        border: `1.5px solid ${BORDER}`, fontSize: 15, fontFamily: "'DM Sans',sans-serif",
         outline: "none", background: "white", color: "#102828",
         WebkitTextFillColor: "#102828", appearance: "none", cursor: "pointer",
         boxSizing: "border-box", ...style
@@ -150,13 +182,13 @@ const FilterDropdown = ({ label, icon, options, selected, onChange, color = BRAN
   const display = (opt) => labelFn ? labelFn(opt) : opt;
   return (
     <div style={{ position:"relative", flex:1 }} onClick={e=>e.stopPropagation()}>
-      <button onClick={()=>setOpen(o=>!o)} style={{ width:"100%", padding:"9px 12px", borderRadius:10, border:`1.5px solid ${count>0?color:"#B8DFE0"}`, background:count>0?color+"15":"white", display:"flex", alignItems:"center", gap:6, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:count>0?color:"#3D7070" }}>
-        <Icon name={icon} size={13} color={count>0?color:"#3D7070"}/><span style={{flex:1,textAlign:"left"}}>{count>0?`${label} (${count})`:label}</span>
-        <div style={{ width:22,height:22,borderRadius:6,background:count>0?color+"30":LIGHT,display:"flex",alignItems:"center",justifyContent:"center" }}><Icon name="chevdown" size={12} color={count>0?color:"#3D7070"}/></div>
+      <button onClick={()=>setOpen(o=>!o)} style={{ width:"100%", padding:"9px 12px", borderRadius:10, border:`1.5px solid ${count>0?color:BORDER}`, background:count>0?color+"15":"white", display:"flex", alignItems:"center", gap:6, cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:count>0?color:MUTED }}>
+        <Icon name={icon} size={13} color={count>0?color:MUTED}/><span style={{flex:1,textAlign:"left"}}>{count>0?`${label} (${count})`:label}</span>
+        <div style={{ width:22,height:22,borderRadius:6,background:count>0?color+"30":LIGHT,display:"flex",alignItems:"center",justifyContent:"center" }}><Icon name="chevdown" size={12} color={count>0?color:MUTED}/></div>
       </button>
       {open&&(<div style={{ position:"absolute", top:"calc(100% + 4px)", left:0, right:0, background:"white", borderRadius:12, boxShadow:"0 8px 24px rgba(0,0,0,0.12)", zIndex:30, overflow:"hidden", border:`1px solid ${LIGHT}` }}>
         {selected.length>0&&<button onClick={()=>{onChange([]);setOpen(false);}} style={{ width:"100%", padding:"9px 14px", textAlign:"left", fontFamily:"'DM Sans',sans-serif", fontSize:12, fontWeight:600, color:"#C0392B", background:"#FFF5F5", cursor:"pointer", border:"none", borderBottom:`1px solid ${LIGHT}` }}>Auswahl aufheben</button>}
-        {options.map(opt=>{const active=selected.includes(opt);return(<button key={opt} onClick={()=>onChange(active?selected.filter(s=>s!==opt):[...selected,opt])} style={{ width:"100%", padding:"10px 14px", textAlign:"left", fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:active?600:400, color:active?color:"#102828", background:active?color+"10":"white", cursor:"pointer", border:"none", borderBottom:`1px solid ${LIGHT}`, display:"flex", alignItems:"center", gap:8 }}><div style={{ width:16,height:16,borderRadius:4,border:`2px solid ${active?color:"#B8DFE0"}`,background:active?color:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>{active&&<Icon name="check" size={10} color="white"/>}</div>{display(opt)}</button>);})}
+        {options.map(opt=>{const active=selected.includes(opt);return(<button key={opt} onClick={()=>onChange(active?selected.filter(s=>s!==opt):[...selected,opt])} style={{ width:"100%", padding:"10px 14px", textAlign:"left", fontFamily:"'DM Sans',sans-serif", fontSize:13, fontWeight:active?600:400, color:active?color:"#102828", background:active?color+"10":"white", cursor:"pointer", border:"none", borderBottom:`1px solid ${LIGHT}`, display:"flex", alignItems:"center", gap:8 }}><div style={{ width:16,height:16,borderRadius:4,border:`2px solid ${active?color:BORDER}`,background:active?color:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}>{active&&<Icon name="check" size={10} color="white"/>}</div>{display(opt)}</button>);})}
       </div>)}
     </div>
   );
@@ -164,12 +196,12 @@ const FilterDropdown = ({ label, icon, options, selected, onChange, color = BRAN
 
 const MultiSelect = ({ options, selected, onChange, color = BRAND }) => (
   <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-    {options.map(opt=>{const active=selected.includes(opt);return <button key={opt} onClick={()=>onChange(active?selected.filter(s=>s!==opt):[...selected,opt])} style={{ padding:"6px 12px", borderRadius:99, fontSize:12, fontWeight:600, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", border:`2px solid ${active?color:"#B8DFE0"}`, background:active?color:"white", color:active?"#102828":"#3D7070" }}>{opt}</button>;})}
+    {options.map(opt=>{const active=selected.includes(opt);return <button key={opt} onClick={()=>onChange(active?selected.filter(s=>s!==opt):[...selected,opt])} style={{ padding:"6px 12px", borderRadius:99, fontSize:12, fontWeight:600, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", border:`2px solid ${active?color:BORDER}`, background:active?color:"white", color:active?"#102828":MUTED }}>{opt}</button>;})}
   </div>
 );
 
 const InfoCard = ({ icon, title, text, items }) => (
-  <div style={{ background:"white", borderRadius:16, boxShadow:"0 2px 16px rgba(95,184,185,0.12)", padding:"18px 20px", textAlign:"left" }}>
+  <div style={{ background:"white", borderRadius:16, boxShadow:`0 2px 16px ${BRAND}1F`, padding:"18px 20px", textAlign:"left" }}>
     <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
       <div style={{ width:34,height:34,borderRadius:9,background:BRAND+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0 }}><Icon name={icon} size={18} color={BRAND}/></div>
       <div style={{ fontFamily:"'Playfair Display',serif", fontSize:15, fontWeight:700, color:"#102828" }}>{title}</div>
@@ -186,7 +218,7 @@ const LoginScreen = ({practice,onLogin}) => {
   const [error,setError]=useState("");
   const [showPw,setShowPw]=useState(false);
   const [resetSent,setResetSent]=useState(false);
-  const inp={width:"100%",padding:"13px 14px",borderRadius:10,border:"1.5px solid #B8DFE0",fontSize:16,fontFamily:"'DM Sans',sans-serif",outline:"none",color:"#102828",background:"white",WebkitTextFillColor:"#102828",boxSizing:"border-box"};
+  const inp={width:"100%",padding:"13px 14px",borderRadius:10,border:`1.5px solid ${BORDER}`,fontSize:16,fontFamily:"'DM Sans',sans-serif",outline:"none",color:"#102828",background:"white",WebkitTextFillColor:"#102828",boxSizing:"border-box"};
   const handleLogin=async()=>{
     if(!email||!password){setError("Bitte Email und Passwort eingeben.");return;}
     setLoading(true);setError("");
@@ -204,11 +236,11 @@ const LoginScreen = ({practice,onLogin}) => {
         </div>
         <div style={{background:"white",borderRadius:22,padding:"28px 24px",boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:DARK,marginBottom:4}}>Willkommen zurück</div>
-          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:22}}>Bitte melde dich an um fortzufahren.</div>
-          <div style={{marginBottom:14}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>Email</div><input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="deine@email.de" style={inp}/></div>
-          <div style={{marginBottom:20}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>Passwort</div><div style={{position:"relative"}}><input type={showPw?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="••••••••" style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:"#3D7070"}}>{showPw?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div></div>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:22}}>Bitte melde dich an um fortzufahren.</div>
+          <div style={{marginBottom:14}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>Email</div><input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="deine@email.de" style={inp}/></div>
+          <div style={{marginBottom:20}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>Passwort</div><div style={{position:"relative"}}><input type={showPw?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="••••••••" style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:MUTED}}>{showPw?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div></div>
           {error&&<div style={{background:"#FFE8E8",borderRadius:10,padding:"10px 14px",marginBottom:16,fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#C0392B"}}>{error}</div>}
-          <button onClick={handleLogin} disabled={loading} style={{width:"100%",padding:"14px",borderRadius:12,background:loading?"#B8DFE0":BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,border:"none",cursor:"pointer"}}>{loading?"Wird angemeldet...":"Anmelden"}</button>
+          <button onClick={handleLogin} disabled={loading} style={{width:"100%",padding:"14px",borderRadius:12,background:loading?BORDER:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,border:"none",cursor:"pointer"}}>{loading?"Wird angemeldet...":"Anmelden"}</button>
         </div>
         <div style={{textAlign:"center",marginTop:14}}>
           {resetSent
@@ -234,7 +266,7 @@ const PasswordResetScreen = ({ onDone }) => {
   const [success, setSuccess] = useState(false);
   const [showPw1,setShowPw1]=useState(false);
   const [showPw2,setShowPw2]=useState(false);
-  const inp = { width:"100%", padding:"13px 14px", borderRadius:10, border:"1.5px solid #B8DFE0", fontSize:16, fontFamily:"'DM Sans',sans-serif", outline:"none", color:"#102828", background:"white", WebkitTextFillColor:"#102828", boxSizing:"border-box" };
+  const inp = { width:"100%", padding:"13px 14px", borderRadius:10, border:`1.5px solid ${BORDER}`, fontSize:16, fontFamily:"'DM Sans',sans-serif", outline:"none", color:"#102828", background:"white", WebkitTextFillColor:"#102828", boxSizing:"border-box" };
 
   const handleReset = async () => {
     if (!password || password.length < 6) { setError("Passwort muss mindestens 6 Zeichen haben."); return; }
@@ -262,22 +294,22 @@ const PasswordResetScreen = ({ onDone }) => {
                 <Icon name="check" size={28} color={BRAND}/>
               </div>
               <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:DARK, marginBottom:8 }}>Passwort gesetzt!</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#3D7070" }}>Du wirst zum Login weitergeleitet...</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:MUTED }}>Du wirst zum Login weitergeleitet...</div>
             </div>
           ) : (
             <>
               <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:DARK, marginBottom:4 }}>Neues Passwort</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#3D7070", marginBottom:22 }}>Bitte wähle ein neues Passwort für deinen Account.</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:MUTED, marginBottom:22 }}>Bitte wähle ein neues Passwort für deinen Account.</div>
               <div style={{ marginBottom:14 }}>
-                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:"#3D7070", letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Neues Passwort</div>
-                <div style={{position:"relative"}}><input type={showPw1?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mindestens 6 Zeichen" style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw1(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:"#3D7070"}}>{showPw1?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:MUTED, letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Neues Passwort</div>
+                <div style={{position:"relative"}}><input type={showPw1?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mindestens 6 Zeichen" style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw1(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:MUTED}}>{showPw1?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
               </div>
               <div style={{ marginBottom:20 }}>
-                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:"#3D7070", letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Passwort wiederholen</div>
-                <div style={{position:"relative"}}><input type={showPw2?"text":"password"} value={password2} onChange={e=>setPassword2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleReset()} placeholder="••••••••" style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw2(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:"#3D7070"}}>{showPw2?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:MUTED, letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Passwort wiederholen</div>
+                <div style={{position:"relative"}}><input type={showPw2?"text":"password"} value={password2} onChange={e=>setPassword2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleReset()} placeholder="••••••••" style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw2(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:MUTED}}>{showPw2?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
               </div>
               {error && <div style={{ background:"#FFE8E8", borderRadius:10, padding:"10px 14px", marginBottom:16, fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#C0392B" }}>{error}</div>}
-              <button onClick={handleReset} disabled={loading} style={{ width:"100%", padding:"14px", borderRadius:12, background:loading?"#B8DFE0":BRAND, color:"#102828", fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:15, border:"none", cursor:"pointer" }}>
+              <button onClick={handleReset} disabled={loading} style={{ width:"100%", padding:"14px", borderRadius:12, background:loading?BORDER:BRAND, color:"#102828", fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:15, border:"none", cursor:"pointer" }}>
                 {loading ? "Wird gespeichert..." : "Passwort speichern"}
               </button>
             </>
@@ -343,7 +375,7 @@ export default function App() {
   const [practiceIcons,setPracticeIcons]=useState([]);
   const [practiceSaving,setPracticeSaving]=useState(false);
 
-  const isAdmin=!!(practice.admin_user_id&&session?.user?.id===practice.admin_user_id);
+  const [isAdmin,setIsAdmin]=useState(false);
 
   const [view,setView]=useState("owner");
   const [practiceTab,setPracticeTab]=useState("patients");
@@ -386,7 +418,8 @@ export default function App() {
   const [newTemplate,setNewTemplate]=useState(EMPTY_TEMPLATE);
   const [editTemplateData,setEditTemplateData]=useState(null);
   const [viewTemplateData,setViewTemplateData]=useState(null);
-  const [propagateTemplateUpdate,setPropagateTemplateUpdate]=useState(false);
+  const [propagateTemplateUpdate,setPropagateTemplateUpdate]=useState(true);
+  const [propagateStarterUpdate,setPropagateStarterUpdate]=useState(false);
   const EMPTY_PLAN={title:"",note:""};
   const [newPlan,setNewPlan]=useState(EMPTY_PLAN);
   const [editPlanData,setEditPlanData]=useState(null);
@@ -499,13 +532,12 @@ www.fit-fun-dog.de`});
       ]);
       if(ps){
         setPractice(ps);
-        BRAND=ps.color_brand||BRAND;
-        DARK=ps.color_dark||DARK;
-        MID=ps.color_mid||MID;
+        applyColors(ps.color_brand||BRAND);
+        difficultyColor=getDifficultyColor();
       }
       setSession(s);
+      if(s) await loadAll(s.user.id);
       setAuthLoading(false);
-      if(s) loadAll(s.user.id);
     };
     init();
     const{data:{subscription}}=supabase.auth.onAuthStateChange((event,s)=>{
@@ -521,6 +553,7 @@ www.fit-fun-dog.de`});
         setSession(null);
         setPatients([]);setExercises([]);setDoneLogs([]);setHistoryLogs([]);setFeedbacks([]);setTemplates([]);
         setOwnerPatient(null);setSelectedPatient(null);
+        setIsAdmin(false);
         setLoading(true);
       } else if(event==="SIGNED_IN"&&s){
         if(suppressAuthEvents.current)return;
@@ -578,9 +611,9 @@ www.fit-fun-dog.de`});
         setPractice(ps);
         setPracticeIcons(pi||[]);
         // Farben global setzen (für dynamische Komponenten außerhalb React)
-        BRAND=ps.color_brand||BRAND;
-        DARK=ps.color_dark||DARK;
-        MID=ps.color_mid||MID;
+        applyColors(ps.color_brand||BRAND);
+        difficultyColor=getDifficultyColor();
+        setIsAdmin(!!(ps.admin_user_id&&uid===ps.admin_user_id));
         // Browser-Tab-Titel + Favicon
         document.title=ps.practice_name||"FitFunDog";
         document.querySelectorAll("link[rel*='icon']").forEach(el=>el.remove());
@@ -634,7 +667,7 @@ www.fit-fun-dog.de`});
 
   const generateVideoQR = async (url) => {
     // inline tiny QR via google charts API - works in print
-    return `https://api.qrserver.com/v1/create-qr-code/?size=80x80&color=1E4A4B&data=${encodeURIComponent(url)}`;
+    return `https://api.qrserver.com/v1/create-qr-code/?size=80x80&color=${DARK.slice(1)}&data=${encodeURIComponent(url)}`;
   };
 
   const printExercisePlan = async (patient) => {
@@ -645,7 +678,7 @@ www.fit-fun-dog.de`});
     const videoQRs = {};
     for (const ex of patExercises) {
       if (ex.video_url) {
-        videoQRs[ex.id] = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&color=1E4A4B&bgcolor=ffffff&data=${encodeURIComponent(ex.video_url)}`;
+        videoQRs[ex.id] = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&color=${DARK.slice(1)}&bgcolor=ffffff&data=${encodeURIComponent(ex.video_url)}`;
       }
     }
 
@@ -667,12 +700,12 @@ www.fit-fun-dog.de`});
   .meta-row{display:grid;grid-template-columns:1fr 1fr;align-items:start;margin-bottom:16px;gap:24px}
   .contact-block{display:flex;flex-direction:column;gap:7px}
   .contact-item{display:flex;align-items:center;gap:0;font-size:11px;color:#555}.contact-item svg{width:16px;flex-shrink:0;margin-right:7px}
-  .contact-icon{width:14px;text-align:center;color:#3D8E8F;font-size:12px}
+  .contact-icon{width:14px;text-align:center;color:${MID};font-size:12px}
   .patient-block{text-align:right}
   .patient-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#aaa;margin-bottom:6px}
-  .patient-name{font-family:"Playfair Display",serif;font-size:16px;font-weight:700;color:#1E4A4B;margin-bottom:3px}
+  .patient-name{font-family:"Playfair Display",serif;font-size:16px;font-weight:700;color:${DARK};margin-bottom:3px}
   .patient-meta{font-size:11px;color:#666;line-height:1.7}
-  .patient-condition{font-size:11px;color:#3D8E8F;margin-top:3px;font-style:italic}
+  .patient-condition{font-size:11px;color:${MID};margin-top:3px;font-style:italic}
   .plan-date{font-size:10px;color:#aaa;margin-top:6px;letter-spacing:1px}
   /* DIVIDER */
   .divider{border:none;border-top:1px solid #e8e8e8;margin:0 0 14px}
@@ -686,19 +719,19 @@ www.fit-fun-dog.de`});
   .ex-body{flex:1;min-width:0}
   .ex-title{font-family:"Playfair Display",serif;font-size:14px;font-weight:700;color:#102828;margin-bottom:5px}
   .ex-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
-  .tag{font-size:9px;font-weight:600;padding:2px 8px;border-radius:20px;background:#f0f9f9;color:#3D8E8F;letter-spacing:0.3px}
-  .tag-freq{background:#1E4A4B;color:white}
+  .tag{font-size:9px;font-weight:600;padding:2px 8px;border-radius:20px;background:#f0f9f9;color:${MID};letter-spacing:0.3px}
+  .tag-freq{background:${DARK};color:white}
   .tag-diff-leicht{background:#e8f8f0;color:#2E7D32}
   .tag-diff-mittel{background:#fff3e0;color:#e65100}
   .tag-diff-schwer{background:#fde8e8;color:#c0392b}
   .ex-desc{font-size:11px;color:#444;line-height:1.6;margin-bottom:8px}
-  .steps-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#3D8E8F;margin-bottom:7px}
+  .steps-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${MID};margin-bottom:7px}
   .step{display:flex;gap:8px;margin-bottom:4px;align-items:flex-start}
-  .step-num{width:18px;height:18px;border-radius:50%;background:#5fb8b9;color:white;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+  .step-num{width:18px;height:18px;border-radius:50%;background:${BRAND};color:white;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
   .step-text{font-size:11px;color:#333;line-height:1.5}
   .video-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 10px;background:#f7fbfb;border-radius:7px;border:1px solid #e0f0f0}
   .video-qr{width:44px;height:44px;flex-shrink:0}
-  .video-text{font-size:10px;color:#3D8E8F;line-height:1.5}
+  .video-text{font-size:10px;color:${MID};line-height:1.5}
   .video-url{font-size:9px;color:#aaa;word-break:break-all;margin-top:1px}
   /* FOOTER SECTION */
   .footer-divider{border:none;border-top:1px solid #e0e0e0;margin:14px 0 10px}
@@ -724,9 +757,9 @@ www.fit-fun-dog.de`});
 <!-- META ROW: contact left, patient right -->
 <div class="meta-row">
   <div class="contact-block">
-    <div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3D8E8F" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><a href="${practice.website_url}" target="_blank" style="color:#555;text-decoration:none">${practice.website_url?.replace(/^https?:\/\//,"")}</a></div>
-    <div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3D8E8F" stroke-width="2.5" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><a href="mailto:${practice.contact_email}" style="color:#555;text-decoration:none">${practice.contact_email}</a></div>
-    ${practice.contact_phone?`<div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3D8E8F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span style="color:#555">${practice.contact_phone}</span></div>`:""}
+    <div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="${MID}" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><a href="${practice.website_url}" target="_blank" style="color:#555;text-decoration:none">${practice.website_url?.replace(/^https?:\/\//,"")}</a></div>
+    <div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="${MID}" stroke-width="2.5" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><a href="mailto:${practice.contact_email}" style="color:#555;text-decoration:none">${practice.contact_email}</a></div>
+    ${practice.contact_phone?`<div class="contact-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="${MID}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span style="color:#555">${practice.contact_phone}</span></div>`:""}
   </div>
   <div class="patient-block">
     <div class="patient-label">P&nbsp;A&nbsp;T&nbsp;I&nbsp;E&nbsp;N&nbsp;T</div>
@@ -766,10 +799,10 @@ ${patExercises.map((ex) => `
       </div>`).join("")}` : ""}
     ${ex.video_url ? `
       <div class="video-row">
-        <img class="video-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=88x88&color=1E4A4B&bgcolor=f7fbfb&data=${encodeURIComponent(ex.video_url)}" alt="Video QR"/>
+        <img class="video-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=88x88&color=${DARK.slice(1)}&bgcolor=${PALE.slice(1)}&data=${encodeURIComponent(ex.video_url)}" alt="Video QR"/>
         <div>
           <div class="video-text">Video zur Übung ansehen</div>
-          <a href="${ex.video_url}" target="_blank" style="font-size:9px;color:#3D8E8F;word-break:break-all;display:block;margin-top:2px">${ex.video_url}</a>
+          <a href="${ex.video_url}" target="_blank" style="font-size:9px;color:${MID};word-break:break-all;display:block;margin-top:2px">${ex.video_url}</a>
         </div>
       </div>` : ""}
   </div>
@@ -785,7 +818,7 @@ ${patExercises.map((ex) => `
     </div>
   </div>
   <div class="footer-col" style="text-align:center;padding:0 40px;border-left:1px solid #f0f0f0;border-right:1px solid #f0f0f0">
-    <div style="font-size:10px;color:#aaa;line-height:1.6">Made with Love by Claudia<br/><a href="https://fitfundog.vercel.app/" target="_blank" style="color:#3D8E8F;text-decoration:none">Fit Fun Dog</a></div>
+    <div style="font-size:10px;color:#aaa;line-height:1.6">Made with Love by Claudia<br/><a href="https://fitfundog.vercel.app/" target="_blank" style="color:${MID};text-decoration:none">Fit Fun Dog</a></div>
   </div>
   <div class="footer-col" style="text-align:center;padding:0 40px">
     <div class="footer-col-label">T E R M I N &nbsp; B U C H E N</div>
@@ -817,7 +850,7 @@ ${patExercises.map((ex) => `
     const date = new Date().toLocaleDateString("de-DE", {day:"2-digit",month:"long",year:"numeric"});
     const html = `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"/><title>Behandlungsplan: ${plan.title}</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;600;700&display=swap" rel="stylesheet"/>
-<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:"DM Sans",sans-serif;color:#102828;background:white;padding:24px 40px;font-size:13px}.header{text-align:center;padding-bottom:12px;margin-bottom:16px;border-bottom:1px solid #e0e0e0}.brand-name{font-size:22px;font-weight:700;letter-spacing:6px;color:#102828;margin-bottom:4px}.brand-sub{font-size:10px;letter-spacing:3px;color:#555;text-transform:uppercase}.plan-header{margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #e8e8e8}.plan-title{font-family:"Playfair Display",serif;font-size:22px;font-weight:700;color:#1E4A4B;margin-bottom:4px}.plan-note{font-size:13px;color:#555;margin-top:4px;font-style:italic}.plan-meta{font-size:10px;color:#aaa;margin-top:6px;letter-spacing:1px}.section-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#aaa;margin-bottom:12px}.exercise{display:flex;gap:14px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f0f0f0;page-break-inside:avoid}.exercise:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}.ex-img{width:72px;height:72px;border-radius:8px;object-fit:contain;background:#f7fbfb;flex-shrink:0;border:1px solid #e8f5f5;padding:3px}.ex-img-placeholder{width:72px;height:72px;border-radius:8px;background:#f7fbfb;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid #e8f5f5}.ex-body{flex:1;min-width:0}.ex-title{font-family:"Playfair Display",serif;font-size:14px;font-weight:700;color:#102828;margin-bottom:5px}.ex-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}.tag{font-size:9px;font-weight:600;padding:2px 8px;border-radius:20px;background:#f0f9f9;color:#3D8E8F}.tag-freq{background:#1E4A4B;color:white}.tag-diff-leicht{background:#e8f8f0;color:#2E7D32}.tag-diff-mittel{background:#fff3e0;color:#e65100}.tag-diff-schwer{background:#fde8e8;color:#c0392b}.ex-desc{font-size:11px;color:#444;line-height:1.6;margin-bottom:8px}.steps-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#3D8E8F;margin-bottom:7px}.step{display:flex;gap:8px;margin-bottom:4px;align-items:flex-start}.step-num{width:18px;height:18px;border-radius:50%;background:#5fb8b9;color:white;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}.step-text{font-size:11px;color:#333;line-height:1.5}.video-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 10px;background:#f7fbfb;border-radius:7px;border:1px solid #e0f0f0}.footer-divider{border:none;border-top:1px solid #e0e0e0;margin:14px 0 10px}.footer-note{font-size:10px;color:#aaa;text-align:center;line-height:1.7}@media print{body{padding:20px 28px}@page{margin:0.8cm}}</style></head><body>
+<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:"DM Sans",sans-serif;color:#102828;background:white;padding:24px 40px;font-size:13px}.header{text-align:center;padding-bottom:12px;margin-bottom:16px;border-bottom:1px solid #e0e0e0}.brand-name{font-size:22px;font-weight:700;letter-spacing:6px;color:#102828;margin-bottom:4px}.brand-sub{font-size:10px;letter-spacing:3px;color:#555;text-transform:uppercase}.plan-header{margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #e8e8e8}.plan-title{font-family:"Playfair Display",serif;font-size:22px;font-weight:700;color:${DARK};margin-bottom:4px}.plan-note{font-size:13px;color:#555;margin-top:4px;font-style:italic}.plan-meta{font-size:10px;color:#aaa;margin-top:6px;letter-spacing:1px}.section-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#aaa;margin-bottom:12px}.exercise{display:flex;gap:14px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f0f0f0;page-break-inside:avoid}.exercise:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}.ex-img{width:72px;height:72px;border-radius:8px;object-fit:contain;background:#f7fbfb;flex-shrink:0;border:1px solid #e8f5f5;padding:3px}.ex-img-placeholder{width:72px;height:72px;border-radius:8px;background:#f7fbfb;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid #e8f5f5}.ex-body{flex:1;min-width:0}.ex-title{font-family:"Playfair Display",serif;font-size:14px;font-weight:700;color:#102828;margin-bottom:5px}.ex-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}.tag{font-size:9px;font-weight:600;padding:2px 8px;border-radius:20px;background:#f0f9f9;color:${MID}}.tag-freq{background:${DARK};color:white}.tag-diff-leicht{background:#e8f8f0;color:#2E7D32}.tag-diff-mittel{background:#fff3e0;color:#e65100}.tag-diff-schwer{background:#fde8e8;color:#c0392b}.ex-desc{font-size:11px;color:#444;line-height:1.6;margin-bottom:8px}.steps-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${MID};margin-bottom:7px}.step{display:flex;gap:8px;margin-bottom:4px;align-items:flex-start}.step-num{width:18px;height:18px;border-radius:50%;background:${BRAND};color:white;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}.step-text{font-size:11px;color:#333;line-height:1.5}.video-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 10px;background:#f7fbfb;border-radius:7px;border:1px solid #e0f0f0}.footer-divider{border:none;border-top:1px solid #e0e0e0;margin:14px 0 10px}.footer-note{font-size:10px;color:#aaa;text-align:center;line-height:1.7}@media print{body{padding:20px 28px}@page{margin:0.8cm}}</style></head><body>
 <div class="header"><div class="brand-name">F|T&nbsp;&nbsp;FUN&nbsp;&nbsp;DOG</div><div class="brand-sub">P&nbsp;H&nbsp;Y&nbsp;S&nbsp;I&nbsp;O&nbsp;T&nbsp;H&nbsp;E&nbsp;R&nbsp;A&nbsp;P&nbsp;I&nbsp;E&nbsp;&nbsp;&amp;&nbsp;&nbsp;O&nbsp;S&nbsp;T&nbsp;E&nbsp;O&nbsp;P&nbsp;A&nbsp;T&nbsp;H&nbsp;I&nbsp;E</div></div>
 <div class="plan-header">
   <div class="plan-title">${plan.title}</div>
@@ -840,7 +873,7 @@ ${pe.default_duration?`<span class="tag">${pe.default_duration}</span>`:""}
 </div>
 ${tmpl.description?`<div class="ex-desc">${tmpl.description}</div>`:""}
 ${tmpl.instructions&&tmpl.instructions.filter(Boolean).length>0?`<div class="steps-label">S C H R I T T &nbsp; F Ü R &nbsp; S C H R I T T</div>${tmpl.instructions.filter(Boolean).map((step,j)=>`<div class="step"><div class="step-num">${j+1}</div><div class="step-text">${step}</div></div>`).join("")}`:""}
-${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex-shrink:0" src="https://api.qrserver.com/v1/create-qr-code/?size=88x88&color=1E4A4B&bgcolor=f7fbfb&data=${encodeURIComponent(tmpl.video_url)}" alt="QR"/><div><div style="font-size:10px;color:#3D8E8F">Video zur Übung</div><a href="${tmpl.video_url}" style="font-size:9px;color:#3D8E8F;word-break:break-all">${tmpl.video_url}</a></div></div>`:""}
+${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex-shrink:0" src="https://api.qrserver.com/v1/create-qr-code/?size=88x88&color=${DARK.slice(1)}&bgcolor=${PALE.slice(1)}&data=${encodeURIComponent(tmpl.video_url)}" alt="QR"/><div><div style="font-size:10px;color:${MID}">Video zur Übung</div><a href="${tmpl.video_url}" style="font-size:9px;color:${MID};word-break:break-all">${tmpl.video_url}</a></div></div>`:""}
 </div></div>`;
 }).join("")}
 <div class="footer-divider"></div>
@@ -1157,20 +1190,40 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     if(!error&&data){
       setTemplates(prev=>prev.map(t=>t.id===data.id?data:t));
       if(propagateTemplateUpdate){
-        // Update all exercises that have this template_id
-        await supabase.from("exercises").update({
+        const updatePayload={
           title:fields.title,categories:fields.categories,target_regions:fields.target_regions,
           difficulty:fields.difficulty,description:fields.description,instructions:fields.instructions,
           image_url:fields.image_url,video_url:fields.video_url,
           title_en:data.title_en||null,description_en:data.description_en||null,instructions_en:data.instructions_en||null,
           title_es:data.title_es||null,description_es:data.description_es||null,instructions_es:data.instructions_es||null
-        }).eq("template_id",editTemplateData.id);
-        // Reload exercises to reflect changes
+        };
+        // 1. Update via template_id (neuere Einträge)
+        await supabase.from("exercises").update(updatePayload).eq("template_id",editTemplateData.id);
+        // 2. Fallback: Update via Titel + practice_id für alte Einträge ohne template_id, gleichzeitig template_id nachpflegen
+        const{data:titleMatches}=await supabase.from("exercises").select("id").eq("practice_id",practice.id).eq("title",editTemplateData.title).is("template_id",null);
+        if(titleMatches&&titleMatches.length>0){
+          await supabase.from("exercises").update({...updatePayload,template_id:editTemplateData.id}).in("id",titleMatches.map(e=>e.id));
+        }
+        // 3. Starter-Propagation zu anderen Praxen
+        if(editTemplateData.is_starter&&propagateStarterUpdate){
+          const{data:otherTmpls}=await supabase.from("exercise_templates").select("id,title").eq("is_starter",true).eq("title",editTemplateData.title).neq("id",editTemplateData.id);
+          if(otherTmpls&&otherTmpls.length>0){
+            for(const ot of otherTmpls){
+              await supabase.from("exercise_templates").update(fields).eq("id",ot.id);
+              await supabase.from("exercises").update(updatePayload).eq("template_id",ot.id);
+              const{data:otherMatches}=await supabase.from("exercises").select("id").eq("title",ot.title).is("template_id",null);
+              if(otherMatches&&otherMatches.length>0){
+                await supabase.from("exercises").update({...updatePayload,template_id:ot.id}).in("id",otherMatches.map(e=>e.id));
+              }
+            }
+          }
+        }
+        // 4. Reload
         const{data:ed}=await supabase.from("exercises").select("*").order("created_at");
         if(ed)setExercises(ed);
       }
     }
-    setSaving(false);setPropagateTemplateUpdate(false);closeSheet();
+    setSaving(false);setPropagateTemplateUpdate(true);setPropagateStarterUpdate(false);closeSheet();
   };
 
   const deleteTemplate=async(tid)=>{
@@ -1372,14 +1425,14 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const patLabel=(p)=>`${p.avatar||""} ${p.name||""} - ${p.breed||""} - ${p.owner||""}`.trim();
   const getUserEmail=(uid)=>userEmails.find(u=>u.id===uid)?.email||null;
 
-  const inp={width:"100%",padding:"11px 14px",borderRadius:10,border:"1.5px solid #B8DFE0",fontSize:16,fontFamily:"'DM Sans',sans-serif",outline:"none",background:"white",color:"#102828",WebkitTextFillColor:"#102828",boxSizing:"border-box"};
-  const SL=({text})=><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>{text}</div>;
-  const SheetHeader=({title,onClose})=>(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:"#102828"}}>{title}</div><button onClick={onClose} style={{background:LIGHT,borderRadius:"50%",width:32,height:32,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="close" size={14} color="#3D7070"/></button></div>);
+  const inp={width:"100%",padding:"11px 14px",borderRadius:10,border:`1.5px solid ${BORDER}`,fontSize:16,fontFamily:"'DM Sans',sans-serif",outline:"none",background:"white",color:"#102828",WebkitTextFillColor:"#102828",boxSizing:"border-box"};
+  const SL=({text})=><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>{text}</div>;
+  const SheetHeader=({title,onClose})=>(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:"#102828"}}>{title}</div><button onClick={onClose} style={{background:LIGHT,borderRadius:"50%",width:32,height:32,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="close" size={14} color={MUTED}/></button></div>);
 
   if(authLoading)return <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${DARK},${BRAND})`,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={practice.logo_url||"/favicon.png"} alt="" style={{height:60,objectFit:"contain"}}/></div>;
   if(isRecoveryMode)return <PasswordResetScreen onDone={()=>{sessionStorage.removeItem("_recovery");setIsRecoveryMode(false);window.location.hash="";}} />;
   if(!session)return <LoginScreen practice={practice||{logo_url:"",practice_name:"",practice_subtitle:"",therapist_email:"",privacy_url:"",imprint_url:""}}/>;
-  if(loading)return <div style={{minHeight:"100vh",background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}><Icon name="paw" size={48} color={BRAND}/><div style={{fontFamily:"'DM Sans',sans-serif",color:"#3D7070"}}>Wird geladen...</div></div>;
+  if(loading)return <div style={{minHeight:"100vh",background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}><Icon name="paw" size={48} color={BRAND}/><div style={{fontFamily:"'DM Sans',sans-serif",color:MUTED}}>Wird geladen...</div></div>;
 
   return (
     <div style={{fontFamily:"Georgia,serif",minHeight:"100vh",background:LIGHT,color:"#102828"}} onClick={()=>setLangOpen(false)}>
@@ -1389,16 +1442,16 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         body{-webkit-text-size-adjust:100%;}
         .btn{cursor:pointer;border:none;transition:all .18s;background:none;}
         .btn:hover{opacity:.85;}
-        .card{background:white;border-radius:16px;box-shadow:0 2px 16px rgba(95,184,185,0.10);text-align:left;}
+        .card{background:white;border-radius:16px;box-shadow:0 2px 16px ${BRAND}1A;text-align:left;}
         .ex-card{transition:all .18s;cursor:pointer;}
-        .ex-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(95,184,185,0.18);}
+        .ex-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px ${BRAND}2E;}
         .tag{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif;}
         input,textarea,select{font-family:'DM Sans',sans-serif;outline:none;-webkit-text-fill-color:#102828;color:#102828;font-size:16px;}
-        input:focus,textarea:focus,select:focus{border-color:${BRAND}!important;box-shadow:0 0 0 3px rgba(95,184,185,0.15);}
+        input:focus,textarea:focus,select:focus{border-color:${BRAND}!important;box-shadow:0 0 0 3px ${BRAND}26;}
         .overlay{position:fixed;inset:0;background:rgba(16,40,40,0.55);z-index:100;display:flex;align-items:flex-end;justify-content:center;}
         .sheet{background:white;border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:24px 20px 40px;}
         .pbar{height:8px;background:rgba(255,255,255,0.2);border-radius:99px;overflow:hidden;}
-        .pfill{height:100%;border-radius:99px;background:linear-gradient(90deg,#8FD4D5,#ffffff88);transition:width .6s ease;}
+        .pfill{height:100%;border-radius:99px;background:linear-gradient(90deg,${ACCENT},#ffffff88);transition:width .6s ease;}
         .nav-tab{padding:9px 0;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;border:none;transition:all .18s;flex:1;display:flex;align-items:center;justify-content:center;gap:5px;}
         .tmpl-row{padding:10px 12px;border-radius:10px;cursor:pointer;border:2px solid transparent;display:flex;align-items:center;gap:10px;transition:all .15s;}
         .tmpl-row:hover{background:${LIGHT};}
@@ -1416,13 +1469,13 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             <div style={{display:"flex",alignItems:"center",gap:10}}>
               <img src={practice.logo_url||"/favicon.png"} alt={practice.practice_name} style={{height:36,objectFit:"contain"}}/>
               <div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#E6F6F6",lineHeight:1.1}}>{practice.practice_name}</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:LIGHT,lineHeight:1.1}}>{practice.practice_name}</div>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,color:ACCENT,letterSpacing:"0.3px"}}>{practice.practice_subtitle||""}</div>
               </div>
             </div>
             <div style={{display:"flex",gap:6,alignItems:"center"}}>
               <div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
-                <button className="btn" onClick={()=>setLangOpen(o=>!o)} style={{display:"flex",alignItems:"center",background:"#2A6364",borderRadius:9,padding:"7px 9px"}}>
+                <button className="btn" onClick={()=>setLangOpen(o=>!o)} style={{display:"flex",alignItems:"center",background:NAV_BG,borderRadius:9,padding:"7px 9px"}}>
                   <Icon name="lang" size={15} color={ACCENT}/>
                 </button>
                 {langOpen&&<div style={{position:"absolute",right:0,top:"calc(100% + 6px)",background:"white",borderRadius:12,boxShadow:"0 8px 24px rgba(0,0,0,0.15)",overflow:"hidden",minWidth:140,zIndex:50}}>
@@ -1431,12 +1484,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   ))}
                 </div>}
               </div>
-              <button className="btn" onClick={handleLogout} style={{background:"#2A6364",borderRadius:9,padding:"7px 9px",display:"flex"}}>
+              <button className="btn" onClick={handleLogout} style={{background:NAV_BG,borderRadius:9,padding:"7px 9px",display:"flex"}}>
                 <Icon name="logout" size={15} color={ACCENT}/>
               </button>
             </div>
           </div>
-          <div style={{display:"flex",background:"#2A6364"}}>
+          <div style={{display:"flex",background:NAV_BG}}>
             {[["owner","home",isAdmin?"Vorschau":t.navOwner],...(isAdmin?[["therapist","practice",t.navTherapist]]:[["profile","profile",t.navProfile]]),["info","info",t.navInfo],...(isAdmin?[["admin","profile",t.navAdmin]]:[])].map(([v,ic,lb])=>(
               <button key={v} className="nav-tab" onClick={()=>setView(v)} style={{background:view===v?"white":"transparent",color:view===v?DARK:ACCENT,borderRadius:view===v?"10px 10px 0 0":0,marginTop:view===v?3:0}}>
                 <Icon name={ic} size={14} color={view===v?DARK:ACCENT}/>{lb}
@@ -1463,8 +1516,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#E65100",marginBottom:6,display:"flex",alignItems:"center",gap:8}}><Icon name="lock" size={16} color="#E65100"/>{t.changePw}</div>
               <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#5D4037",marginBottom:10}}>{t.pwSecurityHint}</div>
               <div style={{display:"flex",gap:8}}>
-                <div style={{position:"relative",flex:1}}><input type={showNewPw?"text":"password"} value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder={t.newPasswordPh} style={{...inp,width:"100%",paddingRight:42}}/><button onClick={()=>setShowNewPw(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:"#3D7070"}}>{showNewPw?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
-                <button className="btn" onClick={changePassword} disabled={saving||!newPassword} style={{background:newPassword?BRAND:"#B8DFE0",color:"#102828",borderRadius:9,padding:"8px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,flexShrink:0}}>{saving?"...":t.save}</button>
+                <div style={{position:"relative",flex:1}}><input type={showNewPw?"text":"password"} value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder={t.newPasswordPh} style={{...inp,width:"100%",paddingRight:42}}/><button onClick={()=>setShowNewPw(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:MUTED}}>{showNewPw?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
+                <button className="btn" onClick={changePassword} disabled={saving||!newPassword} style={{background:newPassword?BRAND:BORDER,color:"#102828",borderRadius:9,padding:"8px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,flexShrink:0}}>{saving?"...":t.save}</button>
               </div>
             </div>
           )}
@@ -1497,7 +1550,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           })()}
 
           {!ownerPatient?(
-            <div className="card" style={{padding:28,textAlign:"center",color:"#3D7070"}}>
+            <div className="card" style={{padding:28,textAlign:"center",color:MUTED}}>
               <div style={{display:"flex",justifyContent:"center",marginBottom:10}}><Icon name="paw" size={44} color={ACCENT}/></div>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:600}}>{t.noPatient}</div>
             </div>
@@ -1534,16 +1587,16 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 </div>
               </div>
               {/* Tile 2: Streak */}
-              <div style={{background:`linear-gradient(135deg,${MID} 0%,${BRAND} 100%)`,borderRadius:16,padding:"16px 14px 14px",boxShadow:"0 4px 16px rgba(95,184,185,0.25)",display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:120}}>
+              <div style={{background:`linear-gradient(135deg,${MID} 0%,${BRAND} 100%)`,borderRadius:16,padding:"16px 14px 14px",boxShadow:`0 4px 16px ${BRAND}40`,display:"flex",flexDirection:"column",justifyContent:"space-between",minHeight:120}}>
                 <div style={{display:"flex",alignItems:"center",gap:5}}>
                   <Icon name="star" size={12} color="#FBBF24"/>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"#E6F6F6",letterSpacing:"1px",textTransform:"uppercase"}}>{t.streakLabel}</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10,color:LIGHT,letterSpacing:"1px",textTransform:"uppercase"}}>{t.streakLabel}</div>
                 </div>
                 <div>
                   <div style={{fontFamily:"'Playfair Display',serif",fontSize:42,fontWeight:700,color:"white",lineHeight:1}}>
                     {streak>0?streak:"—"}
                   </div>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#E6F6F6",marginTop:3}}>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:LIGHT,marginTop:3}}>
                     {streak===1?t.streakDay:streak>1?t.streakDays:t.streakNone}
                   </div>
                 </div>
@@ -1557,7 +1610,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             {/* ── 16-Wochen Kalender ── */}
             <div style={{background:PALE,borderRadius:14,marginBottom:14,overflow:"hidden",border:`1px solid ${LIGHT}`}}>
               <button className="btn" onClick={()=>setCalendarOpen(o=>!o)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",gap:4}}>
-                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",letterSpacing:"0.8px",textTransform:"uppercase",fontWeight:600}}>{t.last28}</span>
+                <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,letterSpacing:"0.8px",textTransform:"uppercase",fontWeight:600}}>{t.last28}</span>
                 <Icon name="chevdown" size={12} color={MID}/>
               </button>
               {calendarOpen&&(
@@ -1567,7 +1620,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       <div key={mondayStr} style={{height:22,borderRadius:6,background:success?BRAND:isCurrentWeek?ACCENT+"40":LIGHT,outline:isCurrentWeek?`2px solid ${ACCENT}`:"none",outlineOffset:1}}/>
                     ))}
                   </div>
-                  <div style={{display:"flex",justifyContent:"space-between",fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"#3D7070"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontFamily:"'DM Sans',sans-serif",fontSize:10,color:MUTED}}>
                     <span>vor 15 Wochen</span>
                     <span>heute</span>
                   </div>
@@ -1580,7 +1633,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               <FilterDropdown label={t.filterRegion} icon="target" options={TARGET_REGIONS} selected={filterRegions} onChange={setFilterRegions} color={MID} labelFn={tReg}/>
             </div>
 
-            {filteredOwnerExs.length===0&&<div className="card" style={{padding:20,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>{t.noExercises}</div>}
+            {filteredOwnerExs.length===0&&<div className="card" style={{padding:20,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>{t.noExercises}</div>}
 
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
               {filteredOwnerExs.map(ex=>{
@@ -1597,29 +1650,29 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                         <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:7}}>
                           {(ex.categories||[]).slice(0,2).map(c=><span key={c} className="tag" style={{background:BRAND+"20",color:BRAND}}>{tCat(c)}</span>)}
                           <span className="tag" style={{background:(difficultyColor[ex.difficulty]||BRAND)+"20",color:difficultyColor[ex.difficulty]||BRAND}}>{tDiff(ex.difficulty)}</span>
-                          <span className="tag" style={{background:LIGHT,color:"#3D7070"}}>⏱ {ex.duration}</span>
+                          <span className="tag" style={{background:LIGHT,color:MUTED}}>⏱ {ex.duration}</span>
                         </div>
                         {/* Repeat checkboxes */}
                         <div style={{display:"flex",alignItems:"center",gap:6}} onClick={e=>e.stopPropagation()}>
-                          <Icon name="repeat" size={13} color="#3D7070"/>
+                          <Icon name="repeat" size={13} color={MUTED}/>
                           <div style={{display:"flex",gap:5}}>
                             {Array.from({length:rc}).map((_,i)=>{
                               const checked=i<doneNow;
                               return(
                                 <button key={i} className="repeat-box" onClick={e=>{e.stopPropagation();toggleRepeat(ex.id,rc);}}
-                                  style={{borderColor:checked?BRAND:"#B8DFE0",background:checked?BRAND:"white",width:28,height:28}}>
+                                  style={{borderColor:checked?BRAND:BORDER,background:checked?BRAND:"white",width:28,height:28}}>
                                   {checked&&<Icon name="check" size={13} color="white"/>}
                                 </button>
                               );
                             })}
                           </div>
-                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{doneNow}/{rc}× {t.thisWeekShort}</span>
+                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>{doneNow}/{rc}× {t.thisWeekShort}</span>
                         </div>
                         {/* Feedback button + latest feedback indicator */}
                         <div style={{display:"flex",alignItems:"center",gap:6,marginTop:7}} onClick={e=>e.stopPropagation()}>
                           <button className="btn" onClick={e=>{e.stopPropagation();const fb=getLatestFeedback(ex.id);setFeedbackSheet(ex);setFeedbackPain(fb?.pain_level||0);setFeedbackComment(fb?.comment||"");}}
-                            style={{display:"flex",alignItems:"center",gap:4,background:LIGHT,borderRadius:8,padding:"4px 10px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color:"#3D7070",border:`1px solid #B8DFE0`}}>
-                            <Icon name="info" size={12} color="#3D7070"/> {t.reportSymptom}
+                            style={{display:"flex",alignItems:"center",gap:4,background:LIGHT,borderRadius:8,padding:"4px 10px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color:MUTED,border:`1px solid ${BORDER}`}}>
+                            <Icon name="info" size={12} color={MUTED}/> {t.reportSymptom}
                           </button>
                           {(()=>{const fb=getLatestFeedback(ex.id);return fb?(<span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:PAIN_COLORS[fb.pain_level],fontWeight:600}}>● {t.painLabels[fb.pain_level]}</span>):null;})()}
                         </div>
@@ -1637,7 +1690,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       {view==="profile"&&!isAdmin&&(
         <div style={{maxWidth:480,margin:"0 auto",padding:"16px 14px 80px"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK,marginBottom:4}}>{t.navProfile}</div>
-          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:20}}>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:20}}>
             {ownerPatient?.owner||""}
           </div>
 
@@ -1650,11 +1703,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
             <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
               <div style={{width:40,height:40,borderRadius:12,background:pushEnabled?BRAND+"18":LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <Icon name={pushEnabled?"bell":"belloff"} size={20} color={pushEnabled?BRAND:"#3D7070"}/>
+                <Icon name={pushEnabled?"bell":"belloff"} size={20} color={pushEnabled?BRAND:MUTED}/>
               </div>
               <div style={{flex:1}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK}}>{t.reminders}</div>
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginTop:1}}>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:1}}>
                   {pushEnabled?t.reminderActive:t.reminderInactive}
                 </div>
               </div>
@@ -1673,14 +1726,14 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
             {pushEnabled&&(
               <div style={{background:LIGHT,borderRadius:12,padding:"14px 16px",marginBottom:14}}>
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",letterSpacing:".7px",textTransform:"uppercase",marginBottom:10}}>{t.reminderTime}</div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".7px",textTransform:"uppercase",marginBottom:10}}>{t.reminderTime}</div>
                 <div style={{display:"flex",alignItems:"center",gap:12}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,flex:1,background:"white",borderRadius:10,border:`1.5px solid ${BRAND}`,padding:"10px 14px"}}>
                     <Icon name="clock" size={16} color={BRAND}/>
                     <input type="time" value={pushTime} onChange={e=>updatePushTime(e.target.value)}
                       style={{fontFamily:"'DM Sans',sans-serif",fontSize:15,fontWeight:600,color:DARK,border:"none",outline:"none",background:"transparent",WebkitTextFillColor:DARK,flex:1}}/>
                   </div>
-                  {t.oclock&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070"}}>{t.oclock}</div>}
+                  {t.oclock&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED}}>{t.oclock}</div>}
                 </div>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:ACCENT,marginTop:8}}>
                   {t.reminderHint}
@@ -1711,8 +1764,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         </a>
         {/* Legal + Konto löschen links */}
         <div style={{textAlign:"center",padding:"8px 0 16px",display:"flex",justifyContent:"center",gap:20,flexWrap:"wrap"}}>
-          <a href={practice.privacy_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",textDecoration:"none"}}>{t.privacyLink}</a>
-          <a href={practice.imprint_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",textDecoration:"none"}}>{t.imprintLink}</a>
+          <a href={practice.privacy_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,textDecoration:"none"}}>{t.privacyLink}</a>
+          <a href={practice.imprint_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,textDecoration:"none"}}>{t.imprintLink}</a>
           <button onClick={()=>{setDeleteConfirmText("");setShowDeleteAccount(true);}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#aaa",padding:0,textDecoration:"none"}}>{t.deleteAccount}</button>
         </div>
       </div>
@@ -1723,8 +1776,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         <div style={{maxWidth:480,margin:"0 auto",padding:"0 0 80px"}}>
           <div style={{display:"flex",gap:0,background:"white",borderBottom:`2px solid ${LIGHT}`,padding:"0 14px"}}>
             {[["patients","user","Patienten"],["exercises","tip","Übungen"],["plans","star","Pläne"],["assign","assign","Zuweisen"]].map(([tab,ic,lb])=>(
-              <button key={tab} className="btn" onClick={()=>setPracticeTab(tab)} style={{flex:1,padding:"13px 6px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:practiceTab===tab?BRAND:"#3D7070",borderBottom:practiceTab===tab?`2px solid ${BRAND}`:"2px solid transparent",marginBottom:-2,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                <Icon name={ic} size={13} color={practiceTab===tab?BRAND:"#3D7070"}/>{lb}
+              <button key={tab} className="btn" onClick={()=>setPracticeTab(tab)} style={{flex:1,padding:"13px 6px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:practiceTab===tab?BRAND:MUTED,borderBottom:practiceTab===tab?`2px solid ${BRAND}`:"2px solid transparent",marginBottom:-2,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                <Icon name={ic} size={13} color={practiceTab===tab?BRAND:MUTED}/>{lb}
               </button>
             ))}
           </div>
@@ -1746,7 +1799,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       <div style={{width:42,height:42,borderRadius:12,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{p.avatar||"🐕"}</div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#102828"}}>{p.name}</div>
-                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginTop:1}}>{p.breed} · {p.owner}</div>
+                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:1}}>{p.breed} · {p.owner}</div>
                         <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#5a5a5a",marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.condition}</div>
                         <div style={{marginTop:4}}>
                           {userEmail?<span className="tag" style={{background:"#E8F5E9",color:"#2E7D32",display:"inline-flex",alignItems:"center",gap:3}}><Icon name="mail" size={10} color="#2E7D32"/>{userEmail}</span>
@@ -1762,7 +1815,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     </div>
                   );
                 })}
-                {filteredPatients.length===0&&<div className="card" style={{padding:20,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>{patientSearch?"Keine Patienten gefunden.":"Noch keine Patienten angelegt."}</div>}
+                {filteredPatients.length===0&&<div className="card" style={{padding:20,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>{patientSearch?"Keine Patienten gefunden.":"Noch keine Patienten angelegt."}</div>}
               </div>
             </div>
           )}
@@ -1789,12 +1842,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       </div>
                     </div>
                     <div style={{display:"flex",gap:5}} onClick={e=>e.stopPropagation()}>
-                      {!tmpl.is_starter&&<button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setPropagateTemplateUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>}
+                      <button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setPropagateTemplateUpdate(true);setPropagateStarterUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
                       <button className="iBtn" onClick={()=>{setSheetData(tmpl);setSheet("confirmDeleteTmpl");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                     </div>
                   </div>
                 ))}
-                {templates.length===0&&<div className="card" style={{padding:24,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Übungsvorlagen erstellt.</div>}
+                {templates.length===0&&<div className="card" style={{padding:24,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Übungsvorlagen erstellt.</div>}
               </div>
             </div>
           )}
@@ -1807,7 +1860,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   <Icon name="plus" size={14} color="#102828"/> Neuer Plan
                 </button>
               </div>
-              {planTemplates.length===0&&<div className="card" style={{padding:24,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Behandlungspläne erstellt.</div>}
+              {planTemplates.length===0&&<div className="card" style={{padding:24,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Behandlungspläne erstellt.</div>}
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                 {planTemplates.map(plan=>{
                   const planExs=planTemplateExercises.filter(pe=>pe.plan_template_id===plan.id);
@@ -1816,7 +1869,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:planExs.length>0?10:0}}>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#102828"}}>{plan.title}</div>
-                          {plan.note&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginTop:3}}>{plan.note}</div>}
+                          {plan.note&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:3}}>{plan.note}</div>}
                           <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:ACCENT,marginTop:4}}>{planExs.length} Übung{planExs.length!==1?"en":""}</div>
                         </div>
                         <div style={{display:"flex",gap:5,flexShrink:0}}>
@@ -1841,7 +1894,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                                   :<div style={{width:26,height:26,borderRadius:6,background:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={12} color={ACCENT}/></div>}
                                 <div style={{flex:1,minWidth:0}}>
                                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{tmpl?.title||"Unbekannte Übung"}</div>
-                                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{pe.default_duration||"—"} · {pe.default_repeat_count||1}× pro Woche</div>
+                                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>{pe.default_duration||"—"} · {pe.default_repeat_count||1}× pro Woche</div>
                                 </div>
                               </div>
                             );
@@ -1862,8 +1915,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               {/* Sub-Tabs */}
               <div style={{display:"flex",gap:6,marginBottom:16,background:"white",borderRadius:12,padding:4,boxShadow:"0 2px 12px rgba(95,184,185,0.08)"}}>
                 {[["exercises","Einzelne Übung"],["plans","Behandlungsplan"]].map(([tab,label])=>(
-                  <button key={tab} className="btn" onClick={()=>setAssignSubTab(tab)} style={{flex:1,padding:"9px 8px",borderRadius:9,background:assignSubTab===tab?BRAND:"transparent",color:assignSubTab===tab?"#102828":"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                    <Icon name={tab==="exercises"?"assign":"star"} size={13} color={assignSubTab===tab?"#102828":"#3D7070"}/>{label}
+                  <button key={tab} className="btn" onClick={()=>setAssignSubTab(tab)} style={{flex:1,padding:"9px 8px",borderRadius:9,background:assignSubTab===tab?BRAND:"transparent",color:assignSubTab===tab?"#102828":MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                    <Icon name={tab==="exercises"?"assign":"star"} size={13} color={assignSubTab===tab?"#102828":MUTED}/>{label}
                   </button>
                 ))}
               </div>
@@ -1880,13 +1933,13 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 </div>
                 {selectedPatient&&(<>
                   <div style={{display:"flex",gap:8,marginBottom:14}}>
-                    <button className="btn" onClick={()=>setSheet("addExercise")} style={{flex:1,background:DARK,color:"#E6F6F6",borderRadius:12,padding:"12px",fontSize:13,fontFamily:"'DM Sans',sans-serif",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-                      <Icon name="assign" size={16} color="#E6F6F6"/> Übung zuweisen
+                    <button className="btn" onClick={()=>setSheet("addExercise")} style={{flex:1,background:DARK,color:LIGHT,borderRadius:12,padding:"12px",fontSize:13,fontFamily:"'DM Sans',sans-serif",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                      <Icon name="assign" size={16} color={LIGHT}/> Übung zuweisen
                     </button>
                     <button className="iBtn" title="Übungsplan drucken" onClick={()=>printExercisePlan(selectedPatient)} style={{background:"#E8F5E9",width:44,height:44,borderRadius:12,flexShrink:0}}><Icon name="print" size={16} color="#2E7D32"/></button>
                     <button className="iBtn" title="Plan-Info per Mail senden" onClick={()=>openPlanMail(selectedPatient)} disabled={!getUserEmail(selectedPatient.user_id)} style={{background:getUserEmail(selectedPatient.user_id)?"#E3F2FD":"#F5F5F5",width:44,height:44,borderRadius:12,flexShrink:0,opacity:getUserEmail(selectedPatient.user_id)?1:0.4}}><Icon name="mail" size={16} color={getUserEmail(selectedPatient.user_id)?"#1565C0":"#aaa"}/></button>
                   </div>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>{t.homeExercises(exForPatient(selectedPatient.id).length)}</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>{t.homeExercises(exForPatient(selectedPatient.id).length)}</div>
                   {exForPatient(selectedPatient.id).length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:ACCENT,textAlign:"center",padding:"12px 0"}}>{t.noExercisesYet}</div>}
                   <div style={{display:"flex",flexDirection:"column",gap:8}}>
                     {exForPatient(selectedPatient.id).map(ex=>{
@@ -1898,18 +1951,18 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                           {ex.image_url?<img src={ex.image_url} alt={ex.title} style={{width:38,height:38,borderRadius:8,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}/>
                             :<div style={{width:38,height:38,borderRadius:8,background:fullyDone?BRAND+"20":LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}><Icon name="paw" size={17} color={fullyDone?BRAND:ACCENT}/></div>}
                           <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}>
-                            <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:fullyDone?"#3D7070":"#102828",textDecoration:fullyDone?"line-through":"none"}}>{exT(ex,"title")}</div>
+                            <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:fullyDone?MUTED:"#102828",textDecoration:fullyDone?"line-through":"none"}}>{exT(ex,"title")}</div>
                             <div style={{display:"flex",alignItems:"center",gap:5,marginTop:3}}>
                               {Array.from({length:rc}).map((_,i)=>(
                                 <div key={i} style={{width:10,height:10,borderRadius:3,background:i<doneNow?BRAND:"#E0E0E0"}}/>
                               ))}
-                              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{doneNow}/{rc} · {ex.duration}</span>
+                              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>{doneNow}/{rc} · {ex.duration}</span>
                             </div>
                             {(()=>{const fb=getLatestFeedback(ex.id);return fb?(
                               <div style={{marginTop:5,display:"flex",alignItems:"center",gap:6}}>
                                 <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>● {t.painLabels[fb.pain_level]}</span>
-                                <button className="btn" onClick={e=>{e.stopPropagation();setViewFeedbackEx(ex);}} style={{display:"flex",alignItems:"center",gap:3,background:LIGHT,borderRadius:6,padding:"2px 8px",fontFamily:"'DM Sans',sans-serif",fontSize:10,fontWeight:600,color:"#3D7070",border:`1px solid #B8DFE0`}}>
-                                  <Icon name="info" size={10} color="#3D7070"/> anzeigen
+                                <button className="btn" onClick={e=>{e.stopPropagation();setViewFeedbackEx(ex);}} style={{display:"flex",alignItems:"center",gap:3,background:LIGHT,borderRadius:6,padding:"2px 8px",fontFamily:"'DM Sans',sans-serif",fontSize:10,fontWeight:600,color:MUTED,border:`1px solid ${BORDER}`}}>
+                                  <Icon name="info" size={10} color={MUTED}/> anzeigen
                                 </button>
                               </div>
                             ):null;})()}
@@ -1920,7 +1973,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     })}
                   </div>
                 </>)}
-                {!selectedPatient&&<div className="card" style={{padding:24,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Bitte zuerst einen Patienten auswählen.</div>}
+                {!selectedPatient&&<div className="card" style={{padding:24,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Bitte zuerst einen Patienten auswählen.</div>}
               </>)}
 
               {/* Sub-Tab: Behandlungsplan */}
@@ -1940,7 +1993,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   <div style={{marginBottom:14}}>
                     <SL text="Plan auswählen"/>
                     {planTemplates.length===0
-                      ?<div className="card" style={{padding:16,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Behandlungspläne erstellt.</div>
+                      ?<div className="card" style={{padding:16,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Behandlungspläne erstellt.</div>
                       :<div style={{display:"flex",flexDirection:"column",gap:6}}>
                         {planTemplates.map(plan=>{
                           const planExs=planTemplateExercises.filter(pe=>pe.plan_template_id===plan.id);
@@ -1960,7 +2013,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                                 <div>
                                   <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:"#102828"}}>{plan.title}</div>
-                                  {plan.note&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",marginTop:2}}>{plan.note}</div>}
+                                  {plan.note&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:2}}>{plan.note}</div>}
                                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:ACCENT,marginTop:2}}>{planExs.length} Übung{planExs.length!==1?"en":""}</div>
                                 </div>
                                 {planAssignState?.plan?.id===plan.id&&<Icon name="check" size={16} color={BRAND}/>}
@@ -1997,8 +2050,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   {/* 4. Zuweisen + Drucken Buttons */}
                   <div style={{display:"flex",gap:8,marginBottom:14}}>
                     <button className="btn" disabled={saving||!planAssignState||planAssignState.exercises.length===0} onClick={assignPlanToPatient}
-                      style={{flex:1,padding:"12px",borderRadius:12,background:planAssignState?.exercises.length>0?BRAND:"#B8DFE0",color:planAssignState?.exercises.length>0?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                      <Icon name="assign" size={15} color={planAssignState?.exercises.length>0?"#102828":"#7ECBCC"}/>
+                      style={{flex:1,padding:"12px",borderRadius:12,background:planAssignState?.exercises.length>0?BRAND:BORDER,color:planAssignState?.exercises.length>0?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                      <Icon name="assign" size={15} color={planAssignState?.exercises.length>0?"#102828":DISABLED}/>
                       {saving?t.saving:planAssignState?`${planAssignState.exercises.length} Übung${planAssignState.exercises.length!==1?"en":""} zuweisen`:"Plan zuweisen"}
                     </button>
                     <button className="iBtn" title="Heimübungen drucken" onClick={()=>printExercisePlan(planAssignPatient)} style={{background:"#E8F5E9",width:44,height:44,borderRadius:12,flexShrink:0}}><Icon name="print" size={16} color="#2E7D32"/></button>
@@ -2006,7 +2059,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   </div>
 
                   {/* 5. Aktuelle Heimübungen des Patienten */}
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>{t.homeExercises(exForPatient(planAssignPatient.id).length)}</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,textTransform:"uppercase",letterSpacing:".5px",marginBottom:10}}>{t.homeExercises(exForPatient(planAssignPatient.id).length)}</div>
                   {exForPatient(planAssignPatient.id).length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:ACCENT,textAlign:"center",padding:"12px 0"}}>{t.noExercisesYet}</div>}
                   <div style={{display:"flex",flexDirection:"column",gap:8}}>
                     {exForPatient(planAssignPatient.id).map(ex=>{
@@ -2018,12 +2071,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                           {ex.image_url?<img src={ex.image_url} alt={ex.title} style={{width:38,height:38,borderRadius:8,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}/>
                             :<div style={{width:38,height:38,borderRadius:8,background:fullyDone?BRAND+"20":LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}><Icon name="paw" size={17} color={fullyDone?BRAND:ACCENT}/></div>}
                           <div style={{flex:1,minWidth:0,cursor:"pointer"}} onClick={()=>setSelectedExercise(ex)}>
-                            <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:fullyDone?"#3D7070":"#102828",textDecoration:fullyDone?"line-through":"none"}}>{exT(ex,"title")}</div>
+                            <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:600,color:fullyDone?MUTED:"#102828",textDecoration:fullyDone?"line-through":"none"}}>{exT(ex,"title")}</div>
                             <div style={{display:"flex",alignItems:"center",gap:5,marginTop:3}}>
                               {Array.from({length:rc}).map((_,i)=>(
                                 <div key={i} style={{width:10,height:10,borderRadius:3,background:i<doneNow?BRAND:"#E0E0E0"}}/>
                               ))}
-                              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{doneNow}/{rc} · {ex.duration}</span>
+                              <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>{doneNow}/{rc} · {ex.duration}</span>
                             </div>
                           </div>
                           <button className="iBtn" onClick={()=>{setSheetData(ex);setSheet("confirmDeleteEx");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
@@ -2033,7 +2086,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   </div>
                 </>)}
 
-                {!planAssignPatient&&<div className="card" style={{padding:24,textAlign:"center",color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Bitte zuerst einen Patienten auswählen.</div>}
+                {!planAssignPatient&&<div className="card" style={{padding:24,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Bitte zuerst einen Patienten auswählen.</div>}
               </>)}
             </div>
           )}
@@ -2044,12 +2097,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       {view==="admin"&&isAdmin&&(
         <div style={{maxWidth:480,margin:"0 auto",padding:"16px 14px 80px"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:DARK,marginBottom:4}}>Admin</div>
-          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:20}}>Einstellungen & App-Verwaltung</div>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:20}}>Einstellungen & App-Verwaltung</div>
 
           {/* Praxis-Einstellungen */}
           <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:4}}>Praxis-Einstellungen</div>
-            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginBottom:14}}>Änderungen werden nach dem nächsten Laden wirksam.</div>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:14}}>Änderungen werden nach dem nächsten Laden wirksam.</div>
             {[
               {label:"Praxisname",field:"practice_name"},
               {label:"Untertitel",field:"practice_subtitle"},
@@ -2073,24 +2126,37 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             <div style={{marginBottom:10}}>
               <SL text="Primärfarbe (Hex)"/>
               <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                <input value={practice.color_brand||""} onChange={e=>setPractice(p=>({...p,color_brand:e.target.value}))} style={{...inp,marginBottom:0,flex:1}} placeholder="#5fb8b9"/>
-                <div style={{width:32,height:32,borderRadius:8,background:practice.color_brand||BRAND,border:"1.5px solid #B8DFE0",flexShrink:0}}/>
+                <input value={practice.color_brand||""} onChange={e=>{const v=e.target.value;setPractice(p=>({...p,color_brand:v}));if(/^#[0-9a-fA-F]{6}$/.test(v)){const c=deriveColors(v);setPractice(p=>({...p,color_brand:v,color_dark:c.dark,color_mid:c.mid}));}}} style={{...inp,marginBottom:0,flex:1}} placeholder="#5fb8b9"/>
+                <div style={{position:"relative",flexShrink:0}}>
+                  <div onClick={()=>document.getElementById("brandColorPicker").click()} style={{width:38,height:38,borderRadius:9,background:(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND,border:`1.5px solid ${BORDER}`,cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}/>
+                  <input id="brandColorPicker" type="color" value={(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND} onChange={e=>{const v=e.target.value;const c=deriveColors(v);setPractice(p=>({...p,color_brand:v,color_dark:c.dark,color_mid:c.mid}));}} style={{position:"absolute",opacity:0,width:1,height:1,pointerEvents:"none",top:0,left:0}}/>
+                </div>
               </div>
-            </div>
-            <div style={{marginBottom:10}}>
-              <SL text="Dunkelfarbe (Hex)"/>
-              <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                <input value={practice.color_dark||""} onChange={e=>setPractice(p=>({...p,color_dark:e.target.value}))} style={{...inp,marginBottom:0,flex:1}} placeholder="#1E4A4B"/>
-                <div style={{width:32,height:32,borderRadius:8,background:practice.color_dark||DARK,border:"1.5px solid #B8DFE0",flexShrink:0}}/>
-              </div>
+              {(()=>{const brand=(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND;const c=deriveColors(brand);return(
+                <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".5px",textTransform:"uppercase"}}>Abgeleitete Palette</div>
+                  <div style={{display:"flex",gap:5}}>
+                    {[["Primär",brand],["Dunkel",c.dark],["Mittel",c.mid],["Hell",c.light],["Blass",c.pale],["Akzent",c.accent]].map(([label,col])=>(
+                      <div key={label} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                        <div style={{width:"100%",height:28,borderRadius:7,background:col,border:`1px solid ${BORDER}`}}/>
+                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,color:MUTED,textAlign:"center",lineHeight:1.2}}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );})()}
             </div>
 
 
 
             <button className="btn" onClick={async()=>{
               setPracticeSaving(true);
-              const{admin_user_id,...fields}=practice;
+              const c=deriveColors(practice.color_brand||BRAND);
+              const saveData={...practice,color_dark:c.dark,color_mid:c.mid};
+              const{admin_user_id,...fields}=saveData;
               await supabase.from("practice_settings").update(fields).eq("admin_user_id",admin_user_id);
+              applyColors(practice.color_brand||BRAND);
+              difficultyColor=getDifficultyColor();
               setPracticeSaving(false);
             }} disabled={practiceSaving}
               style={{width:"100%",padding:"12px",borderRadius:12,background:practice.color_brand||BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
@@ -2101,7 +2167,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           {/* Mail-Vorlage */}
           <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:4}}>Plan-Mail Vorlage</div>
-            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginBottom:14}}>Wird beim Versenden nach Plan-Zuweisung verwendet. Platzhalter: <code style={{background:"#D0ECF0",borderRadius:4,padding:"1px 5px",fontSize:11,color:"#1E4A4B"}}>{"{{patient}}"}</code>, <code style={{background:"#D0ECF0",borderRadius:4,padding:"1px 5px",fontSize:11,color:"#1E4A4B"}}>{"{{besitzer}}"}</code> und <code style={{background:"#D0ECF0",borderRadius:4,padding:"1px 5px",fontSize:11,color:"#1E4A4B"}}>{"{{email}}"}</code></div>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:14}}>Wird beim Versenden nach Plan-Zuweisung verwendet. Platzhalter: <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{patient}}"}</code>, <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{besitzer}}"}</code> und <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{email}}"}</code></div>
             <div style={{marginBottom:10}}>
               <SL text="Betreff"/>
               <input value={mailTemplate.subject} onChange={e=>setMailTemplate(p=>({...p,subject:e.target.value}))} style={{...inp,marginBottom:0}} placeholder="Betreff..."/>
@@ -2119,7 +2185,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           {/* Feedback */}
           <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:6}}>Feedback zur App</div>
-            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:12}}>Direkt an die Entwicklerin senden.</div>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:12}}>Direkt an die Entwicklerin senden.</div>
             <button className="btn" onClick={()=>{setAppFeedbackText("");setShowAppFeedback(true);}}
               style={{width:"100%",padding:"12px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
               <Icon name="mail" size={16} color="#102828"/>Feedback geben
@@ -2147,11 +2213,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       {view==="info"&&(
         <div style={{maxWidth:480,margin:"0 auto",padding:"16px 14px 80px"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,marginBottom:4}}>{t.tipsTitle}</div>
-          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:14}}>{t.tipsSub}</div>
-          <div style={{display:"flex",gap:7,marginBottom:16,background:"white",borderRadius:14,padding:5,boxShadow:"0 2px 12px rgba(95,184,185,0.10)"}}>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:14}}>{t.tipsSub}</div>
+          <div style={{display:"flex",gap:7,marginBottom:16,background:"white",borderRadius:14,padding:5,boxShadow:`0 2px 12px ${BRAND}1A`}}>
             {[["tips","tip",t.tabTips],["pause","rest",t.tabPause]].map(([tab,ic,label])=>(
-              <button key={tab} className="btn" onClick={()=>setInfoTab(tab)} style={{flex:1,padding:"10px 8px",borderRadius:10,background:infoTab===tab?BRAND:"transparent",color:infoTab===tab?"#102828":"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                <Icon name={ic} size={14} color={infoTab===tab?"#102828":"#3D7070"}/>{label}
+              <button key={tab} className="btn" onClick={()=>setInfoTab(tab)} style={{flex:1,padding:"10px 8px",borderRadius:10,background:infoTab===tab?BRAND:"transparent",color:infoTab===tab?"#102828":MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                <Icon name={ic} size={14} color={infoTab===tab?"#102828":MUTED}/>{label}
               </button>
             ))}
           </div>
@@ -2212,13 +2278,13 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       const checked=i<doneNow;
                       return(
                         <button key={i} className="repeat-box" onClick={()=>toggleRepeat(selectedExercise.id,rc)}
-                          style={{borderColor:checked?BRAND:"#B8DFE0",background:checked?BRAND:"white",width:36,height:36,borderRadius:10}}>
+                          style={{borderColor:checked?BRAND:BORDER,background:checked?BRAND:"white",width:36,height:36,borderRadius:10}}>
                           {checked&&<Icon name="check" size={18} color="white"/>}
                         </button>
                       );
                     })}
                   </div>
-                  <button className="btn" onClick={()=>{toggleRepeat(selectedExercise.id,rc);if(doneNow+1>=rc)setSelectedExercise(null);}} style={{width:"100%",padding:"14px",borderRadius:12,background:fullyDone?LIGHT:BRAND,color:fullyDone?"#3D7070":"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+                  <button className="btn" onClick={()=>{toggleRepeat(selectedExercise.id,rc);if(doneNow+1>=rc)setSelectedExercise(null);}} style={{width:"100%",padding:"14px",borderRadius:12,background:fullyDone?LIGHT:BRAND,color:fullyDone?MUTED:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                     {fullyDone?t.markUndone:`${t.markDone} (${doneNow+1<rc?doneNow+1:rc}/${rc})`}
                   </button>
                 </div>
@@ -2271,7 +2337,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   {filteredTemplates.length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:ACCENT,textAlign:"center",padding:"12px 0"}}>{t.noCategoryEx}</div>}
                 </div>
               </div>
-              <button className="btn" onClick={addExercise} disabled={saving} style={{width:"100%",padding:"14px",borderRadius:12,background:selectedTemplate&&selectedPatient&&duration?BRAND:"#B8DFE0",color:selectedTemplate&&selectedPatient&&duration?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+              <button className="btn" onClick={addExercise} disabled={saving} style={{width:"100%",padding:"14px",borderRadius:12,background:selectedTemplate&&selectedPatient&&duration?BRAND:BORDER,color:selectedTemplate&&selectedPatient&&duration?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:t.assignBtn}
               </button>
             </div>
@@ -2294,13 +2360,13 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:DARK,marginBottom:12}}>Login-Konto</div>
                 <div style={{display:"flex",gap:6,marginBottom:12}}>
                   {[["new","Neu"],["existing","Bestehend"],["none","Kein Login"]].map(([mode,label])=>(
-                    <button key={mode} className="mode-btn" onClick={()=>setNewAccountMode(mode)} style={{borderColor:newAccountMode===mode?BRAND:"#B8DFE0",background:newAccountMode===mode?BRAND:"white",color:newAccountMode===mode?"#102828":"#3D7070"}}>{label}</button>
+                    <button key={mode} className="mode-btn" onClick={()=>setNewAccountMode(mode)} style={{borderColor:newAccountMode===mode?BRAND:BORDER,background:newAccountMode===mode?BRAND:"white",color:newAccountMode===mode?"#102828":MUTED}}>{label}</button>
                   ))}
                 </div>
                 {newAccountMode==="new"&&(<>
                   <div style={{marginBottom:10}}><SL text="Email"/><input value={newPatient.ownerEmail||""} onChange={e=>setNewPatient(p=>({...p,ownerEmail:e.target.value}))} placeholder="besitzer@email.de" type="email" style={inp}/></div>
                   <div><SL text="Passwort"/><input value={newPatient.ownerPassword||""} onChange={e=>setNewPatient(p=>({...p,ownerPassword:e.target.value}))} placeholder="Mind. 6 Zeichen" type="text" style={inp}/></div>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",marginTop:8}}>💡 Tipp: Email als initiales Passwort verwenden</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:8}}>💡 Tipp: Email als initiales Passwort verwenden</div>
                 </>)}
                 {newAccountMode==="existing"&&(<>
                   <SearchInput value={userSearch} onChange={setUserSearch} placeholder="User suchen..."/>
@@ -2309,9 +2375,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     {filteredUsers.map(u=><option key={u.id} value={u.id}>{u.email}</option>)}
                   </CustomSelect>
                 </>)}
-                {newAccountMode==="none"&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070"}}>Dieser Patient bekommt keinen App-Zugang.</div>}
+                {newAccountMode==="none"&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED}}>Dieser Patient bekommt keinen App-Zugang.</div>}
               </div>
-              <button className="btn" onClick={addPatient} disabled={saving||!newPatient.name} style={{width:"100%",padding:"14px",borderRadius:12,background:newPatient.name?BRAND:"#B8DFE0",color:newPatient.name?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+              <button className="btn" onClick={addPatient} disabled={saving||!newPatient.name} style={{width:"100%",padding:"14px",borderRadius:12,background:newPatient.name?BRAND:BORDER,color:newPatient.name?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:"Patient anlegen"}
               </button>
             </div>
@@ -2346,7 +2412,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 {resetEmailSent&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#2E7D32",background:"#E8F5E9",borderRadius:8,padding:"8px 12px",marginBottom:10}}>Passwort-Reset Email gesendet.</div>}
                 <div style={{display:"flex",gap:6,marginBottom:12}}>
                   {[["existing","Bestehend"],["new","Neu anlegen"],["none","Kein Login"]].map(([mode,label])=>(
-                    <button key={mode} className="mode-btn" onClick={()=>setEditAccountMode(mode)} style={{borderColor:editAccountMode===mode?BRAND:"#B8DFE0",background:editAccountMode===mode?BRAND:"white",color:editAccountMode===mode?"#102828":"#3D7070"}}>{label}</button>
+                    <button key={mode} className="mode-btn" onClick={()=>setEditAccountMode(mode)} style={{borderColor:editAccountMode===mode?BRAND:BORDER,background:editAccountMode===mode?BRAND:"white",color:editAccountMode===mode?"#102828":MUTED}}>{label}</button>
                   ))}
                 </div>
                 {editAccountMode==="existing"&&(<>
@@ -2359,11 +2425,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 {editAccountMode==="new"&&(<>
                   <div style={{marginBottom:10}}><SL text="Email"/><input value={editPatientData.ownerEmail||""} onChange={e=>setEditPatientData(p=>({...p,ownerEmail:e.target.value}))} placeholder="besitzer@email.de" type="email" style={inp}/></div>
                   <div><SL text="Passwort"/><input value={editPatientData.ownerPassword||""} onChange={e=>setEditPatientData(p=>({...p,ownerPassword:e.target.value}))} placeholder="Mind. 6 Zeichen" type="text" style={inp}/></div>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",marginTop:8}}>Tipp: Email als initiales Passwort verwenden</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:8}}>Tipp: Email als initiales Passwort verwenden</div>
                 </>)}
-                {editAccountMode==="none"&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070"}}>Kein App-Zugang für diesen Patienten.</div>}
+                {editAccountMode==="none"&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED}}>Kein App-Zugang für diesen Patienten.</div>}
               </div>
-              <button className="btn" onClick={updatePatient} disabled={saving||!editPatientData.name} style={{width:"100%",padding:"14px",borderRadius:12,background:editPatientData.name?BRAND:"#B8DFE0",color:editPatientData.name?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+              <button className="btn" onClick={updatePatient} disabled={saving||!editPatientData.name} style={{width:"100%",padding:"14px",borderRadius:12,background:editPatientData.name?BRAND:BORDER,color:editPatientData.name?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:"Änderungen speichern"}
               </button>
             </div>
@@ -2403,7 +2469,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </div>
               <div><SL text="Bild-URL"/><input value={newTemplate.image_url} onChange={e=>setNewTemplate(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
               <div><SL text="Video-URL (optional)"/><input value={newTemplate.video_url} onChange={e=>setNewTemplate(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/..." style={inp}/></div>
-              <button className="btn" onClick={addTemplate} disabled={saving||!newTemplate.title} style={{width:"100%",padding:"14px",borderRadius:12,background:newTemplate.title?BRAND:"#B8DFE0",color:newTemplate.title?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+              <button className="btn" onClick={addTemplate} disabled={saving||!newTemplate.title} style={{width:"100%",padding:"14px",borderRadius:12,background:newTemplate.title?BRAND:BORDER,color:newTemplate.title?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:"Übung speichern"}
               </button>
             </div>
@@ -2445,14 +2511,23 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               <div><SL text="Bild-URL"/><input value={editTemplateData.image_url||""} onChange={e=>setEditTemplateData(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
               <div><SL text="Video-URL"/><input value={editTemplateData.video_url||""} onChange={e=>setEditTemplateData(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/..." style={inp}/></div>
               {/* Propagation checkbox */}
-              <label style={{display:"flex",alignItems:"flex-start",gap:10,background:propagateTemplateUpdate?"#FFF8E1":"#F8F8F8",border:`1.5px solid ${propagateTemplateUpdate?"#FFB300":"#B8DFE0"}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
+              <label style={{display:"flex",alignItems:"flex-start",gap:10,background:propagateTemplateUpdate?"#FFF8E1":"#F8F8F8",border:`1.5px solid ${propagateTemplateUpdate?"#FFB300":BORDER}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
                 <input type="checkbox" checked={propagateTemplateUpdate} onChange={e=>setPropagateTemplateUpdate(e.target.checked)} style={{width:18,height:18,marginTop:1,flexShrink:0,accentColor:BRAND,cursor:"pointer"}}/>
                 <div>
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#102828"}}>Änderungen auf bestehende Patienten-Übungen übertragen</div>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",marginTop:3}}>Alle Übungen, die auf dieser Vorlage basieren, werden ebenfalls aktualisiert (Titel, Beschreibung, Schritte, Bild, Video). Dauer und Häufigkeit bleiben unverändert.</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:3}}>Alle Übungen, die auf dieser Vorlage basieren, werden ebenfalls aktualisiert (Titel, Beschreibung, Schritte, Bild, Video). Dauer und Häufigkeit bleiben unverändert.</div>
                 </div>
               </label>
-              <button className="btn" onClick={updateTemplate} disabled={saving||!editTemplateData.title} style={{width:"100%",padding:"14px",borderRadius:12,background:editTemplateData.title?BRAND:"#B8DFE0",color:editTemplateData.title?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+              {editTemplateData.is_starter&&(
+                <label style={{display:"flex",alignItems:"flex-start",gap:10,background:propagateStarterUpdate?"#FFF3E0":"#F8F8F8",border:`1.5px solid ${propagateStarterUpdate?"#FF9800":BORDER}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
+                  <input type="checkbox" checked={propagateStarterUpdate} onChange={e=>setPropagateStarterUpdate(e.target.checked)} style={{width:18,height:18,marginTop:1,flexShrink:0,accentColor:MID,cursor:"pointer"}}/>
+                  <div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#102828"}}>Auch Startübungen anderer Praxen aktualisieren</div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:3}}>Die gleichnamige Vorlage wird in allen anderen Praxen ebenfalls aktualisiert — inklusive bereits zugewiesener Patientenübungen.</div>
+                  </div>
+                </label>
+              )}
+              <button className="btn" onClick={updateTemplate} disabled={saving||!editTemplateData.title} style={{width:"100%",padding:"14px",borderRadius:12,background:editTemplateData.title?BRAND:BORDER,color:editTemplateData.title?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:"Änderungen speichern"}
               </button>
             </div>
@@ -2480,12 +2555,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             {viewTemplateData.description&&(
               <div style={{marginBottom:16}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#102828",marginBottom:6}}>Beschreibung</div>
-                <p style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",lineHeight:1.6,margin:0}}>{viewTemplateData.description}</p>
+                <p style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,lineHeight:1.6,margin:0}}>{viewTemplateData.description}</p>
               </div>
             )}
             {(viewTemplateData.instructions||[]).filter(Boolean).length>0&&(
               <div>
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:"#3D7070",textTransform:"uppercase",letterSpacing:".7px",marginBottom:10}}>Schritt für Schritt</div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,textTransform:"uppercase",letterSpacing:".7px",marginBottom:10}}>Schritt für Schritt</div>
                 {viewTemplateData.instructions.filter(Boolean).map((step,i)=>(
                   <div key={i} style={{display:"flex",gap:10,marginBottom:10,alignItems:"flex-start"}}>
                     <div style={{width:24,height:24,borderRadius:"50%",background:BRAND,color:"#102828",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,flexShrink:0}}>{i+1}</div>
@@ -2499,10 +2574,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       )}
 
       {/* CONFIRM SHEETS */}
-      {sheet==="confirmDeleteEx"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übung entfernen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft entfernt.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteExercise(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.remove}</button></div></div></div>)}
-      {sheet==="confirmDeletePt"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Patient löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.name}</strong> und alle Übungen werden dauerhaft gelöscht.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deletePatient(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
-      {sheet==="confirmDeleteTmpl"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übungsvorlage löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird aus der Bibliothek gelöscht. Bereits zugewiesene Übungen bleiben erhalten.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
-      {sheet==="confirmDeletePlan"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Plan löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#3D7070",marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft gelöscht. Bereits zugewiesene Patienten-Übungen bleiben erhalten.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deletePlanTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
+      {sheet==="confirmDeleteEx"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übung entfernen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft entfernt.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteExercise(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.remove}</button></div></div></div>)}
+      {sheet==="confirmDeletePt"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Patient löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.name}</strong> und alle Übungen werden dauerhaft gelöscht.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deletePatient(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
+      {sheet==="confirmDeleteTmpl"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übungsvorlage löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird aus der Bibliothek gelöscht. Bereits zugewiesene Übungen bleiben erhalten.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
+      {sheet==="confirmDeletePlan"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Plan löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft gelöscht. Bereits zugewiesene Patienten-Übungen bleiben erhalten.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deletePlanTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
 
       {/* SHEET: ADD PLAN */}
       {(sheet==="addPlan"||sheet==="editPlan")&&(
@@ -2526,7 +2601,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                         <div style={{display:"flex",alignItems:"center",gap:6}}>
                           <input value={ex.default_duration} onChange={e=>setPlanExerciseDraft(prev=>prev.map((x,i)=>i===idx?{...x,default_duration:e.target.value}:x))} placeholder="Dauer..." style={{...inp,fontSize:16,padding:"4px 8px",flex:1}}/>
                           <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
-                            <button className="btn" onClick={()=>setPlanExerciseDraft(prev=>prev.map((x,i)=>i===idx?{...x,default_repeat_count:Math.max(1,(x.default_repeat_count||1)-1)}:x))} style={{width:22,height:22,borderRadius:5,background:"white",border:`1px solid #B8DFE0`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:DARK}}>−</button>
+                            <button className="btn" onClick={()=>setPlanExerciseDraft(prev=>prev.map((x,i)=>i===idx?{...x,default_repeat_count:Math.max(1,(x.default_repeat_count||1)-1)}:x))} style={{width:22,height:22,borderRadius:5,background:"white",border:`1px solid ${BORDER}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:DARK}}>−</button>
                             <span style={{fontFamily:"'Playfair Display',serif",fontSize:13,fontWeight:700,color:DARK,minWidth:20,textAlign:"center"}}>{ex.default_repeat_count||1}x</span>
                             <button className="btn" onClick={()=>setPlanExerciseDraft(prev=>prev.map((x,i)=>i===idx?{...x,default_repeat_count:Math.min(7,(x.default_repeat_count||1)+1)}:x))} style={{width:22,height:22,borderRadius:5,background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:"#102828"}}>+</button>
                           </div>
@@ -2557,14 +2632,14 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     if(!selectedPlanTemplate)return;
                     setPlanExerciseDraft(prev=>[...prev,{exercise_template_id:selectedPlanTemplate.id,default_duration:"",default_repeat_count:1,sort_order:prev.length}]);
                     setSelectedPlanTemplate(null);
-                  }} style={{marginTop:8,width:"100%",padding:"9px",borderRadius:9,background:selectedPlanTemplate?BRAND:"#B8DFE0",color:selectedPlanTemplate?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-                    <Icon name="plus" size={13} color={selectedPlanTemplate?"#102828":"#B8DFE0"}/> Zum Plan hinzufügen
+                  }} style={{marginTop:8,width:"100%",padding:"9px",borderRadius:9,background:selectedPlanTemplate?BRAND:BORDER,color:selectedPlanTemplate?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                    <Icon name="plus" size={13} color={selectedPlanTemplate?"#102828":BORDER}/> Zum Plan hinzufügen
                   </button>
                 </div>
               </div>
 
               <button className="btn" disabled={saving||(sheet==="addPlan"?!newPlan.title:!editPlanData?.title)} onClick={sheet==="addPlan"?addPlanTemplate:updatePlanTemplate}
-                style={{width:"100%",padding:"14px",borderRadius:12,background:(sheet==="addPlan"?newPlan.title:editPlanData?.title)?BRAND:"#B8DFE0",color:(sheet==="addPlan"?newPlan.title:editPlanData?.title)?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+                style={{width:"100%",padding:"14px",borderRadius:12,background:(sheet==="addPlan"?newPlan.title:editPlanData?.title)?BRAND:BORDER,color:(sheet==="addPlan"?newPlan.title:editPlanData?.title)?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:sheet==="addPlan"?"Plan speichern":"Änderungen speichern"}
               </button>
             </div>
@@ -2583,7 +2658,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </div>
               <div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#2E7D32"}}>Zugewiesen!</div>
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#3D7070",marginTop:2}}>{planAssignDone.plan.title} → {planAssignDone.patient.name}</div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:2}}>{planAssignDone.plan.title} → {planAssignDone.patient.name}</div>
               </div>
             </div>
             <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:DARK,marginBottom:18}}>
@@ -2592,7 +2667,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             {getUserEmail(planAssignDone.patient.user_id)?(
               <>
                 <div style={{background:PALE,borderRadius:10,padding:"10px 14px",marginBottom:14,border:`1.5px solid ${LIGHT}`}}>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070",marginBottom:3}}>Mail wird gesendet an</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:3}}>Mail wird gesendet an</div>
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,color:DARK}}>{getUserEmail(planAssignDone.patient.user_id)}</div>
                 </div>
                 <a href={`mailto:${getUserEmail(planAssignDone.patient.user_id)}?subject=${encodeURIComponent((mailTemplate.subject||"").replace(/\{\{patient\}\}/g,planAssignDone.patient.name||"").replace(/\{\{besitzer\}\}/g,planAssignDone.patient.owner||"").replace(/\{\{email\}\}/g,getUserEmail(planAssignDone.patient.user_id)||""))}&body=${encodeURIComponent((mailTemplate.body||"").replace(/\{\{patient\}\}/g,planAssignDone.patient.name||"").replace(/\{\{besitzer\}\}/g,planAssignDone.patient.owner||"").replace(/\{\{email\}\}/g,getUserEmail(planAssignDone.patient.user_id)||""))}`}
@@ -2605,7 +2680,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               <div style={{background:"#FFF3E0",borderRadius:10,padding:"12px 14px",marginBottom:14,fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#E65100"}}>Diesem Patienten ist kein Mail-Account zugeordnet.</div>
             )}
             <button className="btn" onClick={()=>{setPlanAssignDone(null);closeSheet();}}
-              style={{width:"100%",padding:"13px",borderRadius:12,background:LIGHT,color:"#3D7070",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:14}}>
+              style={{width:"100%",padding:"13px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:14}}>
               Überspringen
             </button>
           </div>
@@ -2617,7 +2692,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         <div className="overlay" onClick={()=>setViewFeedbackEx(null)}>
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title="Feedback vom Besitzer" onClose={()=>setViewFeedbackEx(null)}/>
-            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:16}}>{viewFeedbackEx.title}</div>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:16}}>{viewFeedbackEx.title}</div>
             {(()=>{
               const exFeedbacks=feedbacks.filter(f=>f.exercise_id===viewFeedbackEx.id);
               if(exFeedbacks.length===0)return <div style={{textAlign:"center",padding:"24px 0",color:ACCENT,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch kein Feedback vorhanden.</div>;
@@ -2630,7 +2705,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                           <span style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>{fb.pain_level}</span>
                           <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:PAIN_COLORS[fb.pain_level]}}>{t.painLabels[fb.pain_level]}</span>
                         </div>
-                        <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#3D7070"}}>{new Date(fb.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}</span>
+                        <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>{new Date(fb.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"})}</span>
                       </div>
                       {fb.comment&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:DARK,lineHeight:1.6}}>„{fb.comment}"</div>}
                     </div>
@@ -2647,14 +2722,14 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         <div className="overlay" onClick={()=>{setFeedbackSheet(null);setFeedbackPain(0);setFeedbackComment("");}}>
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={t.reportSymptom} onClose={()=>{setFeedbackSheet(null);setFeedbackPain(0);setFeedbackComment("");}}/>
-            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:16}}>{exT(feedbackSheet,"title")}</div>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:16}}>{exT(feedbackSheet,"title")}</div>
             <div style={{marginBottom:18}}>
               <SL text={t.painLevel}/>
               <div style={{display:"flex",gap:8,marginTop:4}}>
                 {[1,2,3,4,5].map(n=>(
-                  <button key={n} className="btn" onClick={()=>setFeedbackPain(n)} style={{flex:1,padding:"12px 0",borderRadius:10,border:`2px solid ${feedbackPain===n?PAIN_COLORS[n]:"#B8DFE0"}`,background:feedbackPain===n?PAIN_COLORS[n]+"18":"white",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                  <button key={n} className="btn" onClick={()=>setFeedbackPain(n)} style={{flex:1,padding:"12px 0",borderRadius:10,border:`2px solid ${feedbackPain===n?PAIN_COLORS[n]:BORDER}`,background:feedbackPain===n?PAIN_COLORS[n]+"18":"white",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
                     <span style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:feedbackPain===n?PAIN_COLORS[n]:DARK}}>{n}</span>
-                    <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,fontWeight:600,color:feedbackPain===n?PAIN_COLORS[n]:"#3D7070",textAlign:"center",lineHeight:1.2}}>{t.painLabels[n]}</span>
+                    <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,fontWeight:600,color:feedbackPain===n?PAIN_COLORS[n]:MUTED,textAlign:"center",lineHeight:1.2}}>{t.painLabels[n]}</span>
                   </button>
                 ))}
               </div>
@@ -2663,7 +2738,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               <SL text={t.commentOptional}/>
               <textarea value={feedbackComment} onChange={e=>setFeedbackComment(e.target.value)} rows={3} placeholder={t.feedbackPlaceholder} style={{...inp,resize:"vertical"}}/>
             </div>
-            <button className="btn" onClick={saveFeedback} disabled={saving||feedbackPain===0} style={{width:"100%",padding:"14px",borderRadius:12,background:feedbackPain>0?BRAND:"#B8DFE0",color:feedbackPain>0?"#102828":"#7ECBCC",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+            <button className="btn" onClick={saveFeedback} disabled={saving||feedbackPain===0} style={{width:"100%",padding:"14px",borderRadius:12,background:feedbackPain>0?BRAND:BORDER,color:feedbackPain>0?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
               {saving?t.saving:t.saveFinding}
             </button>
           </div>
@@ -2675,7 +2750,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         <div className="overlay" onClick={()=>setShowAppFeedback(false)}>
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={t.feedbackTitle} onClose={()=>setShowAppFeedback(false)}/>
-            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#3D7070",marginBottom:14}}>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:14}}>
               Dein Feedback hilft dabei die App weiterzuentwickeln. Was funktioniert gut, was könnte besser sein?
             </div>
             <textarea value={appFeedbackText} onChange={e=>setAppFeedbackText(e.target.value)} rows={5}
