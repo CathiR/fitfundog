@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, startTransition } from "react";
 import { supabase } from "./supabase";
 
 // Praxis-Slug aus Umgebungsvariable (wird pro Vercel-Deployment gesetzt)
@@ -1491,8 +1491,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           </div>
           <div style={{display:"flex",background:NAV_BG}}>
             {[["owner","home",isAdmin?"Vorschau":t.navOwner],...(isAdmin?[["therapist","practice",t.navTherapist]]:[["profile","profile",t.navProfile]]),["info","info",t.navInfo],...(isAdmin?[["admin","profile",t.navAdmin]]:[])].map(([v,ic,lb])=>(
-              <button key={v} className="nav-tab" onClick={()=>setView(v)} style={{background:view===v?"white":"transparent",color:view===v?DARK:ACCENT,borderRadius:view===v?"10px 10px 0 0":0,marginTop:view===v?3:0}}>
-                <Icon name={ic} size={14} color={view===v?DARK:ACCENT}/>{lb}
+              <button key={v} className="nav-tab" onClick={()=>startTransition(()=>setView(v))} style={{background:view===v?"white":"transparent",color:view===v?DARK:"rgba(255,255,255,0.75)",borderRadius:view===v?"10px 10px 0 0":0,marginTop:view===v?3:0}}>
+                <Icon name={ic} size={14} color={view===v?DARK:"rgba(255,255,255,0.75)"}/>{lb}
               </button>
             ))}
           </div>
