@@ -100,6 +100,7 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
     clock: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
     lang: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
     chevdown: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>,
+    chevron: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>,
     paw: <svg {...s} viewBox="0 0 24 24" fill={color}><circle cx="5.5" cy="6.5" r="2"/><circle cx="12" cy="4.5" r="2"/><circle cx="18.5" cy="6.5" r="2"/><circle cx="3.5" cy="12.5" r="1.5"/><path d="M12 8c-3.5 0-7 3-7 6.5 0 2.5 2 4.5 4.5 4.5h5c2.5 0 4.5-2 4.5-4.5C19 11 15.5 8 12 8z"/></svg>,
     tip: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 1 7 7c0 2.4-1.2 4.5-3 5.7V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.3A7 7 0 0 1 12 2z"/></svg>,
     rest: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22C6.5 22 2 17.5 2 12S6.5 2 12 2s10 4.5 10 10-4.5 10-10 10z"/><path d="M12 6v6l4 2"/></svg>,
@@ -374,6 +375,7 @@ export default function App() {
   });
   const [practiceIcons,setPracticeIcons]=useState([]);
   const [practiceSaving,setPracticeSaving]=useState(false);
+  const [adminSection,setAdminSection]=useState(null);
 
   const [isAdmin,setIsAdmin]=useState(false);
 
@@ -429,62 +431,8 @@ export default function App() {
   const [planAssignPatient,setPlanAssignPatient]=useState(null);
   const [planAssignSearch,setPlanAssignSearch]=useState("");
   const [planAssignDone,setPlanAssignDone]=useState(null); // {patient, plan} nach erfolgreicher Zuweisung
-  const [mailTemplate,setMailTemplate]=useState({subject:"Deine Heimübungen für {{patient}} – jetzt direkt auf deinem Handy",body:`Liebe/r {{besitzer}},
+  const [mailTemplate,setMailTemplate]=useState({subject:"",body:""});
 
-es war schön, euch heute in der Praxis zu haben. Damit {{patient}} auch zu Hause optimal weiterarbeiten kann, habe ich ab sofort etwas Besonderes für euch:
-
-Ich nutze jetzt FitFunDog – meine eigene App für Heimübungen, die ich gemeinsam mit einer Entwicklerin speziell für meine Praxis aufgebaut habe. Dort findest du alle zugewiesenen Übungen für {{patient}}, mit Beschreibung, Schritt-für-Schritt-Anleitung und Video – immer griffbereit auf deinem Handy.
-
-
-DEINE ZUGANGSDATEN ZUR ERSTANMELDUNG
--------------------------------------
-Link:
-https://fitfundog.vercel.app
-
-E-Mail:   {{email}}
-Passwort: {{email}}
-
-Beim ersten Login wirst du gebeten, ein eigenes Passwort zu vergeben.
-
-
-SO INSTALLIERST DU DIE APP AUF DEINEM HOMESCREEN
---------------------------------------------------
-Die App funktioniert direkt im Browser (Safari / Chrome / Mozilla & Co) – du musst nichts herunterladen. Für den besten Komfort empfehle ich dir, sie wie eine richtige App zu installieren:
-
-iPhone (Safari):
-  1. Öffne in Safari:
-     https://fitfundog.vercel.app
-  2. Tippe unten auf das Teilen-Symbol (Quadrat mit Pfeil)
-  3. Wähle „Zum Home-Bildschirm" und bestätige
-  4. Die App erscheint wie jede andere App auf deinem Homescreen
-
-Android (Chrome):
-  1. Öffne in Chrome:
-     https://fitfundog.vercel.app
-  2. Tippe oben rechts auf die drei Punkte
-  3. Wähle „Zum Startbildschirm hinzufügen" und bestätige
-
-
-WAS DICH IN DER APP ERWARTET
-------------------------------
-* Alle Übungen für {{patient}} mit Anleitung und Video (wird nach und nach noch ergänzt)
-* Abhaken, wenn eine Übung erledigt ist
-* Dein persönlicher Fortschritt auf einen Blick
-* Erinnerungen per Push-Benachrichtigung (optional aktivierbar)
-* Direktes Feedback zu den Übungen möglich
-
-
-EIN EHRLICHES WORT ZUM SCHLUSS
---------------------------------
-Die App ist frisch gestartet und wächst noch. Ich entwickle sie kontinuierlich weiter – und dein Feedback ist dabei Gold wert. Was fehlt dir? Was könntest du dir noch wünschen? Du kannst mir direkt in der App unter Profil → Feedback senden schreiben, oder einfach auf diese Mail antworten.
-
-Ich freue mich, dass ich {{patient}} jetzt auch zwischen unseren Terminen so gut begleiten kann.
-
-Bis zum nächsten Termin und liebe Grüße,
-
-Claudia Kucharzak-Riedel
-Fit Fun Dog – Tierphysiotherapie & Osteopathie für Tiere
-www.fit-fun-dog.de`});
   const [mailTemplateSaving,setMailTemplateSaving]=useState(false);
   const [mailTemplateLoaded,setMailTemplateLoaded]=useState(false);
   const [assignSubTab,setAssignSubTab]=useState("exercises");
@@ -613,7 +561,9 @@ www.fit-fun-dog.de`});
         // Farben global setzen (für dynamische Komponenten außerhalb React)
         applyColors(ps.color_brand||BRAND);
         difficultyColor=getDifficultyColor();
-        setIsAdmin(!!(ps.admin_user_id&&uid===ps.admin_user_id));
+        const adminNow=!!(ps.admin_user_id&&uid===ps.admin_user_id);
+        setIsAdmin(adminNow);
+        if(adminNow){setView("therapist");setPracticeTab("assign");}
         // Browser-Tab-Titel + Favicon
         document.title=ps.practice_name||"FitFunDog";
         document.querySelectorAll("link[rel*='icon']").forEach(el=>el.remove());
@@ -637,7 +587,7 @@ www.fit-fun-dog.de`});
       setPlanTemplateExercises(pte||[]);
 
       // Mail-Vorlage laden
-      const{data:settingsData}=await supabase.from("settings").select("value").eq("key","plan_mail_template").maybeSingle();
+      const{data:settingsData}=await supabase.from("settings").select("value").eq("key",`plan_mail_template_${PRACTICE_SLUG}`).maybeSingle();
       if(settingsData?.value){
         try{const parsed=JSON.parse(settingsData.value);setMailTemplate(parsed);}catch(e){}
       }
@@ -1297,7 +1247,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
   const saveMailTemplate=async()=>{
     setMailTemplateSaving(true);
-    await supabase.from("settings").upsert({key:"plan_mail_template",value:JSON.stringify(mailTemplate)});
+    await supabase.from("settings").upsert({key:`plan_mail_template_${PRACTICE_SLUG}`,value:JSON.stringify(mailTemplate)});
     setMailTemplateSaving(false);
   };
 
@@ -1842,7 +1792,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       </div>
                     </div>
                     <div style={{display:"flex",gap:5}} onClick={e=>e.stopPropagation()}>
-                      <button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setPropagateTemplateUpdate(true);setPropagateStarterUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
+                      {(!tmpl.is_starter||practice.slug==="fitfundog")&&<button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setPropagateTemplateUpdate(true);setPropagateStarterUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>}
                       <button className="iBtn" onClick={()=>{setSheetData(tmpl);setSheet("confirmDeleteTmpl");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                     </div>
                   </div>
@@ -2098,114 +2048,125 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         <div style={{maxWidth:480,margin:"0 auto",padding:"16px 14px 80px"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:DARK,marginBottom:4}}>Admin</div>
           <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:20}}>Einstellungen & App-Verwaltung</div>
-
-          {/* Praxis-Einstellungen */}
-          <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:4}}>Praxis-Einstellungen</div>
-            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:14}}>Änderungen werden nach dem nächsten Laden wirksam.</div>
-            {[
-              {label:"Praxisname",field:"practice_name"},
-              {label:"Untertitel",field:"practice_subtitle"},
-              {label:"Logo-URL (hell)",field:"logo_url"},
-              {label:"Logo-URL (dunkel / Druck)",field:"logo_dark_url"},
-              {label:"Website",field:"website_url"},
-              {label:"Kontakt-E-Mail",field:"contact_email"},
-              {label:"Telefon",field:"contact_phone"},
-              {label:"Termin-Buchungslink",field:"booking_url"},
-              {label:"Datenschutz-URL",field:"privacy_url"},
-              {label:"Impressum-URL",field:"imprint_url"},
-              {label:"App-URL",field:"app_url"},
-              {label:"Therapeutin-E-Mail (Login)",field:"therapist_email"},
-              {label:"Entwicklerin-E-Mail (Feedback)",field:"feedback_email_dev"},
-            ].map(({label,field})=>(
-              <div key={field} style={{marginBottom:10}}>
-                <SL text={label}/>
-                <input value={practice[field]||""} onChange={e=>setPractice(p=>({...p,[field]:e.target.value}))} style={{...inp,marginBottom:0}} placeholder={label+"..."}/>
-              </div>
-            ))}
-            <div style={{marginBottom:10}}>
-              <SL text="Primärfarbe (Hex)"/>
-              <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                <input value={practice.color_brand||""} onChange={e=>{const v=e.target.value;setPractice(p=>({...p,color_brand:v}));if(/^#[0-9a-fA-F]{6}$/.test(v)){const c=deriveColors(v);setPractice(p=>({...p,color_brand:v,color_dark:c.dark,color_mid:c.mid}));}}} style={{...inp,marginBottom:0,flex:1}} placeholder="#5fb8b9"/>
-                <div style={{position:"relative",flexShrink:0}}>
-                  <div onClick={()=>document.getElementById("brandColorPicker").click()} style={{width:38,height:38,borderRadius:9,background:(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND,border:`1.5px solid ${BORDER}`,cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}/>
-                  <input id="brandColorPicker" type="color" value={(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND} onChange={e=>{const v=e.target.value;const c=deriveColors(v);setPractice(p=>({...p,color_brand:v,color_dark:c.dark,color_mid:c.mid}));}} style={{position:"absolute",opacity:0,width:1,height:1,pointerEvents:"none",top:0,left:0}}/>
+          {(()=>{
+            const ARow=({id,title,subtitle,icon,children})=>{
+              const open=adminSection===id;
+              return(
+                <div style={{marginBottom:10,borderRadius:14,overflow:"hidden",boxShadow:`0 2px 12px ${BRAND}1A`,background:"white"}}>
+                  <button className="btn" onClick={()=>setAdminSection(open?null:id)} style={{width:"100%",padding:"15px 18px",display:"flex",alignItems:"center",gap:12,background:"white",borderBottom:open?`1px solid ${BORDER}`:"none"}}>
+                    <div style={{width:36,height:36,borderRadius:10,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      <Icon name={icon} size={17} color={BRAND}/>
+                    </div>
+                    <div style={{flex:1,textAlign:"left"}}>
+                      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,fontWeight:700,color:"#102828"}}>{title}</div>
+                      {subtitle&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:1}}>{subtitle}</div>}
+                    </div>
+                    <div style={{transform:open?"rotate(90deg)":"rotate(0deg)",transition:"transform .2s",flexShrink:0}}>
+                      <Icon name="chevron" size={16} color={MUTED}/>
+                    </div>
+                  </button>
+                  {open&&<div style={{padding:"18px 20px"}}>{children}</div>}
                 </div>
-              </div>
-              {(()=>{const brand=(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND;const c=deriveColors(brand);return(
-                <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".5px",textTransform:"uppercase"}}>Abgeleitete Palette</div>
-                  <div style={{display:"flex",gap:5}}>
-                    {[["Primär",brand],["Dunkel",c.dark],["Mittel",c.mid],["Hell",c.light],["Blass",c.pale],["Akzent",c.accent]].map(([label,col])=>(
-                      <div key={label} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                        <div style={{width:"100%",height:28,borderRadius:7,background:col,border:`1px solid ${BORDER}`}}/>
-                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,color:MUTED,textAlign:"center",lineHeight:1.2}}>{label}</div>
-                      </div>
-                    ))}
+              );
+            };
+            return(<>
+              <ARow id="praxis" title="App-Einstellungen" subtitle="Praxisname, Logo, Farbe, Kontakt" icon="practice">
+        {[
+          {label:"Praxisname",field:"practice_name"},
+          {label:"Untertitel",field:"practice_subtitle"},
+          {label:"Logo-URL (hell)",field:"logo_url"},
+          {label:"Logo-URL (dunkel / Druck)",field:"logo_dark_url"},
+          {label:"Website",field:"website_url"},
+          {label:"Kontakt-E-Mail",field:"contact_email"},
+          {label:"Telefon",field:"contact_phone"},
+          {label:"Termin-Buchungslink",field:"booking_url"},
+          {label:"Datenschutz-URL",field:"privacy_url"},
+          {label:"Impressum-URL",field:"imprint_url"},
+          {label:"App-URL",field:"app_url"},
+          {label:"Therapeutin-E-Mail (Login)",field:"therapist_email"},
+          {label:"Entwicklerin-E-Mail (Feedback)",field:"feedback_email_dev"},
+        ].map(({label,field})=>(
+          <div key={field} style={{marginBottom:10}}>
+            <SL text={label}/>
+            <input value={practice[field]||""} onChange={e=>setPractice(p=>({...p,[field]:e.target.value}))} style={{...inp,marginBottom:0}} placeholder={label+"..."}/>
+          </div>
+        ))}
+        <div style={{marginBottom:10}}>
+          <SL text="Primärfarbe (Hex)"/>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <input value={practice.color_brand||""} onChange={e=>{const v=e.target.value;setPractice(p=>({...p,color_brand:v}));if(/^#[0-9a-fA-F]{6}$/.test(v)){const c=deriveColors(v);setPractice(p=>({...p,color_brand:v,color_dark:c.dark,color_mid:c.mid}));}}} style={{...inp,marginBottom:0,flex:1}} placeholder="#5fb8b9"/>
+            <div style={{position:"relative",flexShrink:0}}>
+              <div onClick={()=>document.getElementById("brandColorPicker").click()} style={{width:38,height:38,borderRadius:9,background:(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND,border:`1.5px solid ${BORDER}`,cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}/>
+              <input id="brandColorPicker" type="color" value={(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND} onChange={e=>{const v=e.target.value;const c=deriveColors(v);setPractice(p=>({...p,color_brand:v,color_dark:c.dark,color_mid:c.mid}));}} style={{position:"absolute",opacity:0,width:1,height:1,pointerEvents:"none",top:0,left:0}}/>
+            </div>
+          </div>
+          {(()=>{const brand=(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND;const c=deriveColors(brand);return(
+            <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
+              <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".5px",textTransform:"uppercase"}}>Abgeleitete Palette</div>
+              <div style={{display:"flex",gap:5}}>
+                {[["Primär",brand],["Dunkel",c.dark],["Mittel",c.mid],["Hell",c.light],["Blass",c.pale],["Akzent",c.accent]].map(([label,col])=>(
+                  <div key={label} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                    <div style={{width:"100%",height:28,borderRadius:7,background:col,border:`1px solid ${BORDER}`}}/>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,color:MUTED,textAlign:"center",lineHeight:1.2}}>{label}</div>
                   </div>
+                ))}
+              </div>
+            </div>
+          );})()}
+        </div>
+
+
+
+        <button className="btn" onClick={async()=>{
+          setPracticeSaving(true);
+          const c=deriveColors(practice.color_brand||BRAND);
+          const saveData={...practice,color_dark:c.dark,color_mid:c.mid};
+          const{admin_user_id,...fields}=saveData;
+          await supabase.from("practice_settings").update(fields).eq("admin_user_id",admin_user_id);
+          applyColors(practice.color_brand||BRAND);
+          difficultyColor=getDifficultyColor();
+          setPracticeSaving(false);
+        }} disabled={practiceSaving}
+          style={{width:"100%",padding:"12px",borderRadius:12,background:practice.color_brand||BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          <Icon name="check" size={16} color="#102828"/>{practiceSaving?"Wird gespeichert...":"Einstellungen speichern"}
+        </button>
+          </div>
+              </ARow>
+              <ARow id="mail" title="Plan-Mail Vorlage" subtitle="E-Mail nach Planzuweisung" icon="mail">
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:14}}>
+                  Platzhalter: <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{patient}}"}</code>, <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{besitzer}}"}</code>, <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{email}}"}</code>
                 </div>
-              );})()}
-            </div>
-
-
-
-            <button className="btn" onClick={async()=>{
-              setPracticeSaving(true);
-              const c=deriveColors(practice.color_brand||BRAND);
-              const saveData={...practice,color_dark:c.dark,color_mid:c.mid};
-              const{admin_user_id,...fields}=saveData;
-              await supabase.from("practice_settings").update(fields).eq("admin_user_id",admin_user_id);
-              applyColors(practice.color_brand||BRAND);
-              difficultyColor=getDifficultyColor();
-              setPracticeSaving(false);
-            }} disabled={practiceSaving}
-              style={{width:"100%",padding:"12px",borderRadius:12,background:practice.color_brand||BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-              <Icon name="check" size={16} color="#102828"/>{practiceSaving?"Wird gespeichert...":"Einstellungen speichern"}
-            </button>
-          </div>
-
-          {/* Mail-Vorlage */}
-          <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:4}}>Plan-Mail Vorlage</div>
-            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:14}}>Wird beim Versenden nach Plan-Zuweisung verwendet. Platzhalter: <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{patient}}"}</code>, <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{besitzer}}"}</code> und <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{email}}"}</code></div>
-            <div style={{marginBottom:10}}>
-              <SL text="Betreff"/>
-              <input value={mailTemplate.subject} onChange={e=>setMailTemplate(p=>({...p,subject:e.target.value}))} style={{...inp,marginBottom:0}} placeholder="Betreff..."/>
-            </div>
-            <div style={{marginBottom:14}}>
-              <SL text="Mailtext"/>
-              <textarea value={mailTemplate.body} onChange={e=>setMailTemplate(p=>({...p,body:e.target.value}))} rows={7} style={{...inp,resize:"vertical"}} placeholder="Mailtext..."/>
-            </div>
-            <button className="btn" onClick={saveMailTemplate} disabled={mailTemplateSaving}
-              style={{width:"100%",padding:"12px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-              <Icon name="check" size={16} color="#102828"/>{mailTemplateSaving?"Wird gespeichert...":"Vorlage speichern"}
-            </button>
-          </div>
-
-          {/* Feedback */}
-          <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:6}}>Feedback zur App</div>
-            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:12}}>Direkt an die Entwicklerin senden.</div>
-            <button className="btn" onClick={()=>{setAppFeedbackText("");setShowAppFeedback(true);}}
-              style={{width:"100%",padding:"12px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-              <Icon name="mail" size={16} color="#102828"/>Feedback geben
-            </button>
-          </div>
-
-          {/* Legal */}
-          <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
-            <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:12}}>Rechtliches</div>
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              <a href={practice.privacy_url||"#"} target="_blank"
-                style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:BRAND,textDecoration:"none",display:"flex",alignItems:"center",gap:8}}>
-                <Icon name="info" size={15} color={BRAND}/>Datenschutzerklärung
-              </a>
-              <a href={practice.imprint_url||"#"} target="_blank"
-                style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:BRAND,textDecoration:"none",display:"flex",alignItems:"center",gap:8}}>
-                <Icon name="info" size={15} color={BRAND}/>Impressum
-              </a>
-            </div>
-          </div>
+                <div style={{marginBottom:10}}>
+                  <SL text="Betreff"/>
+                  <input value={mailTemplate.subject} onChange={e=>setMailTemplate(p=>({...p,subject:e.target.value}))} style={{...inp,marginBottom:0}} placeholder="Betreff..."/>
+                </div>
+                <div style={{marginBottom:14}}>
+                  <SL text="Mailtext"/>
+                  <textarea value={mailTemplate.body} onChange={e=>setMailTemplate(p=>({...p,body:e.target.value}))} rows={8} style={{...inp,resize:"vertical"}} placeholder="Mailtext..."/>
+                </div>
+                <button className="btn" onClick={saveMailTemplate} disabled={mailTemplateSaving}
+                  style={{width:"100%",padding:"12px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                  <Icon name="check" size={16} color="#102828"/>{mailTemplateSaving?"Wird gespeichert...": "Vorlage speichern"}
+                </button>
+              </ARow>
+              <ARow id="legal" title="Rechtliches & Feedback" subtitle="Links, Datenschutz, Feedback" icon="info">
+                <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                  <a href={practice.privacy_url||"#"} target="_blank"
+                    style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:BRAND,textDecoration:"none",display:"flex",alignItems:"center",gap:8,padding:"12px 14px",background:LIGHT,borderRadius:10}}>
+                    <Icon name="info" size={15} color={BRAND}/>Datenschutzerklärung
+                  </a>
+                  <a href={practice.imprint_url||"#"} target="_blank"
+                    style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:BRAND,textDecoration:"none",display:"flex",alignItems:"center",gap:8,padding:"12px 14px",background:LIGHT,borderRadius:10}}>
+                    <Icon name="info" size={15} color={BRAND}/>Impressum
+                  </a>
+                  <button className="btn" onClick={()=>{setAppFeedbackText("");setShowAppFeedback(true);}}
+                    style={{width:"100%",padding:"12px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                    <Icon name="mail" size={16} color="#102828"/>Feedback an Entwicklerin
+                  </button>
+                </div>
+              </ARow>
+            </>);
+          })()}
         </div>
       )}
 
@@ -2518,7 +2479,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:3}}>Alle Übungen, die auf dieser Vorlage basieren, werden ebenfalls aktualisiert (Titel, Beschreibung, Schritte, Bild, Video). Dauer und Häufigkeit bleiben unverändert.</div>
                 </div>
               </label>
-              {editTemplateData.is_starter&&(
+              {editTemplateData.is_starter&&practice.slug==="fitfundog"&&(
                 <label style={{display:"flex",alignItems:"flex-start",gap:10,background:propagateStarterUpdate?"#FFF3E0":"#F8F8F8",border:`1.5px solid ${propagateStarterUpdate?"#FF9800":BORDER}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
                   <input type="checkbox" checked={propagateStarterUpdate} onChange={e=>setPropagateStarterUpdate(e.target.checked)} style={{width:18,height:18,marginTop:1,flexShrink:0,accentColor:MID,cursor:"pointer"}}/>
                   <div>
