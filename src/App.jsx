@@ -2130,7 +2130,6 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           style={{width:"100%",padding:"12px",borderRadius:12,background:practice.color_brand||BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
           <Icon name="check" size={16} color="#102828"/>{practiceSaving?"Wird gespeichert...":"Einstellungen speichern"}
         </button>
-          </div>
               </ARow>
               <ARow id="mail" title="Plan-Mail Vorlage" subtitle="E-Mail nach Planzuweisung" icon="mail">
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:14}}>
