@@ -212,6 +212,26 @@ const InfoCard = ({ icon, title, text, items }) => (
   </div>
 );
 
+const ARow=({id,adminSection,setAdminSection,title,subtitle,icon,children})=>{
+  const open=adminSection===id;
+  return(
+    <div style={{marginBottom:10,borderRadius:14,overflow:"hidden",boxShadow:`0 2px 12px ${BRAND}1A`,background:"white"}}>
+      <button className="btn" onClick={()=>setAdminSection(open?null:id)} style={{width:"100%",padding:"15px 18px",display:"flex",alignItems:"center",gap:12,background:"white",borderBottom:open?`1px solid ${BORDER}`:"none"}}>
+        <div style={{width:36,height:36,borderRadius:10,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <Icon name={icon} size={17} color={BRAND}/>
+        </div>
+        <div style={{flex:1,textAlign:"left"}}>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,fontWeight:700,color:"#102828"}}>{title}</div>
+          {subtitle&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:1}}>{subtitle}</div>}
+        </div>
+        <div style={{transform:open?"rotate(90deg)":"rotate(0deg)",transition:"transform .2s",flexShrink:0}}>
+          <Icon name="chevron" size={16} color={MUTED}/>
+        </div>
+      </button>
+      {open&&<div style={{padding:"18px 20px"}}>{children}</div>}
+    </div>
+  );
+};
 const LoginScreen = ({practice,onLogin}) => {
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
@@ -588,7 +608,13 @@ export default function App() {
 
       // Mail-Vorlage laden
       const{data:settingsData}=await supabase.from("settings").select("value").eq("key",`plan_mail_template_${PRACTICE_SLUG}`).maybeSingle();
-      if(settingsData?.value){
+      // Migration: falls noch kein praxis-spezifischer Eintrag, alten Eintrag laden
+      let settingsDataFinal=settingsData;
+      if(!settingsData){
+        const{data:oldData}=await supabase.from("settings").select("value").eq("key","plan_mail_template").maybeSingle();
+        settingsDataFinal=oldData;
+      }
+      if(settingsDataFinal?.value){
         try{const parsed=JSON.parse(settingsData.value);setMailTemplate(parsed);}catch(e){}
       }
       setMailTemplateLoaded(true);
@@ -2048,29 +2074,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         <div style={{maxWidth:480,margin:"0 auto",padding:"16px 14px 80px"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:DARK,marginBottom:4}}>Admin</div>
           <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:20}}>Einstellungen & App-Verwaltung</div>
-          {(()=>{
-            const ARow=({id,title,subtitle,icon,children})=>{
-              const open=adminSection===id;
-              return(
-                <div style={{marginBottom:10,borderRadius:14,overflow:"hidden",boxShadow:`0 2px 12px ${BRAND}1A`,background:"white"}}>
-                  <button className="btn" onClick={()=>setAdminSection(open?null:id)} style={{width:"100%",padding:"15px 18px",display:"flex",alignItems:"center",gap:12,background:"white",borderBottom:open?`1px solid ${BORDER}`:"none"}}>
-                    <div style={{width:36,height:36,borderRadius:10,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                      <Icon name={icon} size={17} color={BRAND}/>
-                    </div>
-                    <div style={{flex:1,textAlign:"left"}}>
-                      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,fontWeight:700,color:"#102828"}}>{title}</div>
-                      {subtitle&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:1}}>{subtitle}</div>}
-                    </div>
-                    <div style={{transform:open?"rotate(90deg)":"rotate(0deg)",transition:"transform .2s",flexShrink:0}}>
-                      <Icon name="chevron" size={16} color={MUTED}/>
-                    </div>
-                  </button>
-                  {open&&<div style={{padding:"18px 20px"}}>{children}</div>}
-                </div>
-              );
-            };
-            return(<>
-              <ARow id="praxis" title="App-Einstellungen" subtitle="Praxisname, Logo, Farbe, Kontakt" icon="practice">
+          <>
+              <ARow id="praxis" adminSection={adminSection} setAdminSection={setAdminSection} title="App-Einstellungen" subtitle="Praxisname, Logo, Farbe, Kontakt" icon="practice">
         {[
           {label:"Praxisname",field:"practice_name"},
           {label:"Untertitel",field:"practice_subtitle"},
@@ -2131,7 +2136,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           <Icon name="check" size={16} color="#102828"/>{practiceSaving?"Wird gespeichert...":"Einstellungen speichern"}
         </button>
               </ARow>
-              <ARow id="mail" title="Plan-Mail Vorlage" subtitle="E-Mail nach Planzuweisung" icon="mail">
+              <ARow id="mail" adminSection={adminSection} setAdminSection={setAdminSection} title="Plan-Mail Vorlage" subtitle="E-Mail nach Planzuweisung" icon="mail">
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:14}}>
                   Platzhalter: <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{patient}}"}</code>, <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{besitzer}}"}</code>, <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{email}}"}</code>
                 </div>
@@ -2148,7 +2153,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   <Icon name="check" size={16} color="#102828"/>{mailTemplateSaving?"Wird gespeichert...": "Vorlage speichern"}
                 </button>
               </ARow>
-              <ARow id="legal" title="Rechtliches & Feedback" subtitle="Links, Datenschutz, Feedback" icon="info">
+              <ARow id="legal" adminSection={adminSection} setAdminSection={setAdminSection} title="Rechtliches & Feedback" subtitle="Links, Datenschutz, Feedback" icon="info">
                 <div style={{display:"flex",flexDirection:"column",gap:10}}>
                   <a href={practice.privacy_url||"#"} target="_blank"
                     style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:BRAND,textDecoration:"none",display:"flex",alignItems:"center",gap:8,padding:"12px 14px",background:LIGHT,borderRadius:10}}>
@@ -2164,8 +2169,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   </button>
                 </div>
               </ARow>
-            </>);
-          })()}
+          </>
         </div>
       )}
 
