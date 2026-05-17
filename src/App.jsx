@@ -558,7 +558,7 @@ export default function App() {
         supabase.from("patients").select("*").order("name"),
         supabase.from("exercises").select("*").order("created_at"),
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
-        supabase.from("exercise_templates").select("*").or(`practice_id.eq.${practice.id},is_starter.eq.true`).order("title"),
+        supabase.from("exercise_templates").select("*").order("title"),
         supabase.rpc("get_user_emails"),
         supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-111);return d.toISOString().split("T")[0];})()),
         supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false}),
@@ -601,29 +601,13 @@ export default function App() {
       setDoneLogs(ld||[]);
       setHistoryLogs(hl||[]);
       setFeedbacks(fb||[]);
-      // Deduplizieren: eigene Praxis-Version hat Vorrang vor Starter-Version
-      const deduped=(td||[]).reduce((acc,t)=>{
-        const existing=acc.find(x=>x.title===t.title);
-        if(!existing)return[...acc,t];
-        // Eigene Praxis-Version (practice_id match) hat Vorrang
-        if(t.practice_id===practice.id&&existing.practice_id!==practice.id){
-          return acc.map(x=>x.title===t.title?t:x);
-        }
-        return acc;
-      },[]);
-      setTemplates(deduped);
+      setTemplates(td||[]);
       setUserEmails(ue||[]);
       setPlanTemplates(ptd||[]);
       setPlanTemplateExercises(pte||[]);
 
       // Mail-Vorlage laden
-      const{data:settingsData}=await supabase.from("settings").select("value").eq("key",`plan_mail_template_${PRACTICE_SLUG}`).maybeSingle();
-      // Migration: falls noch kein praxis-spezifischer Eintrag, alten Eintrag laden
-      let settingsDataFinal=settingsData;
-      if(!settingsData){
-        const{data:oldData}=await supabase.from("settings").select("value").eq("key","plan_mail_template").maybeSingle();
-        settingsDataFinal=oldData;
-      }
+      const{data:settingsDataFinal}=await supabase.from("settings").select("value").eq("key","plan_mail_template").maybeSingle();
       if(settingsDataFinal?.value){
         try{const parsed=JSON.parse(settingsData.value);setMailTemplate(parsed);}catch(e){}
       }
@@ -1283,7 +1267,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
   const saveMailTemplate=async()=>{
     setMailTemplateSaving(true);
-    await supabase.from("settings").upsert({key:`plan_mail_template_${PRACTICE_SLUG}`,value:JSON.stringify(mailTemplate)});
+    await supabase.from("settings").upsert({key:"plan_mail_template",value:JSON.stringify(mailTemplate)});
     setMailTemplateSaving(false);
   };
 
