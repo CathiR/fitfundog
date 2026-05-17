@@ -558,7 +558,7 @@ export default function App() {
         supabase.from("patients").select("*").order("name"),
         supabase.from("exercises").select("*").order("created_at"),
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
-        supabase.from("exercise_templates").select("*").order("title"),
+        supabase.from("exercise_templates").select("*").or(`practice_id.eq.${practice.id},is_starter.eq.true`).order("title"),
         supabase.rpc("get_user_emails"),
         supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-111);return d.toISOString().split("T")[0];})()),
         supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false}),
@@ -601,7 +601,17 @@ export default function App() {
       setDoneLogs(ld||[]);
       setHistoryLogs(hl||[]);
       setFeedbacks(fb||[]);
-      setTemplates(td||[]);
+      // Deduplizieren: eigene Praxis-Version hat Vorrang vor Starter-Version
+      const deduped=(td||[]).reduce((acc,t)=>{
+        const existing=acc.find(x=>x.title===t.title);
+        if(!existing)return[...acc,t];
+        // Eigene Praxis-Version (practice_id match) hat Vorrang
+        if(t.practice_id===practice.id&&existing.practice_id!==practice.id){
+          return acc.map(x=>x.title===t.title?t:x);
+        }
+        return acc;
+      },[]);
+      setTemplates(deduped);
       setUserEmails(ue||[]);
       setPlanTemplates(ptd||[]);
       setPlanTemplateExercises(pte||[]);
