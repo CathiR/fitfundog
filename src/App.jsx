@@ -607,13 +607,7 @@ export default function App() {
       setPlanTemplateExercises(pte||[]);
 
       // Mail-Vorlage laden
-      const{data:settingsData}=await supabase.from("settings").select("value").eq("key",`plan_mail_template_${PRACTICE_SLUG}`).maybeSingle();
-      // Migration: falls noch kein praxis-spezifischer Eintrag, alten Eintrag laden
-      let settingsDataFinal=settingsData;
-      if(!settingsData){
-        const{data:oldData}=await supabase.from("settings").select("value").eq("key","plan_mail_template").maybeSingle();
-        settingsDataFinal=oldData;
-      }
+      const{data:settingsDataFinal}=await supabase.from("settings").select("value").eq("key","plan_mail_template").maybeSingle();
       if(settingsDataFinal?.value){
         try{const parsed=JSON.parse(settingsData.value);setMailTemplate(parsed);}catch(e){}
       }
@@ -1273,7 +1267,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
   const saveMailTemplate=async()=>{
     setMailTemplateSaving(true);
-    await supabase.from("settings").upsert({key:`plan_mail_template_${PRACTICE_SLUG}`,value:JSON.stringify(mailTemplate)});
+    await supabase.from("settings").upsert({key:"plan_mail_template",value:JSON.stringify(mailTemplate)});
     setMailTemplateSaving(false);
   };
 
@@ -2074,102 +2068,92 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         <div style={{maxWidth:480,margin:"0 auto",padding:"16px 14px 80px"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:DARK,marginBottom:4}}>Admin</div>
           <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:20}}>Einstellungen & App-Verwaltung</div>
-          <>
-              <ARow id="praxis" adminSection={adminSection} setAdminSection={setAdminSection} title="App-Einstellungen" subtitle="Praxisname, Logo, Farbe, Kontakt" icon="practice">
-        {[
-          {label:"Praxisname",field:"practice_name"},
-          {label:"Untertitel",field:"practice_subtitle"},
-          {label:"Logo-URL (hell)",field:"logo_url"},
-          {label:"Logo-URL (dunkel / Druck)",field:"logo_dark_url"},
-          {label:"Website",field:"website_url"},
-          {label:"Kontakt-E-Mail",field:"contact_email"},
-          {label:"Telefon",field:"contact_phone"},
-          {label:"Termin-Buchungslink",field:"booking_url"},
-          {label:"Datenschutz-URL",field:"privacy_url"},
-          {label:"Impressum-URL",field:"imprint_url"},
-          {label:"App-URL",field:"app_url"},
-          {label:"Therapeutin-E-Mail (Login)",field:"therapist_email"},
-          {label:"Entwicklerin-E-Mail (Feedback)",field:"feedback_email_dev"},
-        ].map(({label,field})=>(
-          <div key={field} style={{marginBottom:10}}>
-            <SL text={label}/>
-            <input value={practice[field]||""} onChange={e=>setPractice(p=>({...p,[field]:e.target.value}))} style={{...inp,marginBottom:0}} placeholder={label+"..."}/>
-          </div>
-        ))}
-        <div style={{marginBottom:10}}>
-          <SL text="Primärfarbe (Hex)"/>
-          <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <input value={practice.color_brand||""} onChange={e=>{const v=e.target.value;setPractice(p=>({...p,color_brand:v}));if(/^#[0-9a-fA-F]{6}$/.test(v)){const c=deriveColors(v);setPractice(p=>({...p,color_brand:v,color_dark:c.dark,color_mid:c.mid}));}}} style={{...inp,marginBottom:0,flex:1}} placeholder="#5fb8b9"/>
-            <div style={{position:"relative",flexShrink:0}}>
-              <div onClick={()=>document.getElementById("brandColorPicker").click()} style={{width:38,height:38,borderRadius:9,background:(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND,border:`1.5px solid ${BORDER}`,cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}/>
-              <input id="brandColorPicker" type="color" value={(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND} onChange={e=>{const v=e.target.value;const c=deriveColors(v);setPractice(p=>({...p,color_brand:v,color_dark:c.dark,color_mid:c.mid}));}} style={{position:"absolute",opacity:0,width:1,height:1,pointerEvents:"none",top:0,left:0}}/>
-            </div>
-          </div>
-          {(()=>{const brand=(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND;const c=deriveColors(brand);return(
-            <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
-              <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".5px",textTransform:"uppercase"}}>Abgeleitete Palette</div>
-              <div style={{display:"flex",gap:5}}>
-                {[["Primär",brand],["Dunkel",c.dark],["Mittel",c.mid],["Hell",c.light],["Blass",c.pale],["Akzent",c.accent]].map(([label,col])=>(
-                  <div key={label} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                    <div style={{width:"100%",height:28,borderRadius:7,background:col,border:`1px solid ${BORDER}`}}/>
-                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,color:MUTED,textAlign:"center",lineHeight:1.2}}>{label}</div>
-                  </div>
-                ))}
+          <ARow id="praxis" adminSection={adminSection} setAdminSection={setAdminSection} title="App-Einstellungen" subtitle="Praxisname, Logo, Farbe, Kontakt" icon="practice">
+            {[
+              {label:"Praxisname",field:"practice_name"},
+              {label:"Untertitel",field:"practice_subtitle"},
+              {label:"Logo-URL (hell)",field:"logo_url"},
+              {label:"Logo-URL (dunkel / Druck)",field:"logo_dark_url"},
+              {label:"Website",field:"website_url"},
+              {label:"Kontakt-E-Mail",field:"contact_email"},
+              {label:"Telefon",field:"contact_phone"},
+              {label:"Termin-Buchungslink",field:"booking_url"},
+              {label:"Datenschutz-URL",field:"privacy_url"},
+              {label:"Impressum-URL",field:"imprint_url"},
+              {label:"App-URL",field:"app_url"},
+              {label:"Therapeutin-E-Mail (Login)",field:"therapist_email"},
+              {label:"Entwicklerin-E-Mail (Feedback)",field:"feedback_email_dev"},
+            ].map(({label,field})=>(
+              <div key={field} style={{marginBottom:10}}>
+                <SL text={label}/>
+                <input value={practice[field]||""} onChange={e=>setPractice(p=>({...p,[field]:e.target.value}))} style={{...inp,marginBottom:0}} placeholder={label+"..."}/>
               </div>
+            ))}
+            <div style={{marginBottom:14}}>
+              <SL text="Primärfarbe (Hex)"/>
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <input value={practice.color_brand||""} onChange={e=>{const v=e.target.value;setPractice(p=>({...p,color_brand:v}));if(/^#[0-9a-fA-F]{6}$/.test(v)){const c=deriveColors(v);setPractice(p=>({...p,color_brand:v,color_dark:c.dark,color_mid:c.mid}));}}} style={{...inp,marginBottom:0,flex:1}} placeholder="#5fb8b9"/>
+                <div style={{position:"relative",flexShrink:0}}>
+                  <div onClick={()=>document.getElementById("brandColorPicker").click()} style={{width:38,height:38,borderRadius:9,background:(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND,border:`1.5px solid ${BORDER}`,cursor:"pointer",boxShadow:"0 2px 8px rgba(0,0,0,0.15)"}}/>
+                  <input id="brandColorPicker" type="color" value={(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND} onChange={e=>{const v=e.target.value;const c=deriveColors(v);setPractice(p=>({...p,color_brand:v,color_dark:c.dark,color_mid:c.mid}));}} style={{position:"absolute",opacity:0,width:1,height:1,pointerEvents:"none",top:0,left:0}}/>
+                </div>
+              </div>
+              {(()=>{const brand=(practice.color_brand&&/^#[0-9a-fA-F]{6}$/.test(practice.color_brand))?practice.color_brand:BRAND;const c=deriveColors(brand);return(
+                <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:6}}>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".5px",textTransform:"uppercase"}}>Abgeleitete Palette</div>
+                  <div style={{display:"flex",gap:5}}>
+                    {[["Primär",brand],["Dunkel",c.dark],["Mittel",c.mid],["Hell",c.light],["Blass",c.pale],["Akzent",c.accent]].map(([label,col])=>(
+                      <div key={label} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                        <div style={{width:"100%",height:28,borderRadius:7,background:col,border:`1px solid ${BORDER}`}}/>
+                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:9,color:MUTED,textAlign:"center",lineHeight:1.2}}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );})()}
             </div>
-          );})()}
-        </div>
-
-
-
-        <button className="btn" onClick={async()=>{
-          setPracticeSaving(true);
-          const c=deriveColors(practice.color_brand||BRAND);
-          const saveData={...practice,color_dark:c.dark,color_mid:c.mid};
-          const{admin_user_id,...fields}=saveData;
-          await supabase.from("practice_settings").update(fields).eq("admin_user_id",admin_user_id);
-          applyColors(practice.color_brand||BRAND);
-          difficultyColor=getDifficultyColor();
-          setPracticeSaving(false);
-        }} disabled={practiceSaving}
-          style={{width:"100%",padding:"12px",borderRadius:12,background:practice.color_brand||BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-          <Icon name="check" size={16} color="#102828"/>{practiceSaving?"Wird gespeichert...":"Einstellungen speichern"}
-        </button>
-              </ARow>
-              <ARow id="mail" adminSection={adminSection} setAdminSection={setAdminSection} title="Plan-Mail Vorlage" subtitle="E-Mail nach Planzuweisung" icon="mail">
-                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:14}}>
-                  Platzhalter: <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{patient}}"}</code>, <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{besitzer}}"}</code>, <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{email}}"}</code>
-                </div>
-                <div style={{marginBottom:10}}>
-                  <SL text="Betreff"/>
-                  <input value={mailTemplate.subject} onChange={e=>setMailTemplate(p=>({...p,subject:e.target.value}))} style={{...inp,marginBottom:0}} placeholder="Betreff..."/>
-                </div>
-                <div style={{marginBottom:14}}>
-                  <SL text="Mailtext"/>
-                  <textarea value={mailTemplate.body} onChange={e=>setMailTemplate(p=>({...p,body:e.target.value}))} rows={8} style={{...inp,resize:"vertical"}} placeholder="Mailtext..."/>
-                </div>
-                <button className="btn" onClick={saveMailTemplate} disabled={mailTemplateSaving}
-                  style={{width:"100%",padding:"12px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-                  <Icon name="check" size={16} color="#102828"/>{mailTemplateSaving?"Wird gespeichert...": "Vorlage speichern"}
-                </button>
-              </ARow>
-              <ARow id="legal" adminSection={adminSection} setAdminSection={setAdminSection} title="Rechtliches & Feedback" subtitle="Links, Datenschutz, Feedback" icon="info">
-                <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                  <a href={practice.privacy_url||"#"} target="_blank"
-                    style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:BRAND,textDecoration:"none",display:"flex",alignItems:"center",gap:8,padding:"12px 14px",background:LIGHT,borderRadius:10}}>
-                    <Icon name="info" size={15} color={BRAND}/>Datenschutzerklärung
-                  </a>
-                  <a href={practice.imprint_url||"#"} target="_blank"
-                    style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:BRAND,textDecoration:"none",display:"flex",alignItems:"center",gap:8,padding:"12px 14px",background:LIGHT,borderRadius:10}}>
-                    <Icon name="info" size={15} color={BRAND}/>Impressum
-                  </a>
-                  <button className="btn" onClick={()=>{setAppFeedbackText("");setShowAppFeedback(true);}}
-                    style={{width:"100%",padding:"12px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
-                    <Icon name="mail" size={16} color="#102828"/>Feedback an Entwicklerin
-                  </button>
-                </div>
-              </ARow>
-          </>
+            <button className="btn" onClick={async()=>{
+              setPracticeSaving(true);
+              const c=deriveColors(practice.color_brand||BRAND);
+              const saveData={...practice,color_dark:c.dark,color_mid:c.mid};
+              const{admin_user_id,...fields}=saveData;
+              await supabase.from("practice_settings").update(fields).eq("admin_user_id",admin_user_id);
+              applyColors(practice.color_brand||BRAND);
+              difficultyColor=getDifficultyColor();
+              setPracticeSaving(false);
+            }} disabled={practiceSaving} style={{width:"100%",padding:"12px",borderRadius:12,background:practice.color_brand||BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+              <Icon name="check" size={16} color="#102828"/>{practiceSaving?"Wird gespeichert...": "Einstellungen speichern"}
+            </button>
+          </ARow>
+          <ARow id="mail" adminSection={adminSection} setAdminSection={setAdminSection} title="Plan-Mail Vorlage" subtitle="E-Mail nach Planzuweisung" icon="mail">
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:14}}>
+              Platzhalter: <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{patient}}"}</code>, <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{besitzer}}"}</code>, <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{email}}"}</code>
+            </div>
+            <div style={{marginBottom:10}}>
+              <SL text="Betreff"/>
+              <input value={mailTemplate.subject} onChange={e=>setMailTemplate(p=>({...p,subject:e.target.value}))} style={{...inp,marginBottom:0}} placeholder="Betreff..."/>
+            </div>
+            <div style={{marginBottom:14}}>
+              <SL text="Mailtext"/>
+              <textarea value={mailTemplate.body} onChange={e=>setMailTemplate(p=>({...p,body:e.target.value}))} rows={8} style={{...inp,resize:"vertical"}} placeholder="Mailtext..."/>
+            </div>
+            <button className="btn" onClick={saveMailTemplate} disabled={mailTemplateSaving} style={{width:"100%",padding:"12px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+              <Icon name="check" size={16} color="#102828"/>{mailTemplateSaving?"Wird gespeichert...": "Vorlage speichern"}
+            </button>
+          </ARow>
+          <ARow id="legal" adminSection={adminSection} setAdminSection={setAdminSection} title="Rechtliches & Feedback" subtitle="Links, Datenschutz, Feedback" icon="info">
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <a href={practice.privacy_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:BRAND,textDecoration:"none",display:"flex",alignItems:"center",gap:8,padding:"12px 14px",background:LIGHT,borderRadius:10}}>
+                <Icon name="info" size={15} color={BRAND}/>Datenschutzerklärung
+              </a>
+              <a href={practice.imprint_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:BRAND,textDecoration:"none",display:"flex",alignItems:"center",gap:8,padding:"12px 14px",background:LIGHT,borderRadius:10}}>
+                <Icon name="info" size={15} color={BRAND}/>Impressum
+              </a>
+              <button className="btn" onClick={()=>{setAppFeedbackText("");setShowAppFeedback(true);}} style={{width:"100%",padding:"12px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+                <Icon name="mail" size={16} color="#102828"/>Feedback an Entwicklerin
+              </button>
+            </div>
+          </ARow>
         </div>
       )}
 
