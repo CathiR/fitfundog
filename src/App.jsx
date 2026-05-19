@@ -4,6 +4,7 @@ import { supabase } from "./supabase";
 // Praxis-Slug aus Umgebungsvariable (wird pro Vercel-Deployment gesetzt)
 // Fallback: "fitfundog" für lokale Entwicklung und bestehende Deployments
 const PRACTICE_SLUG = import.meta.env.VITE_PRACTICE_SLUG || "fitfundog";
+const APP_VERSION = "2026-05-18-028";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -274,6 +275,7 @@ const LoginScreen = ({practice,onLogin}) => {
           {practice.privacy_url&&<a href={practice.privacy_url} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",textDecoration:"none"}}>Datenschutz</a>}
           {practice.imprint_url&&<a href={practice.imprint_url} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",textDecoration:"none"}}>Impressum</a>}
         </div>}
+        <div style={{textAlign:"center",marginTop:12,fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"rgba(255,255,255,0.25)",letterSpacing:".3px"}}>v{APP_VERSION}</div>
       </div>
     </div>
   );
@@ -609,7 +611,7 @@ export default function App() {
       // Mail-Vorlage laden
       const{data:settingsDataFinal}=await supabase.from("settings").select("value").eq("key","plan_mail_template").maybeSingle();
       if(settingsDataFinal?.value){
-        try{const parsed=JSON.parse(settingsData.value);setMailTemplate(parsed);}catch(e){}
+        try{const parsed=JSON.parse(settingsDataFinal.value);setMailTemplate(parsed);}catch(e){}
       }
       setMailTemplateLoaded(true);
 
@@ -1736,8 +1738,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         <div style={{textAlign:"center",padding:"8px 0 16px",display:"flex",justifyContent:"center",gap:20,flexWrap:"wrap"}}>
           <a href={practice.privacy_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,textDecoration:"none"}}>{t.privacyLink}</a>
           <a href={practice.imprint_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,textDecoration:"none"}}>{t.imprintLink}</a>
-          <button onClick={()=>{setDeleteConfirmText("");setShowDeleteAccount(true);}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#aaa",padding:0,textDecoration:"none"}}>{t.deleteAccount}</button>
+          <button onClick={()=>{setDeleteConfirmText("");setShowDeleteAccount(true);}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,opacity:.5,padding:0,textDecoration:"none"}}>{t.deleteAccount}</button>
         </div>
+        <div style={{textAlign:"center",padding:"4px 0 8px",fontFamily:"'DM Sans',sans-serif",fontSize:10,color:MUTED,opacity:.4,letterSpacing:".3px"}}>Made with Love in Berlin · v{APP_VERSION}</div>
       </div>
       )}
 
@@ -2154,6 +2157,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </button>
             </div>
           </ARow>
+          <div style={{textAlign:"center",padding:"8px 0 4px",fontFamily:"'DM Sans',sans-serif",fontSize:10,color:MUTED,opacity:.45,letterSpacing:".3px"}}>Made with Love in Berlin · v{APP_VERSION}</div>
         </div>
       )}
 
