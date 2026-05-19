@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 // Praxis-Slug aus Umgebungsvariable (wird pro Vercel-Deployment gesetzt)
 // Fallback: "fitfundog" für lokale Entwicklung und bestehende Deployments
 const PRACTICE_SLUG = import.meta.env.VITE_PRACTICE_SLUG || "fitfundog";
-const APP_VERSION = "2026-05-18-028";
+const APP_VERSION = "2026-05-19-029";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -1740,11 +1740,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           <a href={practice.imprint_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,textDecoration:"none"}}>{t.imprintLink}</a>
           <button onClick={()=>{setDeleteConfirmText("");setShowDeleteAccount(true);}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,opacity:.5,padding:0,textDecoration:"none"}}>{t.deleteAccount}</button>
         </div>
-<<<<<<< HEAD
-        <div style={{textAlign:"center",padding:"4px 0 8px",fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"#ccc",letterSpacing:".3px"}}>Made with Love in Berlin · v{APP_VERSION}</div>
-=======
         <div style={{textAlign:"center",padding:"4px 0 8px",fontFamily:"'DM Sans',sans-serif",fontSize:10,color:MUTED,opacity:.4,letterSpacing:".3px"}}>Made with Love in Berlin · v{APP_VERSION}</div>
->>>>>>> feature/farben
       </div>
       )}
 
