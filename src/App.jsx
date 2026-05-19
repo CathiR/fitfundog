@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 // Praxis-Slug aus Umgebungsvariable (wird pro Vercel-Deployment gesetzt)
 // Fallback: "fitfundog" für lokale Entwicklung und bestehende Deployments
 const PRACTICE_SLUG = import.meta.env.VITE_PRACTICE_SLUG || "fitfundog";
-const APP_VERSION = "2026-05-19-029";
+const APP_VERSION = "2026-05-19-030";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -400,6 +400,7 @@ export default function App() {
   const [adminSection,setAdminSection]=useState(null);
 
   const [isAdmin,setIsAdmin]=useState(false);
+  const initialLoadDone=useRef(false);
 
   const [view,setView]=useState("owner");
   const [practiceTab,setPracticeTab]=useState("patients");
@@ -585,7 +586,8 @@ export default function App() {
         difficultyColor=getDifficultyColor();
         const adminNow=!!(ps.admin_user_id&&uid===ps.admin_user_id);
         setIsAdmin(adminNow);
-        if(adminNow){setView("therapist");setPracticeTab("assign");}
+        if(adminNow&&!initialLoadDone.current){setView("therapist");setPracticeTab("assign");}
+        initialLoadDone.current=true;
         // Browser-Tab-Titel + Favicon
         document.title=ps.practice_name||"FitFunDog";
         document.querySelectorAll("link[rel*='icon']").forEach(el=>el.remove());
