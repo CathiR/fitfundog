@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 // Praxis-Slug aus Umgebungsvariable (wird pro Vercel-Deployment gesetzt)
 // Fallback: "fitfundog" für lokale Entwicklung und bestehende Deployments
 const PRACTICE_SLUG = import.meta.env.VITE_PRACTICE_SLUG || "fitfundog";
-const APP_VERSION = "2026-05-18-028";
+const APP_VERSION = "2026-05-20-031";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -400,6 +400,7 @@ export default function App() {
   const [adminSection,setAdminSection]=useState(null);
 
   const [isAdmin,setIsAdmin]=useState(false);
+  const initialLoadDone=useRef(false);
 
   const [view,setView]=useState("owner");
   const [practiceTab,setPracticeTab]=useState("patients");
@@ -585,7 +586,8 @@ export default function App() {
         difficultyColor=getDifficultyColor();
         const adminNow=!!(ps.admin_user_id&&uid===ps.admin_user_id);
         setIsAdmin(adminNow);
-        if(adminNow){setView("therapist");setPracticeTab("assign");}
+        if(adminNow&&!initialLoadDone.current){setView("therapist");setPracticeTab("assign");}
+        initialLoadDone.current=true;
         // Browser-Tab-Titel + Favicon
         document.title=ps.practice_name||"FitFunDog";
         document.querySelectorAll("link[rel*='icon']").forEach(el=>el.remove());
@@ -2213,7 +2215,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   {(exT(selectedExercise,"instructions")||[]).map((step,i)=>(
                     <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
                       <div style={{width:22,height:22,borderRadius:"50%",background:BRAND,color:"#102828",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontFamily:"'DM Sans',sans-serif",fontWeight:700,flexShrink:0}}>{i+1}</div>
-                      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:DARK,lineHeight:1.6,paddingTop:2}}>{step}</div>
+                      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:DARK,lineHeight:1.6,paddingTop:2,textAlign:"left"}}>{step}</div>
                     </div>
                   ))}
                 </div>
@@ -2516,7 +2518,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 {viewTemplateData.instructions.filter(Boolean).map((step,i)=>(
                   <div key={i} style={{display:"flex",gap:10,marginBottom:10,alignItems:"flex-start"}}>
                     <div style={{width:24,height:24,borderRadius:"50%",background:BRAND,color:"#102828",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,flexShrink:0}}>{i+1}</div>
-                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#102828",lineHeight:1.5,paddingTop:2}}>{step}</div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#102828",lineHeight:1.5,paddingTop:2,textAlign:"left"}}>{step}</div>
                   </div>
                 ))}
               </div>
