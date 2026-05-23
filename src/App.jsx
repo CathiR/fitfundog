@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 // Praxis-Slug aus Umgebungsvariable (wird pro Vercel-Deployment gesetzt)
 // Fallback: "fitfundog" für lokale Entwicklung und bestehende Deployments
 const PRACTICE_SLUG = import.meta.env.VITE_PRACTICE_SLUG || "fitfundog";
-const APP_VERSION = "2026-05-23-032";
+const APP_VERSION = "2026-05-23-035";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -473,6 +473,8 @@ export default function App() {
   const [selectedExistingUserId,setSelectedExistingUserId]=useState("");
   const [resetEmailSent,setResetEmailSent]=useState(false);
   const [patientSearch,setPatientSearch]=useState("");
+  const [templateSearch,setTemplateSearch]=useState("");
+  const templateListScrollRef=useRef(0);
   const [ownerSearch,setOwnerSearch]=useState("");
   const [assignPatientSearch,setAssignPatientSearch]=useState("");
   const [userSearch,setUserSearch]=useState("");
@@ -1797,15 +1799,18 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
           {practiceTab==="exercises"&&(
             <div style={{padding:"16px 14px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK}}>Übungsvorlagen</div>
                 <button className="btn" onClick={()=>{setNewTemplate(EMPTY_TEMPLATE);setSheet("addTemplate");}} style={{background:BRAND,color:"#102828",borderRadius:10,padding:"9px 14px",fontSize:12,fontFamily:"'DM Sans',sans-serif",fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
                   <Icon name="plus" size={14} color="#102828"/> Neue Übung
                 </button>
               </div>
-              <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {templates.map(tmpl=>(
-                  <div key={tmpl.id} className="card" style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center",cursor:"pointer"}} onClick={()=>setViewTemplateData(tmpl)}>
+              <div style={{marginBottom:12}}>
+                <SearchInput value={templateSearch} onChange={setTemplateSearch} placeholder="Übung suchen..."/>
+              </div>
+              {(()=>{const q=templateSearch.trim().toLowerCase();const filteredTmpls=q?templates.filter(t=>(t.title||"").toLowerCase().includes(q)||(t.categories||[]).some(c=>c.toLowerCase().includes(q))):templates;return(<div id="templateList" style={{display:"flex",flexDirection:"column",gap:8}}>
+                {filteredTmpls.map(tmpl=>(
+                  <div key={tmpl.id} className="card" style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center",cursor:"pointer"}} onClick={()=>{templateListScrollRef.current=window.scrollY;setViewTemplateData(tmpl);}}>
                     {tmpl.image_url?<img src={tmpl.image_url} alt={tmpl.title} style={{width:42,height:42,borderRadius:9,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2}}/>
                       :<div style={{width:42,height:42,borderRadius:9,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={18} color={ACCENT}/></div>}
                     <div style={{flex:1,minWidth:0}}>
@@ -1822,8 +1827,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     </div>
                   </div>
                 ))}
-                {templates.length===0&&<div className="card" style={{padding:24,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Übungsvorlagen erstellt.</div>}
-              </div>
+                {templates.length===0&&!q&&<div className="card" style={{padding:24,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Übungsvorlagen erstellt.</div>}
+                {filteredTmpls.length===0&&q&&<div className="card" style={{padding:24,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Keine Treffer.</div>}
+              </div>);})()}
             </div>
           )}
 
@@ -2493,7 +2499,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       {viewTemplateData&&(
         <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()} style={{maxHeight:"85vh",overflowY:"auto"}}>
-            <SheetHeader title={viewTemplateData.title} onClose={()=>setViewTemplateData(null)}/>
+            <SheetHeader title={viewTemplateData.title} onClose={()=>{setViewTemplateData(null);requestAnimationFrame(()=>window.scrollTo(0,templateListScrollRef.current));}}/>
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
               {(viewTemplateData.categories||[]).map(c=><span key={c} className="tag" style={{background:BRAND+"18",color:BRAND}}>{c}</span>)}
               {(viewTemplateData.target_regions||[]).map(r=><span key={r} className="tag" style={{background:MID+"18",color:MID}}>{r}</span>)}
