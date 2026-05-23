@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 // Praxis-Slug aus Umgebungsvariable (wird pro Vercel-Deployment gesetzt)
 // Fallback: "fitfundog" für lokale Entwicklung und bestehende Deployments
 const PRACTICE_SLUG = import.meta.env.VITE_PRACTICE_SLUG || "fitfundog";
-const APP_VERSION = "2026-05-23-033";
+const APP_VERSION = "2026-05-23-034";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -1808,8 +1808,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               <div style={{marginBottom:12}}>
                 <SearchInput value={templateSearch} onChange={setTemplateSearch} placeholder="Übung suchen..."/>
               </div>
-              <div id="templateList" style={{display:"flex",flexDirection:"column",gap:8}}>
-                {(()=>{const q=templateSearch.trim().toLowerCase();const filtered=q?templates.filter(t=>(t.title||"").toLowerCase().includes(q)||(t.categories||[]).some(c=>c.toLowerCase().includes(q))):templates;return filtered.map(tmpl=>(
+              {(()=>{const q=templateSearch.trim().toLowerCase();const filteredTmpls=q?templates.filter(t=>(t.title||"").toLowerCase().includes(q)||(t.categories||[]).some(c=>c.toLowerCase().includes(q))):templates;return(<div id="templateList" style={{display:"flex",flexDirection:"column",gap:8}}>
+                {filteredTmpls.map(tmpl=>(
                   <div key={tmpl.id} className="card" style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center",cursor:"pointer"}} onClick={()=>{templateListScrollRef.current=window.scrollY;setViewTemplateData(tmpl);}}>
                     {tmpl.image_url?<img src={tmpl.image_url} alt={tmpl.title} style={{width:42,height:42,borderRadius:9,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2}}/>
                       :<div style={{width:42,height:42,borderRadius:9,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={18} color={ACCENT}/></div>}
@@ -1823,13 +1823,13 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     </div>
                     <div style={{display:"flex",gap:5}} onClick={e=>e.stopPropagation()}>
                       {(!tmpl.is_starter||practice.slug==="fitfundog")&&<button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setPropagateTemplateUpdate(true);setPropagateStarterUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>}
-                      <button className="iBtn" onClick={()=>{setSheetData(tmpl);setSheet("confirmDeleteTmpl");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
+                      <button className="iBtn" onClick={()=>{setSheetData(tmpl);setSheet("confirmDeleteTmpl");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>}
                     </div>
                   </div>
-                ))})()}
-                {templates.length===0&&!templateSearch&&<div className="card" style={{padding:24,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Übungsvorlagen erstellt.</div>}
-                {templates.length>0&&templateSearch&&templates.filter(t=>(t.title||"").toLowerCase().includes(templateSearch.toLowerCase())).length===0&&<div className="card" style={{padding:24,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Keine Treffer.</div>}
-              </div>
+                ))}
+                {templates.length===0&&!q&&<div className="card" style={{padding:24,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Übungsvorlagen erstellt.</div>}
+                {filteredTmpls.length===0&&q&&<div className="card" style={{padding:24,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Keine Treffer.</div>}
+              </div>);})()}
             </div>
           )}
 
