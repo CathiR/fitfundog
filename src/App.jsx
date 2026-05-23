@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 // Praxis-Slug aus Umgebungsvariable (wird pro Vercel-Deployment gesetzt)
 // Fallback: "fitfundog" für lokale Entwicklung und bestehende Deployments
 const PRACTICE_SLUG = import.meta.env.VITE_PRACTICE_SLUG || "fitfundog";
-const APP_VERSION = "2026-05-20-031";
+const APP_VERSION = "2026-05-23-032";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -1401,7 +1401,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
   const inp={width:"100%",padding:"11px 14px",borderRadius:10,border:`1.5px solid ${BORDER}`,fontSize:16,fontFamily:"'DM Sans',sans-serif",outline:"none",background:"white",color:"#102828",WebkitTextFillColor:"#102828",boxSizing:"border-box"};
   const SL=({text})=><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>{text}</div>;
-  const SheetHeader=({title,onClose})=>(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:"#102828"}}>{title}</div><button onClick={onClose} style={{background:LIGHT,borderRadius:"50%",width:32,height:32,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="close" size={14} color={MUTED}/></button></div>);
+  const SheetHeader=({title,onClose})=>(<div style={{position:"sticky",top:0,zIndex:10,background:"white",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18,paddingBottom:12,borderBottom:`1px solid ${BORDER}`}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:"#102828"}}>{title}</div><button onClick={onClose} style={{background:LIGHT,borderRadius:"50%",width:32,height:32,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="close" size={14} color={MUTED}/></button></div>);
 
   if(authLoading)return <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${DARK},${BRAND})`,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={practice.logo_url||"/favicon.png"} alt="" style={{height:60,objectFit:"contain"}}/></div>;
   if(isRecoveryMode)return <PasswordResetScreen onDone={()=>{sessionStorage.removeItem("_recovery");setIsRecoveryMode(false);window.location.hash="";}} />;
@@ -2184,7 +2184,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
       {/* EXERCISE DETAIL */}
       {selectedExercise&&(
-        <div className="overlay" onClick={()=>setSelectedExercise(null)}>
+        <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={exT(selectedExercise,"title")} onClose={()=>setSelectedExercise(null)}/>
             <div style={{display:"flex",gap:6,marginBottom:14,flexWrap:"wrap"}}>
@@ -2250,7 +2250,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
       {/* SHEET: ASSIGN EXERCISE */}
       {sheet==="addExercise"&&(
-        <div className="overlay" onClick={closeSheet}>
+        <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={t.assignBtn} onClose={closeSheet}/>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -2301,7 +2301,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
       {/* SHEET: ADD PATIENT */}
       {sheet==="addPatient"&&(
-        <div className="overlay" onClick={closeSheet}>
+        <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title="Neuer Patient" onClose={closeSheet}/>
             <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -2341,7 +2341,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
       {/* SHEET: EDIT PATIENT */}
       {sheet==="editPatient"&&editPatientData&&(
-        <div className="overlay" onClick={closeSheet}>
+        <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title="Patient bearbeiten" onClose={closeSheet}/>
             <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -2393,7 +2393,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
       {/* SHEET: ADD TEMPLATE */}
       {sheet==="addTemplate"&&(
-        <div className="overlay" onClick={closeSheet}>
+        <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title="Neue Übung erstellen" onClose={closeSheet}/>
             <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -2433,7 +2433,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
       {/* SHEET: EDIT TEMPLATE */}
       {sheet==="editTemplate"&&editTemplateData&&(
-        <div className="overlay" onClick={closeSheet}>
+        <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title="Übung bearbeiten" onClose={closeSheet}/>
             <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -2491,7 +2491,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
       {/* SHEET: ÜBUNG ANSEHEN */}
       {viewTemplateData&&(
-        <div className="overlay" onClick={()=>setViewTemplateData(null)}>
+        <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()} style={{maxHeight:"85vh",overflowY:"auto"}}>
             <SheetHeader title={viewTemplateData.title} onClose={()=>setViewTemplateData(null)}/>
             <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
@@ -2528,14 +2528,14 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       )}
 
       {/* CONFIRM SHEETS */}
-      {sheet==="confirmDeleteEx"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übung entfernen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft entfernt.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteExercise(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.remove}</button></div></div></div>)}
-      {sheet==="confirmDeletePt"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Patient löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.name}</strong> und alle Übungen werden dauerhaft gelöscht.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deletePatient(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
-      {sheet==="confirmDeleteTmpl"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übungsvorlage löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird aus der Bibliothek gelöscht. Bereits zugewiesene Übungen bleiben erhalten.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
-      {sheet==="confirmDeletePlan"&&sheetData&&(<div className="overlay" onClick={closeSheet}><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Plan löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft gelöscht. Bereits zugewiesene Patienten-Übungen bleiben erhalten.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deletePlanTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
+      {sheet==="confirmDeleteEx"&&sheetData&&(<div className="overlay"><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übung entfernen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft entfernt.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteExercise(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.remove}</button></div></div></div>)}
+      {sheet==="confirmDeletePt"&&sheetData&&(<div className="overlay"><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Patient löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.name}</strong> und alle Übungen werden dauerhaft gelöscht.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deletePatient(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
+      {sheet==="confirmDeleteTmpl"&&sheetData&&(<div className="overlay"><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übungsvorlage löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird aus der Bibliothek gelöscht. Bereits zugewiesene Übungen bleiben erhalten.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
+      {sheet==="confirmDeletePlan"&&sheetData&&(<div className="overlay"><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Plan löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft gelöscht. Bereits zugewiesene Patienten-Übungen bleiben erhalten.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deletePlanTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
 
       {/* SHEET: ADD PLAN */}
       {(sheet==="addPlan"||sheet==="editPlan")&&(
-        <div className="overlay" onClick={closeSheet}>
+        <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={sheet==="addPlan"?"Neuer Behandlungsplan":"Plan bearbeiten"} onClose={closeSheet}/>
             <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -2603,7 +2603,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
       {/* SHEET: PLAN ZUGEWIESEN – MAIL SENDEN */}
       {planAssignDone&&(
-        <div className="overlay" onClick={()=>{setPlanAssignDone(null);closeSheet();}}>
+        <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title="Plan erfolgreich zugewiesen" onClose={()=>{setPlanAssignDone(null);closeSheet();}}/>
             <div style={{background:"#E8F5E9",borderRadius:12,padding:"14px 16px",marginBottom:18,display:"flex",alignItems:"center",gap:12}}>
@@ -2643,7 +2643,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
       {/* SHEET: VIEW FEEDBACK (Therapist) */}
       {viewFeedbackEx&&(
-        <div className="overlay" onClick={()=>setViewFeedbackEx(null)}>
+        <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title="Feedback vom Besitzer" onClose={()=>setViewFeedbackEx(null)}/>
             <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:16}}>{viewFeedbackEx.title}</div>
@@ -2673,7 +2673,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
       {/* SHEET: FEEDBACK */}
       {feedbackSheet&&(
-        <div className="overlay" onClick={()=>{setFeedbackSheet(null);setFeedbackPain(0);setFeedbackComment("");}}>
+        <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={t.reportSymptom} onClose={()=>{setFeedbackSheet(null);setFeedbackPain(0);setFeedbackComment("");}}/>
             <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:16}}>{exT(feedbackSheet,"title")}</div>
@@ -2701,7 +2701,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
       {/* SHEET: APP FEEDBACK */}
       {showAppFeedback&&(
-        <div className="overlay" onClick={()=>setShowAppFeedback(false)}>
+        <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={t.feedbackTitle} onClose={()=>setShowAppFeedback(false)}/>
             <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:14}}>
@@ -2720,7 +2720,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
       {/* SHEET: DELETE ACCOUNT */}
       {showDeleteAccount&&(
-        <div className="overlay" onClick={()=>setShowDeleteAccount(false)}>
+        <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={t.deleteAccount} onClose={()=>setShowDeleteAccount(false)}/>
             <div style={{background:"#FFF0F0",borderRadius:12,padding:"14px 16px",marginBottom:16}}>
