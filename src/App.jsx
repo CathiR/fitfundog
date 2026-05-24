@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 // Praxis-Slug aus Umgebungsvariable (wird pro Vercel-Deployment gesetzt)
 // Fallback: "fitfundog" für lokale Entwicklung und bestehende Deployments
 const PRACTICE_SLUG = import.meta.env.VITE_PRACTICE_SLUG || "fitfundog";
-const APP_VERSION = "2026-05-24-036";
+const APP_VERSION = "2026-05-24-037";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -607,7 +607,7 @@ export default function App() {
       setDoneLogs(ld||[]);
       setHistoryLogs(hl||[]);
       setFeedbacks(fb||[]);
-      setTemplates((td||[]).slice().sort((a,b)=>(a.title||'').localeCompare(b.title||'','de',{sensitivity:'base'})));
+      setTemplates(td||[]);
       setUserEmails(ue||[]);
       setPlanTemplates(ptd||[]);
       setPlanTemplateExercises(pte||[]);
@@ -1149,7 +1149,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     if(!newTemplate.title)return;
     setSaving(true);
     const{data,error}=await supabase.from("exercise_templates").insert({...newTemplate,instructions:newTemplate.instructions.filter(Boolean),practice_id:practice.id}).select().single();
-    if(!error&&data)setTemplates(prev=>[...prev,data].slice().sort((a,b)=>(a.title||'').localeCompare(b.title||'','de',{sensitivity:'base'})));
+    if(!error&&data)setTemplates(prev=>[...prev,data]);
     setSaving(false);setNewTemplate(EMPTY_TEMPLATE);closeSheet();
   };
 
@@ -1160,11 +1160,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       title:editTemplateData.title,categories:editTemplateData.categories||[],
       target_regions:editTemplateData.target_regions||[],difficulty:editTemplateData.difficulty,
       description:editTemplateData.description,instructions:(editTemplateData.instructions||[]).filter(Boolean),
-      image_url:editTemplateData.image_url||null,video_url:editTemplateData.video_url||null
+      image_url:editTemplateData.image_url||null,video_url:editTemplateData.video_url||null,
+      is_starter:!!editTemplateData.is_starter
     };
     const{data,error}=await supabase.from("exercise_templates").update(fields).eq("id",editTemplateData.id).select().single();
     if(!error&&data){
-      setTemplates(prev=>prev.map(t=>t.id===data.id?data:t).slice().sort((a,b)=>(a.title||'').localeCompare(b.title||'','de',{sensitivity:'base'})));
+      setTemplates(prev=>prev.map(t=>t.id===data.id?data:t));
       if(propagateTemplateUpdate){
         const updatePayload={
           title:fields.title,categories:fields.categories,target_regions:fields.target_regions,
@@ -2470,6 +2471,16 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </div>
               <div><SL text="Bild-URL"/><input value={editTemplateData.image_url||""} onChange={e=>setEditTemplateData(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
               <div><SL text="Video-URL"/><input value={editTemplateData.video_url||""} onChange={e=>setEditTemplateData(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/..." style={inp}/></div>
+              {/* Starter-Checkbox – nur FFD */}
+              {practice.slug==="fitfundog"&&(
+                <label style={{display:"flex",alignItems:"flex-start",gap:10,background:editTemplateData.is_starter?"#E8F5E9":"#F8F8F8",border:`1.5px solid ${editTemplateData.is_starter?"#4CAF50":BORDER}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
+                  <input type="checkbox" checked={!!editTemplateData.is_starter} onChange={e=>setEditTemplateData(p=>({...p,is_starter:e.target.checked}))} style={{width:18,height:18,marginTop:1,flexShrink:0,accentColor:"#4CAF50",cursor:"pointer"}}/>
+                  <div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#102828"}}>Starter-Übung (Vorlage für andere Praxen)</div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:3}}>Diese Übung steht anderen Praxen als Vorlage zur Verfügung und kann auf sie übertragen werden.</div>
+                  </div>
+                </label>
+              )}
               {/* Propagation checkbox */}
               <label style={{display:"flex",alignItems:"flex-start",gap:10,background:propagateTemplateUpdate?"#FFF8E1":"#F8F8F8",border:`1.5px solid ${propagateTemplateUpdate?"#FFB300":BORDER}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
                 <input type="checkbox" checked={propagateTemplateUpdate} onChange={e=>setPropagateTemplateUpdate(e.target.checked)} style={{width:18,height:18,marginTop:1,flexShrink:0,accentColor:BRAND,cursor:"pointer"}}/>
