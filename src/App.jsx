@@ -4,7 +4,7 @@ import { supabase } from "./supabase";
 // Praxis-Slug aus Umgebungsvariable (wird pro Vercel-Deployment gesetzt)
 // Fallback: "fitfundog" für lokale Entwicklung und bestehende Deployments
 const PRACTICE_SLUG = import.meta.env.VITE_PRACTICE_SLUG || "fitfundog";
-const APP_VERSION = "2026-05-23-035";
+const APP_VERSION = "2026-05-24-036";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -607,7 +607,7 @@ export default function App() {
       setDoneLogs(ld||[]);
       setHistoryLogs(hl||[]);
       setFeedbacks(fb||[]);
-      setTemplates(td||[]);
+      setTemplates((td||[]).slice().sort((a,b)=>(a.title||'').localeCompare(b.title||'','de',{sensitivity:'base'})));
       setUserEmails(ue||[]);
       setPlanTemplates(ptd||[]);
       setPlanTemplateExercises(pte||[]);
@@ -1149,7 +1149,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     if(!newTemplate.title)return;
     setSaving(true);
     const{data,error}=await supabase.from("exercise_templates").insert({...newTemplate,instructions:newTemplate.instructions.filter(Boolean),practice_id:practice.id}).select().single();
-    if(!error&&data)setTemplates(prev=>[...prev,data]);
+    if(!error&&data)setTemplates(prev=>[...prev,data].slice().sort((a,b)=>(a.title||'').localeCompare(b.title||'','de',{sensitivity:'base'})));
     setSaving(false);setNewTemplate(EMPTY_TEMPLATE);closeSheet();
   };
 
@@ -1164,7 +1164,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     };
     const{data,error}=await supabase.from("exercise_templates").update(fields).eq("id",editTemplateData.id).select().single();
     if(!error&&data){
-      setTemplates(prev=>prev.map(t=>t.id===data.id?data:t));
+      setTemplates(prev=>prev.map(t=>t.id===data.id?data:t).slice().sort((a,b)=>(a.title||'').localeCompare(b.title||'','de',{sensitivity:'base'})));
       if(propagateTemplateUpdate){
         const updatePayload={
           title:fields.title,categories:fields.categories,target_regions:fields.target_regions,
@@ -1403,7 +1403,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
   const inp={width:"100%",padding:"11px 14px",borderRadius:10,border:`1.5px solid ${BORDER}`,fontSize:16,fontFamily:"'DM Sans',sans-serif",outline:"none",background:"white",color:"#102828",WebkitTextFillColor:"#102828",boxSizing:"border-box"};
   const SL=({text})=><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>{text}</div>;
-  const SheetHeader=({title,onClose})=>(<div style={{position:"sticky",top:0,zIndex:10,background:"white",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18,paddingBottom:12,borderBottom:`1px solid ${BORDER}`}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:"#102828"}}>{title}</div><button onClick={onClose} style={{background:LIGHT,borderRadius:"50%",width:32,height:32,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}><Icon name="close" size={14} color={MUTED}/></button></div>);
+  const SheetHeader=({title,onClose})=>(<div style={{position:"sticky",top:0,zIndex:10,background:"white",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:18,paddingBottom:12,borderBottom:`1px solid ${BORDER}`}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:"#102828",flex:1}}>{title}</div><button onClick={onClose} style={{background:LIGHT,borderRadius:"50%",width:32,height:32,minWidth:32,minHeight:32,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="close" size={14} color={MUTED}/></button></div>);
 
   if(authLoading)return <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${DARK},${BRAND})`,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={practice.logo_url||"/favicon.png"} alt="" style={{height:60,objectFit:"contain"}}/></div>;
   if(isRecoveryMode)return <PasswordResetScreen onDone={()=>{sessionStorage.removeItem("_recovery");setIsRecoveryMode(false);window.location.hash="";}} />;
@@ -1814,7 +1814,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     {tmpl.image_url?<img src={tmpl.image_url} alt={tmpl.title} style={{width:42,height:42,borderRadius:9,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2}}/>
                       :<div style={{width:42,height:42,borderRadius:9,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={18} color={ACCENT}/></div>}
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600,color:"#102828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{tmpl.title}</div>
+                      <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600,color:"#102828"}}>{tmpl.title}</div>
                       <div style={{display:"flex",gap:5,marginTop:4,flexWrap:"wrap"}}>
                         {(tmpl.categories||[]).map(c=><span key={c} className="tag" style={{background:BRAND+"18",color:BRAND}}>{c}</span>)}
                         <span className="tag" style={{background:(difficultyColor[tmpl.difficulty]||BRAND)+"18",color:difficultyColor[tmpl.difficulty]||BRAND}}>{tmpl.difficulty}</span>
