@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef, useCallback, startTransition } from "react";
 import { supabase } from "./supabase";
 
-// Praxis-Slug aus Umgebungsvariable (wird pro Vercel-Deployment gesetzt)
-// Fallback: "fitfundog" für lokale Entwicklung und bestehende Deployments
-const PRACTICE_SLUG = import.meta.env.VITE_PRACTICE_SLUG || "fitfundog";
-const APP_VERSION = "2026-05-24-037";
+// Praxis-Slug wird automatisch anhand der Domain erkannt
+const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalace" : "fitfundog";
+const APP_VERSION = "2026-05-24-038";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
