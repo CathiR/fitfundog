@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-05-25-041";
+const APP_VERSION = "2026-05-25-042";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -1196,11 +1196,14 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         }
       }
       // 3. Starter-Propagation zu anderen Praxen — unabhängig von propagateTemplateUpdate
+      console.log("[DEBUG] is_starter:", editTemplateData.is_starter, "propagateStarterUpdate:", propagateStarterUpdate);
       if(editTemplateData.is_starter&&propagateStarterUpdate){
-        const{data:otherTmpls}=await supabase.from("exercise_templates").select("id,title").eq("is_starter",true).eq("title",editTemplateData.title).neq("id",editTemplateData.id);
+        const{data:otherTmpls,error:otherErr}=await supabase.from("exercise_templates").select("id,title").eq("is_starter",true).eq("title",editTemplateData.title).neq("id",editTemplateData.id);
+        console.log("[DEBUG] otherTmpls:", otherTmpls, "error:", otherErr);
         if(otherTmpls&&otherTmpls.length>0){
           for(const ot of otherTmpls){
-            await supabase.from("exercise_templates").update(fields).eq("id",ot.id);
+            const{error:updErr}=await supabase.from("exercise_templates").update(fields).eq("id",ot.id);
+            console.log("[DEBUG] update template", ot.id, "error:", updErr);
             await supabase.from("exercises").update(updatePayload).eq("template_id",ot.id);
             const{data:otherMatches}=await supabase.from("exercises").select("id").eq("title",ot.title).is("template_id",null);
             if(otherMatches&&otherMatches.length>0){
