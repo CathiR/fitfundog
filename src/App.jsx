@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-05-25-040";
+const APP_VERSION = "2026-05-25-041";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -1180,39 +1180,38 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     const{data,error}=await supabase.from("exercise_templates").update(fields).eq("id",editTemplateData.id).select().single();
     if(!error&&data){
       setTemplates(prev=>prev.map(t=>t.id===data.id?data:t));
+      const updatePayload={
+        title:fields.title,categories:fields.categories,target_regions:fields.target_regions,
+        difficulty:fields.difficulty,description:fields.description,instructions:fields.instructions,
+        image_url:fields.image_url,video_url:fields.video_url,
+        title_en:data.title_en||null,description_en:data.description_en||null,instructions_en:data.instructions_en||null,
+        title_es:data.title_es||null,description_es:data.description_es||null,instructions_es:data.instructions_es||null
+      };
+      // 1+2. Patienten-Übungen dieser Praxis aktualisieren
       if(propagateTemplateUpdate){
-        const updatePayload={
-          title:fields.title,categories:fields.categories,target_regions:fields.target_regions,
-          difficulty:fields.difficulty,description:fields.description,instructions:fields.instructions,
-          image_url:fields.image_url,video_url:fields.video_url,
-          title_en:data.title_en||null,description_en:data.description_en||null,instructions_en:data.instructions_en||null,
-          title_es:data.title_es||null,description_es:data.description_es||null,instructions_es:data.instructions_es||null
-        };
-        // 1. Update via template_id (neuere Einträge)
         await supabase.from("exercises").update(updatePayload).eq("template_id",editTemplateData.id);
-        // 2. Fallback: Update via Titel + practice_id für alte Einträge ohne template_id, gleichzeitig template_id nachpflegen
         const{data:titleMatches}=await supabase.from("exercises").select("id").eq("practice_id",practice.id).eq("title",editTemplateData.title).is("template_id",null);
         if(titleMatches&&titleMatches.length>0){
           await supabase.from("exercises").update({...updatePayload,template_id:editTemplateData.id}).in("id",titleMatches.map(e=>e.id));
         }
-        // 3. Starter-Propagation zu anderen Praxen
-        if(editTemplateData.is_starter&&propagateStarterUpdate){
-          const{data:otherTmpls}=await supabase.from("exercise_templates").select("id,title").eq("is_starter",true).eq("title",editTemplateData.title).neq("id",editTemplateData.id);
-          if(otherTmpls&&otherTmpls.length>0){
-            for(const ot of otherTmpls){
-              await supabase.from("exercise_templates").update(fields).eq("id",ot.id);
-              await supabase.from("exercises").update(updatePayload).eq("template_id",ot.id);
-              const{data:otherMatches}=await supabase.from("exercises").select("id").eq("title",ot.title).is("template_id",null);
-              if(otherMatches&&otherMatches.length>0){
-                await supabase.from("exercises").update({...updatePayload,template_id:ot.id}).in("id",otherMatches.map(e=>e.id));
-              }
+      }
+      // 3. Starter-Propagation zu anderen Praxen — unabhängig von propagateTemplateUpdate
+      if(editTemplateData.is_starter&&propagateStarterUpdate){
+        const{data:otherTmpls}=await supabase.from("exercise_templates").select("id,title").eq("is_starter",true).eq("title",editTemplateData.title).neq("id",editTemplateData.id);
+        if(otherTmpls&&otherTmpls.length>0){
+          for(const ot of otherTmpls){
+            await supabase.from("exercise_templates").update(fields).eq("id",ot.id);
+            await supabase.from("exercises").update(updatePayload).eq("template_id",ot.id);
+            const{data:otherMatches}=await supabase.from("exercises").select("id").eq("title",ot.title).is("template_id",null);
+            if(otherMatches&&otherMatches.length>0){
+              await supabase.from("exercises").update({...updatePayload,template_id:ot.id}).in("id",otherMatches.map(e=>e.id));
             }
           }
         }
-        // 4. Reload
-        const{data:ed}=await supabase.from("exercises").select("*").order("created_at");
-        if(ed)setExercises(ed);
       }
+      // 4. Reload
+      const{data:ed}=await supabase.from("exercises").select("*").order("created_at");
+      if(ed)setExercises(ed);
     }
     setSaving(false);setPropagateTemplateUpdate(true);setPropagateStarterUpdate(false);closeSheet();
   };
