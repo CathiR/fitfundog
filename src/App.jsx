@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef, useCallback, startTransition } from "react";
 import { supabase } from "./supabase";
 
-// Praxis-Slug aus Umgebungsvariable (wird pro Vercel-Deployment gesetzt)
-// Fallback: "fitfundog" für lokale Entwicklung und bestehende Deployments
-const PRACTICE_SLUG = import.meta.env.VITE_PRACTICE_SLUG || "fitfundog";
-const APP_VERSION = "2026-05-24-036";
+// Praxis-Slug wird automatisch anhand der Domain erkannt
+const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
+const APP_VERSION = "2026-05-25-044";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -117,6 +116,7 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
     profile: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
     print: <svg {...s} viewBox='0 0 24 24' fill='none' stroke={color} strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'><polyline points='6 9 6 2 18 2 18 9'/><path d='M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2'/><rect x='6' y='14' width='12' height='8'/></svg>,
     star: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+    copy: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
   };
   return icons[name] || null;
 };
@@ -559,11 +559,10 @@ export default function App() {
     setLoading(true);
     const uid=userId;
     try{
-      const [{data:pd},{data:ed},{data:ld},{data:td},{data:ue},{data:hl},{data:fb},{data:ps}]=await Promise.all([
+      const [{data:pd},{data:ed},{data:ld},{data:ue},{data:hl},{data:fb},{data:ps}]=await Promise.all([
         supabase.from("patients").select("*").order("name"),
         supabase.from("exercises").select("*").order("created_at"),
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
-        supabase.from("exercise_templates").select("*").order("title"),
         supabase.rpc("get_user_emails"),
         supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-111);return d.toISOString().split("T")[0];})()),
         supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false}),
@@ -571,9 +570,10 @@ export default function App() {
       ]);
       // Plan-Queries explizit nach practice_id filtern – ps.id erst hier bekannt
       const practiceId=ps?.id;
-      const [{data:ptd},{data:pte}]=await Promise.all([
+      const [{data:ptd},{data:pte},{data:td}]=await Promise.all([
         supabase.from("plan_templates").select("*").eq("practice_id",practiceId).order("created_at"),
         supabase.from("plan_template_exercises").select("*").eq("practice_id",practiceId).order("sort_order"),
+        supabase.from("exercise_templates").select("*").eq("practice_id",practiceId).order("title"),
       ]);
       // Icons nach practice_settings laden damit wir admin_user_id kennen
       const adminId=ps?.admin_user_id||uid;
@@ -607,7 +607,7 @@ export default function App() {
       setDoneLogs(ld||[]);
       setHistoryLogs(hl||[]);
       setFeedbacks(fb||[]);
-      setTemplates((td||[]).slice().sort((a,b)=>(a.title||'').localeCompare(b.title||'','de',{sensitivity:'base'})));
+      setTemplates(td||[]);
       setUserEmails(ue||[]);
       setPlanTemplates(ptd||[]);
       setPlanTemplateExercises(pte||[]);
@@ -1148,8 +1148,23 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const addTemplate=async()=>{
     if(!newTemplate.title)return;
     setSaving(true);
-    const{data,error}=await supabase.from("exercise_templates").insert({...newTemplate,instructions:newTemplate.instructions.filter(Boolean),practice_id:practice.id}).select().single();
-    if(!error&&data)setTemplates(prev=>[...prev,data].slice().sort((a,b)=>(a.title||'').localeCompare(b.title||'','de',{sensitivity:'base'})));
+    const payload={...newTemplate,instructions:newTemplate.instructions.filter(Boolean),practice_id:practice.id};
+    const{data,error}=await supabase.from("exercise_templates").insert(payload).select().single();
+    if(!error&&data){
+      setTemplates(prev=>[...prev,data]);
+      if(data.is_starter){
+        const{data:allPractices}=await supabase.from("practice_settings").select("id,slug").neq("slug",practice.slug);
+        if(allPractices?.length){
+          const copies=allPractices.map(pr=>({
+            title:data.title,categories:data.categories,target_regions:data.target_regions,
+            difficulty:data.difficulty,description:data.description,instructions:data.instructions,
+            image_url:data.image_url,video_url:data.video_url,is_starter:true,
+            practice_id:pr.id
+          }));
+          await supabase.from("exercise_templates").insert(copies);
+        }
+      }
+    }
     setSaving(false);setNewTemplate(EMPTY_TEMPLATE);closeSheet();
   };
 
@@ -1160,44 +1175,47 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       title:editTemplateData.title,categories:editTemplateData.categories||[],
       target_regions:editTemplateData.target_regions||[],difficulty:editTemplateData.difficulty,
       description:editTemplateData.description,instructions:(editTemplateData.instructions||[]).filter(Boolean),
-      image_url:editTemplateData.image_url||null,video_url:editTemplateData.video_url||null
+      image_url:editTemplateData.image_url||null,video_url:editTemplateData.video_url||null,
+      is_starter:!!editTemplateData.is_starter
     };
     const{data,error}=await supabase.from("exercise_templates").update(fields).eq("id",editTemplateData.id).select().single();
     if(!error&&data){
-      setTemplates(prev=>prev.map(t=>t.id===data.id?data:t).slice().sort((a,b)=>(a.title||'').localeCompare(b.title||'','de',{sensitivity:'base'})));
+      setTemplates(prev=>prev.map(t=>t.id===data.id?data:t));
+      const updatePayload={
+        title:fields.title,categories:fields.categories,target_regions:fields.target_regions,
+        difficulty:fields.difficulty,description:fields.description,instructions:fields.instructions,
+        image_url:fields.image_url,video_url:fields.video_url,
+        title_en:data.title_en||null,description_en:data.description_en||null,instructions_en:data.instructions_en||null,
+        title_es:data.title_es||null,description_es:data.description_es||null,instructions_es:data.instructions_es||null
+      };
+      // 1+2. Patienten-Übungen dieser Praxis aktualisieren
       if(propagateTemplateUpdate){
-        const updatePayload={
-          title:fields.title,categories:fields.categories,target_regions:fields.target_regions,
-          difficulty:fields.difficulty,description:fields.description,instructions:fields.instructions,
-          image_url:fields.image_url,video_url:fields.video_url,
-          title_en:data.title_en||null,description_en:data.description_en||null,instructions_en:data.instructions_en||null,
-          title_es:data.title_es||null,description_es:data.description_es||null,instructions_es:data.instructions_es||null
-        };
-        // 1. Update via template_id (neuere Einträge)
         await supabase.from("exercises").update(updatePayload).eq("template_id",editTemplateData.id);
-        // 2. Fallback: Update via Titel + practice_id für alte Einträge ohne template_id, gleichzeitig template_id nachpflegen
         const{data:titleMatches}=await supabase.from("exercises").select("id").eq("practice_id",practice.id).eq("title",editTemplateData.title).is("template_id",null);
         if(titleMatches&&titleMatches.length>0){
           await supabase.from("exercises").update({...updatePayload,template_id:editTemplateData.id}).in("id",titleMatches.map(e=>e.id));
         }
-        // 3. Starter-Propagation zu anderen Praxen
-        if(editTemplateData.is_starter&&propagateStarterUpdate){
-          const{data:otherTmpls}=await supabase.from("exercise_templates").select("id,title").eq("is_starter",true).eq("title",editTemplateData.title).neq("id",editTemplateData.id);
-          if(otherTmpls&&otherTmpls.length>0){
-            for(const ot of otherTmpls){
-              await supabase.from("exercise_templates").update(fields).eq("id",ot.id);
-              await supabase.from("exercises").update(updatePayload).eq("template_id",ot.id);
-              const{data:otherMatches}=await supabase.from("exercises").select("id").eq("title",ot.title).is("template_id",null);
-              if(otherMatches&&otherMatches.length>0){
-                await supabase.from("exercises").update({...updatePayload,template_id:ot.id}).in("id",otherMatches.map(e=>e.id));
-              }
+      }
+      // 3. Starter-Propagation zu anderen Praxen — unabhängig von propagateTemplateUpdate
+      console.log("[DEBUG] is_starter:", editTemplateData.is_starter, "propagateStarterUpdate:", propagateStarterUpdate);
+      if(editTemplateData.is_starter&&propagateStarterUpdate){
+        const{data:otherTmpls,error:otherErr}=await supabase.from("exercise_templates").select("id,title").eq("is_starter",true).eq("title",editTemplateData.title).neq("id",editTemplateData.id);
+        console.log("[DEBUG] otherTmpls:", otherTmpls, "error:", otherErr);
+        if(otherTmpls&&otherTmpls.length>0){
+          for(const ot of otherTmpls){
+            const{error:updErr}=await supabase.from("exercise_templates").update(fields).eq("id",ot.id);
+            console.log("[DEBUG] update template", ot.id, "error:", updErr);
+            await supabase.from("exercises").update(updatePayload).eq("template_id",ot.id);
+            const{data:otherMatches}=await supabase.from("exercises").select("id").eq("title",ot.title).is("template_id",null);
+            if(otherMatches&&otherMatches.length>0){
+              await supabase.from("exercises").update({...updatePayload,template_id:ot.id}).in("id",otherMatches.map(e=>e.id));
             }
           }
         }
-        // 4. Reload
-        const{data:ed}=await supabase.from("exercises").select("*").order("created_at");
-        if(ed)setExercises(ed);
       }
+      // 4. Reload
+      const{data:ed}=await supabase.from("exercises").select("*").order("created_at");
+      if(ed)setExercises(ed);
     }
     setSaving(false);setPropagateTemplateUpdate(true);setPropagateStarterUpdate(false);closeSheet();
   };
@@ -1823,6 +1841,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     </div>
                     <div style={{display:"flex",gap:5}} onClick={e=>e.stopPropagation()}>
                       {(!tmpl.is_starter||practice.slug==="fitfundog")&&<button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setPropagateTemplateUpdate(true);setPropagateStarterUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>}
+                      <button className="iBtn" title="Kopieren" onClick={()=>{setNewTemplate({title:"Kopie "+tmpl.title,categories:tmpl.categories||[],target_regions:tmpl.target_regions||[],difficulty:tmpl.difficulty||"Leicht",description:tmpl.description||"",instructions:tmpl.instructions?.length?[...tmpl.instructions]:[""],image_url:tmpl.image_url||"",video_url:tmpl.video_url||"",is_starter:false});setSheet("addTemplate");}} style={{background:BRAND+"10"}}><Icon name="copy" size={14} color={MID}/></button>
                       <button className="iBtn" onClick={()=>{setSheetData(tmpl);setSheet("confirmDeleteTmpl");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                     </div>
                   </div>
@@ -2429,6 +2448,16 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </div>
               <div><SL text="Bild-URL"/><input value={newTemplate.image_url} onChange={e=>setNewTemplate(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
               <div><SL text="Video-URL (optional)"/><input value={newTemplate.video_url} onChange={e=>setNewTemplate(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/..." style={inp}/></div>
+              {/* Starter-Checkbox – nur FFD */}
+              {practice.slug==="fitfundog"&&(
+                <label style={{display:"flex",alignItems:"flex-start",gap:10,background:newTemplate.is_starter?"#E8F5E9":"#F8F8F8",border:`1.5px solid ${newTemplate.is_starter?"#4CAF50":BORDER}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
+                  <input type="checkbox" checked={!!newTemplate.is_starter} onChange={e=>setNewTemplate(p=>({...p,is_starter:e.target.checked}))} style={{width:18,height:18,marginTop:1,flexShrink:0,accentColor:"#4CAF50",cursor:"pointer"}}/>
+                  <div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#102828"}}>Starter-Übung (Vorlage für andere Praxen)</div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:3}}>Diese Übung wird sofort auch in allen anderen Praxen als Vorlage angelegt.</div>
+                  </div>
+                </label>
+              )}
               <button className="btn" onClick={addTemplate} disabled={saving||!newTemplate.title} style={{width:"100%",padding:"14px",borderRadius:12,background:newTemplate.title?BRAND:BORDER,color:newTemplate.title?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:"Übung speichern"}
               </button>
@@ -2470,6 +2499,16 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </div>
               <div><SL text="Bild-URL"/><input value={editTemplateData.image_url||""} onChange={e=>setEditTemplateData(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
               <div><SL text="Video-URL"/><input value={editTemplateData.video_url||""} onChange={e=>setEditTemplateData(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/..." style={inp}/></div>
+              {/* Starter-Checkbox – nur FFD */}
+              {practice.slug==="fitfundog"&&(
+                <label style={{display:"flex",alignItems:"flex-start",gap:10,background:editTemplateData.is_starter?"#E8F5E9":"#F8F8F8",border:`1.5px solid ${editTemplateData.is_starter?"#4CAF50":BORDER}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
+                  <input type="checkbox" checked={!!editTemplateData.is_starter} onChange={e=>setEditTemplateData(p=>({...p,is_starter:e.target.checked}))} style={{width:18,height:18,marginTop:1,flexShrink:0,accentColor:"#4CAF50",cursor:"pointer"}}/>
+                  <div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#102828"}}>Starter-Übung (Vorlage für andere Praxen)</div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:3}}>Diese Übung steht anderen Praxen als Vorlage zur Verfügung und kann auf sie übertragen werden.</div>
+                  </div>
+                </label>
+              )}
               {/* Propagation checkbox */}
               <label style={{display:"flex",alignItems:"flex-start",gap:10,background:propagateTemplateUpdate?"#FFF8E1":"#F8F8F8",border:`1.5px solid ${propagateTemplateUpdate?"#FFB300":BORDER}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
                 <input type="checkbox" checked={propagateTemplateUpdate} onChange={e=>setPropagateTemplateUpdate(e.target.checked)} style={{width:18,height:18,marginTop:1,flexShrink:0,accentColor:BRAND,cursor:"pointer"}}/>
