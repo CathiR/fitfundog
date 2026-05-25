@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-05-25-043";
+const APP_VERSION = "2026-05-25-044";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -559,11 +559,10 @@ export default function App() {
     setLoading(true);
     const uid=userId;
     try{
-      const [{data:pd},{data:ed},{data:ld},{data:td},{data:ue},{data:hl},{data:fb},{data:ps}]=await Promise.all([
+      const [{data:pd},{data:ed},{data:ld},{data:ue},{data:hl},{data:fb},{data:ps}]=await Promise.all([
         supabase.from("patients").select("*").order("name"),
         supabase.from("exercises").select("*").order("created_at"),
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
-        supabase.from("exercise_templates").select("*").order("title"),
         supabase.rpc("get_user_emails"),
         supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-111);return d.toISOString().split("T")[0];})()),
         supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false}),
@@ -571,9 +570,10 @@ export default function App() {
       ]);
       // Plan-Queries explizit nach practice_id filtern – ps.id erst hier bekannt
       const practiceId=ps?.id;
-      const [{data:ptd},{data:pte}]=await Promise.all([
+      const [{data:ptd},{data:pte},{data:td}]=await Promise.all([
         supabase.from("plan_templates").select("*").eq("practice_id",practiceId).order("created_at"),
         supabase.from("plan_template_exercises").select("*").eq("practice_id",practiceId).order("sort_order"),
+        supabase.from("exercise_templates").select("*").eq("practice_id",practiceId).order("title"),
       ]);
       // Icons nach practice_settings laden damit wir admin_user_id kennen
       const adminId=ps?.admin_user_id||uid;
@@ -1841,7 +1841,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     </div>
                     <div style={{display:"flex",gap:5}} onClick={e=>e.stopPropagation()}>
                       {(!tmpl.is_starter||practice.slug==="fitfundog")&&<button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setPropagateTemplateUpdate(true);setPropagateStarterUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>}
-                      <button className="iBtn" title="Kopieren" onClick={()=>{setNewTemplate({...tmpl,title:"Kopie "+tmpl.title,is_starter:false,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setSheet("addTemplate");}} style={{background:BRAND+"10"}}><Icon name="copy" size={14} color={MID}/></button>
+                      <button className="iBtn" title="Kopieren" onClick={()=>{setNewTemplate({title:"Kopie "+tmpl.title,categories:tmpl.categories||[],target_regions:tmpl.target_regions||[],difficulty:tmpl.difficulty||"Leicht",description:tmpl.description||"",instructions:tmpl.instructions?.length?[...tmpl.instructions]:[""],image_url:tmpl.image_url||"",video_url:tmpl.video_url||"",is_starter:false});setSheet("addTemplate");}} style={{background:BRAND+"10"}}><Icon name="copy" size={14} color={MID}/></button>
                       <button className="iBtn" onClick={()=>{setSheetData(tmpl);setSheet("confirmDeleteTmpl");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                     </div>
                   </div>
