@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useCallback, startTransition } from "react
 import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
-const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalace" : "fitfundog";
-const APP_VERSION = "2026-05-24-038";
+const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
+const APP_VERSION = "2026-05-25-039";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
