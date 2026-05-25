@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-05-25-039";
+const APP_VERSION = "2026-05-25-040";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -1147,8 +1147,23 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const addTemplate=async()=>{
     if(!newTemplate.title)return;
     setSaving(true);
-    const{data,error}=await supabase.from("exercise_templates").insert({...newTemplate,instructions:newTemplate.instructions.filter(Boolean),practice_id:practice.id}).select().single();
-    if(!error&&data)setTemplates(prev=>[...prev,data]);
+    const payload={...newTemplate,instructions:newTemplate.instructions.filter(Boolean),practice_id:practice.id};
+    const{data,error}=await supabase.from("exercise_templates").insert(payload).select().single();
+    if(!error&&data){
+      setTemplates(prev=>[...prev,data]);
+      if(data.is_starter){
+        const{data:allPractices}=await supabase.from("practice_settings").select("id,slug").neq("slug",practice.slug);
+        if(allPractices?.length){
+          const copies=allPractices.map(pr=>({
+            title:data.title,categories:data.categories,target_regions:data.target_regions,
+            difficulty:data.difficulty,description:data.description,instructions:data.instructions,
+            image_url:data.image_url,video_url:data.video_url,is_starter:true,
+            practice_id:pr.id
+          }));
+          await supabase.from("exercise_templates").insert(copies);
+        }
+      }
+    }
     setSaving(false);setNewTemplate(EMPTY_TEMPLATE);closeSheet();
   };
 
@@ -2429,6 +2444,16 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </div>
               <div><SL text="Bild-URL"/><input value={newTemplate.image_url} onChange={e=>setNewTemplate(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
               <div><SL text="Video-URL (optional)"/><input value={newTemplate.video_url} onChange={e=>setNewTemplate(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/..." style={inp}/></div>
+              {/* Starter-Checkbox – nur FFD */}
+              {practice.slug==="fitfundog"&&(
+                <label style={{display:"flex",alignItems:"flex-start",gap:10,background:newTemplate.is_starter?"#E8F5E9":"#F8F8F8",border:`1.5px solid ${newTemplate.is_starter?"#4CAF50":BORDER}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
+                  <input type="checkbox" checked={!!newTemplate.is_starter} onChange={e=>setNewTemplate(p=>({...p,is_starter:e.target.checked}))} style={{width:18,height:18,marginTop:1,flexShrink:0,accentColor:"#4CAF50",cursor:"pointer"}}/>
+                  <div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#102828"}}>Starter-Übung (Vorlage für andere Praxen)</div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:3}}>Diese Übung wird sofort auch in allen anderen Praxen als Vorlage angelegt.</div>
+                  </div>
+                </label>
+              )}
               <button className="btn" onClick={addTemplate} disabled={saving||!newTemplate.title} style={{width:"100%",padding:"14px",borderRadius:12,background:newTemplate.title?BRAND:BORDER,color:newTemplate.title?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:"Übung speichern"}
               </button>
