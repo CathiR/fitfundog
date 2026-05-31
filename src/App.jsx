@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-05-25-044";
+const APP_VERSION = "2026-05-25-045";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -270,12 +270,12 @@ const LoginScreen = ({practice,onLogin}) => {
             :<button onClick={async()=>{if(!email){setError("Bitte zuerst Email eingeben.");return;}await supabase.auth.resetPasswordForEmail(email,{redirectTo:"https://pawphysio.vercel.app"});setResetSent(true);}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.65)",textDecoration:"underline",padding:0}}>Passwort vergessen?</button>
           }
         </div>
-        <div style={{textAlign:"center",marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.4)"}}>Kein Konto? Bitte wende dich an deine Therapeutin.</div>
+        <div style={{textAlign:"center",marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.45)"}}>Kein Konto? Bitte wende dich an deine Therapeutin.</div>
         {(practice.privacy_url||practice.imprint_url)&&<div style={{textAlign:"center",marginTop:16,display:"flex",justifyContent:"center",gap:20}}>
           {practice.privacy_url&&<a href={practice.privacy_url} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",textDecoration:"none"}}>Datenschutz</a>}
           {practice.imprint_url&&<a href={practice.imprint_url} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",textDecoration:"none"}}>Impressum</a>}
         </div>}
-        <div style={{textAlign:"center",marginTop:12,fontFamily:"'DM Sans',sans-serif",fontSize:10,color:"rgba(255,255,255,0.25)",letterSpacing:".3px"}}>v{APP_VERSION}</div>
+        <div style={{textAlign:"center",marginTop:12,fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"rgba(255,255,255,0.45)",letterSpacing:".3px"}}>v{APP_VERSION}</div>
       </div>
     </div>
   );
@@ -523,6 +523,7 @@ export default function App() {
       if(event==="SIGNED_OUT"){
         // Clear all state on logout
         sessionStorage.removeItem("_recovery"); setIsRecoveryMode(false);
+        sessionStorage.removeItem("_adminLanded");
         setSession(null);
         setPatients([]);setExercises([]);setDoneLogs([]);setHistoryLogs([]);setFeedbacks([]);setTemplates([]);
         setOwnerPatient(null);setSelectedPatient(null);
@@ -588,7 +589,7 @@ export default function App() {
         difficultyColor=getDifficultyColor();
         const adminNow=!!(ps.admin_user_id&&uid===ps.admin_user_id);
         setIsAdmin(adminNow);
-        if(adminNow&&!initialLoadDone.current){setView("therapist");setPracticeTab("assign");}
+        if(adminNow&&!sessionStorage.getItem("_adminLanded")){setView("therapist");setPracticeTab("assign");sessionStorage.setItem("_adminLanded","1");}
         initialLoadDone.current=true;
         // Browser-Tab-Titel + Favicon
         document.title=ps.practice_name||"FitFunDog";
@@ -1403,9 +1404,21 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     const rOk=assignFilterRegions.length===0||(t2.target_regions||[]).some(r=>assignFilterRegions.includes(r));
     return cOk&&rOk;
   });
+  const getPatientExerciseInfo=(pid)=>{
+    const exs=exercises.filter(e=>e.patient_id===pid);
+    const count=exs.length;
+    if(!count)return{count:0,lastDate:null,lastDateStr:""};
+    const sorted=[...exs].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+    const lastDate=new Date(sorted[0].created_at);
+    const lastDateStr=lastDate.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
+    return{count,lastDate,lastDateStr};
+  };
   const filteredPatients=patients.filter(p=>{
     const q=patientSearch.trim().toLowerCase();
-    return (p.name||"").toLowerCase().includes(q)||(p.owner||"").toLowerCase().includes(q)||(p.breed||"").toLowerCase().includes(q);
+    if(!q)return true;
+    const info=getPatientExerciseInfo(p.id);
+    const badgeStr=info.count>0?`${info.count} übung ${info.lastDateStr}`:"";
+    return (p.name||"").toLowerCase().includes(q)||(p.owner||"").toLowerCase().includes(q)||(p.breed||"").toLowerCase().includes(q)||badgeStr.toLowerCase().includes(q);
   });
   const filteredAssignPatients=patients.filter(p=>{
     const q=assignPatientSearch.trim().toLowerCase();
@@ -1758,11 +1771,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         </a>
         {/* Legal + Konto löschen links */}
         <div style={{textAlign:"center",padding:"8px 0 16px",display:"flex",justifyContent:"center",gap:20,flexWrap:"wrap"}}>
-          <a href={practice.privacy_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,textDecoration:"none"}}>{t.privacyLink}</a>
-          <a href={practice.imprint_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,textDecoration:"none"}}>{t.imprintLink}</a>
-          <button onClick={()=>{setDeleteConfirmText("");setShowDeleteAccount(true);}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,opacity:.5,padding:0,textDecoration:"none"}}>{t.deleteAccount}</button>
+          <a href={practice.privacy_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,opacity:.65,textDecoration:"none"}}>{t.privacyLink}</a>
+          <a href={practice.imprint_url||"#"} target="_blank" style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,opacity:.65,textDecoration:"none"}}>{t.imprintLink}</a>
+          <button onClick={()=>{setDeleteConfirmText("");setShowDeleteAccount(true);}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,opacity:.65,padding:0,textDecoration:"none"}}>{t.deleteAccount}</button>
         </div>
-        <div style={{textAlign:"center",padding:"4px 0 8px",fontFamily:"'DM Sans',sans-serif",fontSize:10,color:MUTED,opacity:.4,letterSpacing:".3px"}}>Made with Love in Berlin · v{APP_VERSION}</div>
+        <div style={{textAlign:"center",padding:"4px 0 8px",fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,opacity:.65,letterSpacing:".3px"}}>Made with Love in Berlin · v{APP_VERSION}</div>
       </div>
       )}
 
@@ -1790,24 +1803,50 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 {filteredPatients.map(p=>{
                   const userEmail=getUserEmail(p.user_id);
                   return(
-                    <div key={p.id} className="card" style={{padding:"13px 15px",display:"flex",gap:12,alignItems:"center"}}>
-                      <div style={{width:42,height:42,borderRadius:12,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{p.avatar||"🐕"}</div>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#102828"}}>{p.name}</div>
-                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:1}}>{p.breed} · {p.owner}</div>
-                        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#5a5a5a",marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.condition}</div>
-                        <div style={{marginTop:4}}>
-                          {userEmail?<span className="tag" style={{background:"#E8F5E9",color:"#2E7D32",display:"inline-flex",alignItems:"center",gap:3}}><Icon name="mail" size={10} color="#2E7D32"/>{userEmail}</span>
-                            :<span className="tag" style={{background:"#FFF3E0",color:"#E65100"}}>Kein Login</span>}
+                    {(()=>{
+                      const info=getPatientExerciseInfo(p.id);
+                      const [open,setOpen]=React.useState(false);
+                      const patExs=exercises.filter(e=>e.patient_id===p.id).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+                      return(
+                        <div key={p.id} className="card" style={{padding:"13px 15px"}}>
+                          <div style={{display:"flex",gap:12,alignItems:"center"}}>
+                            <div style={{width:42,height:42,borderRadius:12,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{p.avatar||"🐕"}</div>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#102828"}}>{p.name}</div>
+                              <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:1}}>{p.breed} · {p.owner}</div>
+                              <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#5a5a5a",marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.condition}</div>
+                              <div style={{marginTop:5,display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
+                                {userEmail?<span className="tag" style={{background:"#E8F5E9",color:"#2E7D32",display:"inline-flex",alignItems:"center",gap:3}}><Icon name="mail" size={10} color="#2E7D32"/>{userEmail}</span>
+                                  :<span className="tag" style={{background:"#FFF3E0",color:"#E65100"}}>Kein Login</span>}
+                                {info.count>0
+                                  ?<button className="btn" onClick={()=>setOpen(o=>!o)} style={{display:"inline-flex",alignItems:"center",gap:4,background:BRAND+"18",borderRadius:20,padding:"2px 9px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MID}}>
+                                      <Icon name="tip" size={10} color={MID}/>{info.count} {info.count===1?"Übung":"Übungen"} · {info.lastDateStr}
+                                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={MID} strokeWidth="2.5" strokeLinecap="round"><polyline points={open?"18 15 12 9 6 15":"6 9 12 15 18 9"}/></svg>
+                                    </button>
+                                  :<span className="tag" style={{background:"#F5F5F5",color:"#aaa"}}>Keine Übungen</span>}
+                              </div>
+                            </div>
+                            <div style={{display:"flex",gap:5}}>
+                              <button className="iBtn" title="Übungsplan drucken" onClick={()=>printExercisePlan(p)} style={{background:"#E8F5E9"}}><Icon name="print" size={14} color="#2E7D32"/></button>
+                              {userEmail&&<button className="iBtn" title="Plan-Info per Mail senden" onClick={()=>openPlanMail(p,null)} style={{background:"#E3F2FD"}}><Icon name="mail" size={14} color="#1565C0"/></button>}
+                              <button className="iBtn" onClick={()=>{setEditPatientData({...p});setEditAccountMode(p.user_id?"existing":"none");setResetEmailSent(false);setSheet("editPatient");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
+                              <button className="iBtn" onClick={()=>{setSheetData(p);setSheet("confirmDeletePt");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
+                            </div>
+                          </div>
+                          {open&&patExs.length>0&&(
+                            <div style={{marginTop:10,borderTop:`1px solid ${BORDER}`,paddingTop:10,display:"flex",flexDirection:"column",gap:6}}>
+                              {patExs.map(ex=>(
+                                <div key={ex.id} style={{display:"flex",alignItems:"center",gap:8}}>
+                                  <div style={{width:6,height:6,borderRadius:"50%",background:BRAND,flexShrink:0}}/>
+                                  <div style={{flex:1,fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#102828"}}>{ex.title}</div>
+                                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,flexShrink:0}}>{new Date(ex.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                      <div style={{display:"flex",gap:5}}>
-                        <button className="iBtn" title="Übungsplan drucken" onClick={()=>printExercisePlan(p)} style={{background:"#E8F5E9"}}><Icon name="print" size={14} color="#2E7D32"/></button>
-                        {userEmail&&<button className="iBtn" title="Plan-Info per Mail senden" onClick={()=>openPlanMail(p,null)} style={{background:"#E3F2FD"}}><Icon name="mail" size={14} color="#1565C0"/></button>}
-                        <button className="iBtn" onClick={()=>{setEditPatientData({...p});setEditAccountMode(p.user_id?"existing":"none");setResetEmailSent(false);setSheet("editPatient");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
-                        <button className="iBtn" onClick={()=>{setSheetData(p);setSheet("confirmDeletePt");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   );
                 })}
                 {filteredPatients.length===0&&<div className="card" style={{padding:20,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>{patientSearch?"Keine Patienten gefunden.":"Noch keine Patienten angelegt."}</div>}
@@ -1841,7 +1880,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     </div>
                     <div style={{display:"flex",gap:5}} onClick={e=>e.stopPropagation()}>
                       {(!tmpl.is_starter||practice.slug==="fitfundog")&&<button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setPropagateTemplateUpdate(true);setPropagateStarterUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>}
-                      <button className="iBtn" title="Kopieren" onClick={()=>{setNewTemplate({title:"Kopie "+tmpl.title,categories:tmpl.categories||[],target_regions:tmpl.target_regions||[],difficulty:tmpl.difficulty||"Leicht",description:tmpl.description||"",instructions:tmpl.instructions?.length?[...tmpl.instructions]:[""],image_url:tmpl.image_url||"",video_url:tmpl.video_url||"",is_starter:false});setSheet("addTemplate");}} style={{background:BRAND+"10"}}><Icon name="copy" size={14} color={MID}/></button>
+                      {!tmpl.is_starter&&<button className="iBtn" title="Kopieren" onClick={()=>{setNewTemplate({title:"Kopie "+tmpl.title,categories:tmpl.categories||[],target_regions:tmpl.target_regions||[],difficulty:tmpl.difficulty||"Leicht",description:tmpl.description||"",instructions:tmpl.instructions?.length?[...tmpl.instructions]:[""],image_url:tmpl.image_url||"",video_url:tmpl.video_url||"",is_starter:false});setSheet("addTemplate");}} style={{background:BRAND+"10"}}><Icon name="copy" size={14} color={MID}/></button>}
                       <button className="iBtn" onClick={()=>{setSheetData(tmpl);setSheet("confirmDeleteTmpl");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                     </div>
                   </div>
@@ -2184,7 +2223,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </button>
             </div>
           </ARow>
-          <div style={{textAlign:"center",padding:"8px 0 4px",fontFamily:"'DM Sans',sans-serif",fontSize:10,color:MUTED,opacity:.45,letterSpacing:".3px"}}>Made with Love in Berlin · v{APP_VERSION}</div>
+          <div style={{textAlign:"center",padding:"8px 0 4px",fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,opacity:.65,letterSpacing:".3px"}}>Made with Love in Berlin · v{APP_VERSION}</div>
         </div>
       )}
 
