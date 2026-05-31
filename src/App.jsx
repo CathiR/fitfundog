@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-05-31-047";
+const APP_VERSION = "2026-05-31-049";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -1072,9 +1072,6 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       });
       if(se){alert("Account-Fehler: "+se.message);setSaving(false);suppressAuthEvents.current=false;return;}
       userId=sd?.user?.id||null;
-      if(userId){
-        await supabase.from("user_invitations").insert({user_id:userId,practice_id:practiceId});
-      }
       // Re-login als Admin – warten bis Session gesetzt ist
       const storedPw=sessionStorage.getItem("_tfpw");
       const therapistEmail=ps.therapist_email||practice.therapist_email;
@@ -1084,6 +1081,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         await new Promise(r=>setTimeout(r,400));
       }
       suppressAuthEvents.current=false;
+      // user_invitations erst nach Re-Login als Admin schreiben
+      if(userId){
+        await supabase.from("user_invitations").insert({user_id:userId,practice_id:practiceId});
+      }
     }
     const{data,error}=await supabase.from("patients").insert({
       name:newPatient.name,breed:newPatient.breed,age:newPatient.age,
@@ -1108,10 +1109,6 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       });
       if(se){alert("Account-Fehler: "+se.message);setSaving(false);suppressAuthEvents.current=false;return;}
       fields.user_id=sd?.user?.id||null;
-      if(fields.user_id){
-        const{data:ps2}=await supabase.from("practice_settings").select("id").eq("slug",PRACTICE_SLUG).maybeSingle();
-        if(ps2?.id)await supabase.from("user_invitations").insert({user_id:fields.user_id,practice_id:ps2.id});
-      }
       const storedPw=sessionStorage.getItem("_tfpw");
       if(storedPw&&practice.therapist_email){
         const{error:reErr}=await supabase.auth.signInWithPassword({email:practice.therapist_email,password:storedPw});
@@ -1119,6 +1116,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         await new Promise(r=>setTimeout(r,400));
       }
       suppressAuthEvents.current=false;
+      // user_invitations erst nach Re-Login als Admin schreiben
+      if(fields.user_id){
+        const{data:ps2}=await supabase.from("practice_settings").select("id").eq("slug",PRACTICE_SLUG).maybeSingle();
+        if(ps2?.id)await supabase.from("user_invitations").insert({user_id:fields.user_id,practice_id:ps2.id});
+      }
     } else if(_newUserId!==undefined){
       fields.user_id=_newUserId||null;
     }
@@ -1852,10 +1854,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 </button>
               </div>
               <SearchInput value={patientSearch} onChange={setPatientSearch} placeholder="Patient, Besitzer oder Rasse suchen..."/>
-              <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,userSelect:"none"}}>
-                <input type="checkbox" checked={filterHasExercises} onChange={e=>setFilterHasExercises(e.target.checked)} style={{width:16,height:16,accentColor:BRAND,cursor:"pointer"}}/>
+              <div onClick={()=>setFilterHasExercises(v=>!v)} style={{display:"inline-flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,userSelect:"none"}}>
+                <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${filterHasExercises?BRAND:BORDER}`,background:filterHasExercises?BRAND:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s,border-color .15s"}}>
+                  {filterHasExercises&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
                 Nur Patienten mit Übungen
-              </label>
+              </div>
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                 {filteredPatients.map(p=>{
                   const userEmail=getUserEmail(p.user_id);
