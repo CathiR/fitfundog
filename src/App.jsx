@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-05-31-046";
+const APP_VERSION = "2026-05-31-047";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -517,6 +517,7 @@ export default function App() {
   const [selectedExistingUserId,setSelectedExistingUserId]=useState("");
   const [resetEmailSent,setResetEmailSent]=useState(false);
   const [patientSearch,setPatientSearch]=useState("");
+  const [filterHasExercises,setFilterHasExercises]=useState(false);
   const [templateSearch,setTemplateSearch]=useState("");
   const templateListScrollRef=useRef(0);
   const [ownerSearch,setOwnerSearch]=useState("");
@@ -1071,6 +1072,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       });
       if(se){alert("Account-Fehler: "+se.message);setSaving(false);suppressAuthEvents.current=false;return;}
       userId=sd?.user?.id||null;
+      if(userId){
+        await supabase.from("user_invitations").insert({user_id:userId,practice_id:practiceId});
+      }
       // Re-login als Admin – warten bis Session gesetzt ist
       const storedPw=sessionStorage.getItem("_tfpw");
       const therapistEmail=ps.therapist_email||practice.therapist_email;
@@ -1104,6 +1108,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       });
       if(se){alert("Account-Fehler: "+se.message);setSaving(false);suppressAuthEvents.current=false;return;}
       fields.user_id=sd?.user?.id||null;
+      if(fields.user_id){
+        const{data:ps2}=await supabase.from("practice_settings").select("id").eq("slug",PRACTICE_SLUG).maybeSingle();
+        if(ps2?.id)await supabase.from("user_invitations").insert({user_id:fields.user_id,practice_id:ps2.id});
+      }
       const storedPw=sessionStorage.getItem("_tfpw");
       if(storedPw&&practice.therapist_email){
         const{error:reErr}=await supabase.auth.signInWithPassword({email:practice.therapist_email,password:storedPw});
@@ -1458,9 +1466,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     return{count,lastDate,lastDateStr};
   };
   const filteredPatients=patients.filter(p=>{
+    const info=getPatientExerciseInfo(p.id);
+    if(filterHasExercises&&info.count===0)return false;
     const q=patientSearch.trim().toLowerCase();
     if(!q)return true;
-    const info=getPatientExerciseInfo(p.id);
     const badgeStr=info.count>0?`${info.count} übung ${info.lastDateStr}`:"";
     return (p.name||"").toLowerCase().includes(q)||(p.owner||"").toLowerCase().includes(q)||(p.breed||"").toLowerCase().includes(q)||badgeStr.toLowerCase().includes(q);
   });
@@ -1843,6 +1852,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 </button>
               </div>
               <SearchInput value={patientSearch} onChange={setPatientSearch} placeholder="Patient, Besitzer oder Rasse suchen..."/>
+              <label style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,userSelect:"none"}}>
+                <input type="checkbox" checked={filterHasExercises} onChange={e=>setFilterHasExercises(e.target.checked)} style={{width:16,height:16,accentColor:BRAND,cursor:"pointer"}}/>
+                Nur Patienten mit Übungen
+              </label>
               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                 {filteredPatients.map(p=>{
                   const userEmail=getUserEmail(p.user_id);
