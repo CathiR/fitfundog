@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-05-31-049";
+const APP_VERSION = "2026-06-02-050";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -53,25 +53,27 @@ let difficultyColor=getDifficultyColor();
 const PatientCard = ({ p, userEmail, info, patExs, onPrint, onMail, onEdit, onDelete }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div className="card" style={{padding:"13px 15px"}}>
-      <div style={{display:"flex",gap:12,alignItems:"center"}}>
-        <div style={{width:42,height:42,borderRadius:12,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>{p.avatar||"🐕"}</div>
+    <div className="card" style={{padding:"16px 16px 14px"}}>
+      <div style={{display:"flex",gap:14,alignItems:"flex-start"}}>
+        <div style={{width:44,height:44,borderRadius:12,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,marginTop:2}}>{p.avatar||"🐕"}</div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#102828"}}>{p.name}</div>
-          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:1}}>{p.breed} · {p.owner}</div>
-          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#5a5a5a",marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.condition}</div>
-          <div style={{marginTop:5,display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
-            {userEmail?<span className="tag" style={{background:"#E8F5E9",color:"#2E7D32",display:"inline-flex",alignItems:"center",gap:3}}><Icon name="mail" size={10} color="#2E7D32"/>{userEmail}</span>
-              :<span className="tag" style={{background:"#FFF3E0",color:"#E65100"}}>Kein Login</span>}
+          {p.breed&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:1}}>{p.breed}</div>}
+          {p.owner&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:1}}>{p.owner}</div>}
+          {p.condition&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#5a5a5a",marginTop:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.condition}</div>}
+          <div style={{marginTop:7,display:"flex",flexDirection:"column",gap:5}}>
+            {userEmail
+              ?<span className="tag" style={{background:"#E8F5E9",color:"#2E7D32",display:"inline-flex",alignItems:"center",gap:3,alignSelf:"flex-start"}}><Icon name="mail" size={10} color="#2E7D32"/>{userEmail}</span>
+              :<span className="tag" style={{background:"#FFF3E0",color:"#E65100",alignSelf:"flex-start"}}>Kein Login</span>}
             {info.count>0
-              ?<button className="btn" onClick={()=>setOpen(o=>!o)} style={{display:"inline-flex",alignItems:"center",gap:4,background:BRAND+"18",borderRadius:20,padding:"2px 9px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MID}}>
+              ?<button className="btn" onClick={()=>setOpen(o=>!o)} style={{display:"inline-flex",alignItems:"center",gap:4,background:BRAND+"18",borderRadius:20,padding:"3px 10px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MID,alignSelf:"flex-start"}}>
                   <Icon name="tip" size={10} color={MID}/>{info.count} {info.count===1?"Übung":"Übungen"} · {info.lastDateStr}
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={MID} strokeWidth="2.5" strokeLinecap="round"><polyline points={open?"18 15 12 9 6 15":"6 9 12 15 18 9"}/></svg>
                 </button>
-              :<span className="tag" style={{background:"#F5F5F5",color:"#aaa"}}>Keine Übungen</span>}
+              :<span className="tag" style={{background:"#F5F5F5",color:"#aaa",alignSelf:"flex-start"}}>Keine Übungen</span>}
           </div>
         </div>
-        <div style={{display:"flex",gap:5}}>
+        <div style={{display:"flex",gap:5,flexShrink:0}}>
           <button className="iBtn" title="Übungsplan drucken" onClick={onPrint} style={{background:"#E8F5E9"}}><Icon name="print" size={14} color="#2E7D32"/></button>
           {userEmail&&<button className="iBtn" title="Plan-Info per Mail senden" onClick={onMail} style={{background:"#E3F2FD"}}><Icon name="mail" size={14} color="#1565C0"/></button>}
           <button className="iBtn" onClick={onEdit} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
@@ -1854,7 +1856,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 </button>
               </div>
               <SearchInput value={patientSearch} onChange={setPatientSearch} placeholder="Patient, Besitzer oder Rasse suchen..."/>
-              <div onClick={()=>setFilterHasExercises(v=>!v)} style={{display:"inline-flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,userSelect:"none"}}>
+              <div onClick={()=>setFilterHasExercises(v=>!v)} style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,userSelect:"none"}}>
                 <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${filterHasExercises?BRAND:BORDER}`,background:filterHasExercises?BRAND:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s,border-color .15s"}}>
                   {filterHasExercises&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
                 </div>
