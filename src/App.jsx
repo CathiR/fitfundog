@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-02-050";
+const APP_VERSION = "2026-06-02-051";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -53,31 +53,35 @@ let difficultyColor=getDifficultyColor();
 const PatientCard = ({ p, userEmail, info, patExs, onPrint, onMail, onEdit, onDelete }) => {
   const [open, setOpen] = useState(false);
   return (
-    <div className="card" style={{padding:"16px 16px 14px"}}>
-      <div style={{display:"flex",gap:14,alignItems:"flex-start"}}>
-        <div style={{width:44,height:44,borderRadius:12,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0,marginTop:2}}>{p.avatar||"🐕"}</div>
+    <div className="card" style={{padding:"13px 14px 12px"}}>
+      {/* Zeile 1: Avatar + Name + Buttons */}
+      <div style={{display:"flex",gap:10,alignItems:"center"}}>
+        <div style={{width:38,height:38,borderRadius:10,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>{p.avatar||"🐕"}</div>
         <div style={{flex:1,minWidth:0}}>
-          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#102828"}}>{p.name}</div>
-          {p.breed&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:1}}>{p.breed}</div>}
-          {p.owner&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:1}}>{p.owner}</div>}
-          {p.condition&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:"#5a5a5a",marginTop:3,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.condition}</div>}
-          <div style={{marginTop:7,display:"flex",flexDirection:"column",gap:5}}>
-            {userEmail
-              ?<span className="tag" style={{background:"#E8F5E9",color:"#2E7D32",display:"inline-flex",alignItems:"center",gap:3,alignSelf:"flex-start"}}><Icon name="mail" size={10} color="#2E7D32"/>{userEmail}</span>
-              :<span className="tag" style={{background:"#FFF3E0",color:"#E65100",alignSelf:"flex-start"}}>Kein Login</span>}
-            {info.count>0
-              ?<button className="btn" onClick={()=>setOpen(o=>!o)} style={{display:"inline-flex",alignItems:"center",gap:4,background:BRAND+"18",borderRadius:20,padding:"3px 10px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MID,alignSelf:"flex-start"}}>
-                  <Icon name="tip" size={10} color={MID}/>{info.count} {info.count===1?"Übung":"Übungen"} · {info.lastDateStr}
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={MID} strokeWidth="2.5" strokeLinecap="round"><polyline points={open?"18 15 12 9 6 15":"6 9 12 15 18 9"}/></svg>
-                </button>
-              :<span className="tag" style={{background:"#F5F5F5",color:"#aaa",alignSelf:"flex-start"}}>Keine Übungen</span>}
-          </div>
+          <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#102828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
         </div>
-        <div style={{display:"flex",gap:5,flexShrink:0}}>
-          <button className="iBtn" title="Übungsplan drucken" onClick={onPrint} style={{background:"#E8F5E9"}}><Icon name="print" size={14} color="#2E7D32"/></button>
-          {userEmail&&<button className="iBtn" title="Plan-Info per Mail senden" onClick={onMail} style={{background:"#E3F2FD"}}><Icon name="mail" size={14} color="#1565C0"/></button>}
-          <button className="iBtn" onClick={onEdit} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
-          <button className="iBtn" onClick={onDelete} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
+        <div style={{display:"flex",gap:4,flexShrink:0}}>
+          <button className="iBtn" title="Übungsplan drucken" onClick={onPrint} style={{background:"#E8F5E9"}}><Icon name="print" size={13} color="#2E7D32"/></button>
+          {userEmail&&<button className="iBtn" title="Plan-Info per Mail senden" onClick={onMail} style={{background:"#E3F2FD"}}><Icon name="mail" size={13} color="#1565C0"/></button>}
+          <button className="iBtn" onClick={onEdit} style={{background:BRAND+"20"}}><Icon name="edit" size={13} color={MID}/></button>
+          <button className="iBtn" onClick={onDelete} style={{background:"#FFE8E8"}}><Icon name="trash" size={13} color="#C0392B"/></button>
+        </div>
+      </div>
+      {/* Zeile 2: Meta + Badges, eingerückt unter Avatar */}
+      <div style={{marginTop:5,paddingLeft:48,display:"flex",flexDirection:"column",gap:4}}>
+        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+          {[p.breed,p.owner,p.condition].filter(Boolean).join(" · ")}
+        </div>
+        <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
+          {userEmail
+            ?<span className="tag" style={{background:"#E8F5E9",color:"#2E7D32",display:"inline-flex",alignItems:"center",gap:3}}><Icon name="mail" size={10} color="#2E7D32"/>{userEmail}</span>
+            :<span className="tag" style={{background:"#FFF3E0",color:"#E65100"}}>Kein Login</span>}
+          {info.count>0
+            ?<button className="btn" onClick={()=>setOpen(o=>!o)} style={{display:"inline-flex",alignItems:"center",gap:4,background:BRAND+"18",borderRadius:20,padding:"2px 9px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MID}}>
+                <Icon name="tip" size={10} color={MID}/>{info.count} {info.count===1?"Übung":"Übungen"} · {info.lastDateStr}
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke={MID} strokeWidth="2.5" strokeLinecap="round"><polyline points={open?"18 15 12 9 6 15":"6 9 12 15 18 9"}/></svg>
+              </button>
+            :<span className="tag" style={{background:"#F5F5F5",color:"#aaa"}}>Keine Übungen</span>}
         </div>
       </div>
       {open&&patExs.length>0&&(
