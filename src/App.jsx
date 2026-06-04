@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-04-054";
+const APP_VERSION = "2026-06-04-055";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -1104,7 +1104,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       p_user_id:userId, p_practice_id:practiceId
     });
     if(error){alert("Fehler: "+error.message);setSaving(false);return;}
-    await loadAll(ps.admin_user_id||session?.user?.id);
+    const{data:{session:freshSession}}=await supabase.auth.getSession();
+    await loadAll(freshSession?.user?.id||session?.user?.id);
     setSaving(false);setNewPatient(EMPTY_PATIENT);closeSheet();
   };
 
