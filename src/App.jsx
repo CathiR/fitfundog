@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-03-052";
+const APP_VERSION = "2026-06-04-053";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -720,7 +720,7 @@ export default function App() {
 <html lang="de">
 <head>
 <meta charset="UTF-8"/>
-<title>Übungsplan ${patient.name}</title>
+<title>${lang==="en"?"Exercise Plan":lang==="es"?"Plan de ejercicios":"Übungsplan"} ${patient.name}</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;600;700&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -855,7 +855,7 @@ ${patExercises.map((ex) => `
     <div style="font-size:10px;color:#aaa;line-height:1.6">Made with Love by Claudia<br/><a href="https://fitfundog.vercel.app/" target="_blank" style="color:${MID};text-decoration:none">Fit Fun Dog</a></div>
   </div>
   <div class="footer-col" style="text-align:center;padding:0 40px">
-    <div class="footer-col-label">T E R M I N &nbsp; B U C H E N</div>
+    <div class="footer-col-label">${lang==="en"?"B O O K &nbsp; A P P O I N T M E N T":lang==="es"?"R E S E R V A R &nbsp; C I T A":"T E R M I N &nbsp; B U C H E N"}</div>
     <div class="qr-box">
       <img class="qr-img" src="${BOOKING_QR}" alt="Termin QR"/>
     </div>
@@ -1098,11 +1098,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         await supabase.from("user_invitations").insert({user_id:userId,practice_id:practiceId});
       }
     }
-    const{data,error}=await supabase.from("patients").insert({
-      name:newPatient.name,breed:newPatient.breed,age:newPatient.age,
-      owner:newPatient.owner,condition:newPatient.condition,avatar:newPatient.avatar,user_id:userId,
-      practice_id:practiceId
-    }).select().single();
+    const{data,error}=await supabase.rpc("insert_patient_for_practice",{
+      p_name:newPatient.name, p_breed:newPatient.breed, p_age:newPatient.age,
+      p_owner:newPatient.owner, p_condition:newPatient.condition, p_avatar:newPatient.avatar,
+      p_user_id:userId, p_practice_id:practiceId
+    });
     if(error){alert("Fehler: "+error.message);setSaving(false);return;}
     await loadAll(ps.admin_user_id||session?.user?.id);
     setSaving(false);setNewPatient(EMPTY_PATIENT);closeSheet();
