@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-04-053";
+const APP_VERSION = "2026-06-04-054";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -802,7 +802,7 @@ export default function App() {
       ${[patient.breed, patient.age ? patient.age+" Jahre":"", patient.owner].filter(Boolean).join(" · ")}
     </div>
     ${patient.condition ? `<div class="patient-condition">${patient.condition}</div>` : ""}
-    <div class="plan-date">Ü B U N G S P L A N &nbsp;·&nbsp; ${date}</div>
+    <div class="plan-date">${lang==="en"?"E X E R C I S E &nbsp; P L A N":lang==="es"?"P L A N &nbsp; D E &nbsp; E J E R C I C I O S":"Ü B U N G S P L A N"} &nbsp;·&nbsp; ${date}</div>
   </div>
 </div>
 
