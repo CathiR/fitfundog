@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-02-051";
+const APP_VERSION = "2026-06-04-053";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -700,7 +700,13 @@ export default function App() {
 
   const printExercisePlan = async (patient) => {
     const patExercises = exercises.filter(e => e.patient_id === patient.id);
-    const date = new Date().toLocaleDateString("de-DE", {day:"2-digit",month:"long",year:"numeric"});
+    const locale = lang==="es"?"es-ES":lang==="en"?"en-GB":"de-DE";
+    const date = new Date().toLocaleDateString(locale, {day:"2-digit",month:"long",year:"numeric"});
+    const labelHome = lang==="en"?"HOME EXERCISES":lang==="es"?"EJERCICIOS EN CASA":"H\u00a0E\u00a0I\u00a0M\u00dc\u00a0B\u00a0U\u00a0N\u00a0G\u00a0E\u00a0N";
+    const labelExUnit = lang==="en"?`exercise${patExercises.length!==1?"s":""}`:lang==="es"?`ejercicio${patExercises.length!==1?"s":""}`:` \u00dcbung${patExercises.length!==1?"en":""}`;
+    const labelStepByStep = lang==="en"?"S T E P &nbsp; B Y &nbsp; S T E P":lang==="es"?"P A S O &nbsp; A &nbsp; P A S O":"S\u00a0C\u00a0H\u00a0R\u00a0I\u00a0T\u00a0T &nbsp; F\u00dc\u00a0R &nbsp; S\u00a0C\u00a0H\u00a0R\u00a0I\u00a0T\u00a0T";
+    const labelPerWeek = lang==="en"?"× per week":lang==="es"?"× por semana":"× pro Woche";
+    const labelVideo = lang==="en"?"Watch exercise video":lang==="es"?"Ver video del ejercicio":"Video zur Übung ansehen";
 
     // Build video QR entries
     const videoQRs = {};
@@ -714,7 +720,7 @@ export default function App() {
 <html lang="de">
 <head>
 <meta charset="UTF-8"/>
-<title>Übungsplan ${patient.name}</title>
+<title>${lang==="en"?"Exercise Plan":lang==="es"?"Plan de ejercicios":"Übungsplan"} ${patient.name}</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;600;700&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
@@ -801,26 +807,26 @@ export default function App() {
 </div>
 
 <hr class="divider"/>
-<div class="section-label">H&nbsp;E&nbsp;I&nbsp;M&nbsp;Ü&nbsp;B&nbsp;U&nbsp;N&nbsp;G&nbsp;E&nbsp;N &nbsp;·&nbsp; ${patExercises.length} Übung${patExercises.length!==1?"en":""}</div>
+<div class="section-label">${labelHome} &nbsp;·&nbsp; ${patExercises.length}${labelExUnit}</div>
 
 <!-- EXERCISES -->
 ${patExercises.map((ex) => `
 <div class="exercise">
   ${ex.image_url
-    ? `<img class="ex-img" src="${ex.image_url}" alt="${ex.title}"/>`
+    ? `<img class="ex-img" src="${ex.image_url}" alt="${exT(ex,'title')}"/>`
     : `<div class="ex-img-placeholder">🐾</div>`}
   <div class="ex-body">
-    <div class="ex-title">${ex.title}</div>
+    <div class="ex-title">${exT(ex,"title")}</div>
     <div class="ex-tags">
-      ${(ex.categories||[]).map(c=>`<span class="tag">${c}</span>`).join("")}
-      ${ex.difficulty ? `<span class="tag tag-diff-${ex.difficulty.toLowerCase()}">${ex.difficulty}</span>` : ""}
-      ${ex.repeat_count ? `<span class="tag tag-freq">${ex.repeat_count}× pro Woche</span>` : ""}
+      ${(ex.categories||[]).map(c=>`<span class="tag">${tCat(c)}</span>`).join("")}
+      ${ex.difficulty ? `<span class="tag tag-diff-${ex.difficulty.toLowerCase()}">${tDiff(ex.difficulty)}</span>` : ""}
+      ${ex.repeat_count ? `<span class="tag tag-freq">${ex.repeat_count}${labelPerWeek}</span>` : ""}
       ${ex.duration ? `<span class="tag">${ex.duration}</span>` : ""}
     </div>
-    ${ex.description ? `<div class="ex-desc">${ex.description}</div>` : ""}
-    ${ex.instructions && ex.instructions.filter(Boolean).length > 0 ? `
-      <div class="steps-label">S C H R I T T &nbsp; F Ü R &nbsp; S C H R I T T</div>
-      ${ex.instructions.filter(Boolean).map((step,j) => `
+    ${exT(ex,"description") ? `<div class="ex-desc">${exT(ex,"description")}</div>` : ""}
+    ${(exT(ex,"instructions")||[]).filter(Boolean).length > 0 ? `
+      <div class="steps-label">${labelStepByStep}</div>
+      ${(exT(ex,"instructions")||[]).filter(Boolean).map((step,j) => `
       <div class="step">
         <div class="step-num">${j+1}</div>
         <div class="step-text">${step}</div>
@@ -829,7 +835,7 @@ ${patExercises.map((ex) => `
       <div class="video-row">
         <img class="video-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=88x88&color=${DARK.slice(1)}&bgcolor=${PALE.slice(1)}&data=${encodeURIComponent(ex.video_url)}" alt="Video QR"/>
         <div>
-          <div class="video-text">Video zur Übung ansehen</div>
+          <div class="video-text">${labelVideo}</div>
           <a href="${ex.video_url}" target="_blank" style="font-size:9px;color:${MID};word-break:break-all;display:block;margin-top:2px">${ex.video_url}</a>
         </div>
       </div>` : ""}
@@ -849,7 +855,7 @@ ${patExercises.map((ex) => `
     <div style="font-size:10px;color:#aaa;line-height:1.6">Made with Love by Claudia<br/><a href="https://fitfundog.vercel.app/" target="_blank" style="color:${MID};text-decoration:none">Fit Fun Dog</a></div>
   </div>
   <div class="footer-col" style="text-align:center;padding:0 40px">
-    <div class="footer-col-label">T E R M I N &nbsp; B U C H E N</div>
+    <div class="footer-col-label">${lang==="en"?"B O O K &nbsp; A P P O I N T M E N T":lang==="es"?"R E S E R V A R &nbsp; C I T A":"T E R M I N &nbsp; B U C H E N"}</div>
     <div class="qr-box">
       <img class="qr-img" src="${BOOKING_QR}" alt="Termin QR"/>
     </div>
@@ -1092,11 +1098,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         await supabase.from("user_invitations").insert({user_id:userId,practice_id:practiceId});
       }
     }
-    const{data,error}=await supabase.from("patients").insert({
-      name:newPatient.name,breed:newPatient.breed,age:newPatient.age,
-      owner:newPatient.owner,condition:newPatient.condition,avatar:newPatient.avatar,user_id:userId,
-      practice_id:practiceId
-    }).select().single();
+    const{data,error}=await supabase.rpc("insert_patient_for_practice",{
+      p_name:newPatient.name, p_breed:newPatient.breed, p_age:newPatient.age,
+      p_owner:newPatient.owner, p_condition:newPatient.condition, p_avatar:newPatient.avatar,
+      p_user_id:userId, p_practice_id:practiceId
+    });
     if(error){alert("Fehler: "+error.message);setSaving(false);return;}
     await loadAll(ps.admin_user_id||session?.user?.id);
     setSaving(false);setNewPatient(EMPTY_PATIENT);closeSheet();
