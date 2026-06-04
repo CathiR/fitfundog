@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-02-051";
+const APP_VERSION = "2026-06-03-052";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -700,7 +700,13 @@ export default function App() {
 
   const printExercisePlan = async (patient) => {
     const patExercises = exercises.filter(e => e.patient_id === patient.id);
-    const date = new Date().toLocaleDateString("de-DE", {day:"2-digit",month:"long",year:"numeric"});
+    const locale = lang==="es"?"es-ES":lang==="en"?"en-GB":"de-DE";
+    const date = new Date().toLocaleDateString(locale, {day:"2-digit",month:"long",year:"numeric"});
+    const labelHome = lang==="en"?"HOME EXERCISES":lang==="es"?"EJERCICIOS EN CASA":"H\u00a0E\u00a0I\u00a0M\u00dc\u00a0B\u00a0U\u00a0N\u00a0G\u00a0E\u00a0N";
+    const labelExUnit = lang==="en"?`exercise${patExercises.length!==1?"s":""}`:lang==="es"?`ejercicio${patExercises.length!==1?"s":""}`:` \u00dcbung${patExercises.length!==1?"en":""}`;
+    const labelStepByStep = lang==="en"?"S T E P &nbsp; B Y &nbsp; S T E P":lang==="es"?"P A S O &nbsp; A &nbsp; P A S O":"S\u00a0C\u00a0H\u00a0R\u00a0I\u00a0T\u00a0T &nbsp; F\u00dc\u00a0R &nbsp; S\u00a0C\u00a0H\u00a0R\u00a0I\u00a0T\u00a0T";
+    const labelPerWeek = lang==="en"?"× per week":lang==="es"?"× por semana":"× pro Woche";
+    const labelVideo = lang==="en"?"Watch exercise video":lang==="es"?"Ver video del ejercicio":"Video zur Übung ansehen";
 
     // Build video QR entries
     const videoQRs = {};
@@ -801,26 +807,26 @@ export default function App() {
 </div>
 
 <hr class="divider"/>
-<div class="section-label">H&nbsp;E&nbsp;I&nbsp;M&nbsp;Ü&nbsp;B&nbsp;U&nbsp;N&nbsp;G&nbsp;E&nbsp;N &nbsp;·&nbsp; ${patExercises.length} Übung${patExercises.length!==1?"en":""}</div>
+<div class="section-label">${labelHome} &nbsp;·&nbsp; ${patExercises.length}${labelExUnit}</div>
 
 <!-- EXERCISES -->
 ${patExercises.map((ex) => `
 <div class="exercise">
   ${ex.image_url
-    ? `<img class="ex-img" src="${ex.image_url}" alt="${ex.title}"/>`
+    ? `<img class="ex-img" src="${ex.image_url}" alt="${exT(ex,'title')}"/>`
     : `<div class="ex-img-placeholder">🐾</div>`}
   <div class="ex-body">
-    <div class="ex-title">${ex.title}</div>
+    <div class="ex-title">${exT(ex,"title")}</div>
     <div class="ex-tags">
-      ${(ex.categories||[]).map(c=>`<span class="tag">${c}</span>`).join("")}
-      ${ex.difficulty ? `<span class="tag tag-diff-${ex.difficulty.toLowerCase()}">${ex.difficulty}</span>` : ""}
-      ${ex.repeat_count ? `<span class="tag tag-freq">${ex.repeat_count}× pro Woche</span>` : ""}
+      ${(ex.categories||[]).map(c=>`<span class="tag">${tCat(c)}</span>`).join("")}
+      ${ex.difficulty ? `<span class="tag tag-diff-${ex.difficulty.toLowerCase()}">${tDiff(ex.difficulty)}</span>` : ""}
+      ${ex.repeat_count ? `<span class="tag tag-freq">${ex.repeat_count}${labelPerWeek}</span>` : ""}
       ${ex.duration ? `<span class="tag">${ex.duration}</span>` : ""}
     </div>
-    ${ex.description ? `<div class="ex-desc">${ex.description}</div>` : ""}
-    ${ex.instructions && ex.instructions.filter(Boolean).length > 0 ? `
-      <div class="steps-label">S C H R I T T &nbsp; F Ü R &nbsp; S C H R I T T</div>
-      ${ex.instructions.filter(Boolean).map((step,j) => `
+    ${exT(ex,"description") ? `<div class="ex-desc">${exT(ex,"description")}</div>` : ""}
+    ${(exT(ex,"instructions")||[]).filter(Boolean).length > 0 ? `
+      <div class="steps-label">${labelStepByStep}</div>
+      ${(exT(ex,"instructions")||[]).filter(Boolean).map((step,j) => `
       <div class="step">
         <div class="step-num">${j+1}</div>
         <div class="step-text">${step}</div>
@@ -829,7 +835,7 @@ ${patExercises.map((ex) => `
       <div class="video-row">
         <img class="video-qr" src="https://api.qrserver.com/v1/create-qr-code/?size=88x88&color=${DARK.slice(1)}&bgcolor=${PALE.slice(1)}&data=${encodeURIComponent(ex.video_url)}" alt="Video QR"/>
         <div>
-          <div class="video-text">Video zur Übung ansehen</div>
+          <div class="video-text">${labelVideo}</div>
           <a href="${ex.video_url}" target="_blank" style="font-size:9px;color:${MID};word-break:break-all;display:block;margin-top:2px">${ex.video_url}</a>
         </div>
       </div>` : ""}
