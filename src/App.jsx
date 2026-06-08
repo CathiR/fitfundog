@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-04-055";
+const APP_VERSION = "2026-06-08-056";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -1074,6 +1074,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     const practiceId=ps.id;
 
     let userId=null;
+    let adminUserId=ps.admin_user_id||session?.user?.id;
     if(newAccountMode==="existing"){
       userId=selectedExistingUserId||null;
     }else if(newAccountMode==="new"&&newPatient.ownerEmail&&newPatient.ownerPassword){
@@ -1084,13 +1085,13 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       });
       if(se){alert("Account-Fehler: "+se.message);setSaving(false);suppressAuthEvents.current=false;return;}
       userId=sd?.user?.id||null;
-      // Re-login als Admin – warten bis Session gesetzt ist
+      // Re-login als Admin – Session direkt aus Antwort verwenden
       const storedPw=sessionStorage.getItem("_tfpw");
       const therapistEmail=ps.therapist_email||practice.therapist_email;
       if(storedPw&&therapistEmail){
-        const{error:reErr}=await supabase.auth.signInWithPassword({email:therapistEmail,password:storedPw});
-        if(reErr){alert("Re-Login fehlgeschlagen. Bitte neu einloggen.");setSaving(false);suppressAuthEvents.current=false;return;}
-        await new Promise(r=>setTimeout(r,400));
+        const{data:reData,error:reErr}=await supabase.auth.signInWithPassword({email:therapistEmail,password:storedPw});
+        if(reErr||!reData?.session){alert("Re-Login fehlgeschlagen. Bitte neu einloggen.");setSaving(false);suppressAuthEvents.current=false;return;}
+        adminUserId=reData.session.user.id;
       }
       suppressAuthEvents.current=false;
       // user_invitations erst nach Re-Login als Admin schreiben
@@ -1104,8 +1105,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       p_user_id:userId, p_practice_id:practiceId
     });
     if(error){alert("Fehler: "+error.message);setSaving(false);return;}
-    const{data:{session:freshSession}}=await supabase.auth.getSession();
-    await loadAll(freshSession?.user?.id||session?.user?.id);
+    await loadAll(adminUserId);
     setSaving(false);setNewPatient(EMPTY_PATIENT);closeSheet();
   };
 
@@ -1113,6 +1113,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     if(!editPatientData?.name)return;
     setSaving(true);
     const{id,_newUserId,ownerEmail,ownerPassword,...fields}=editPatientData;
+    let adminUserIdUp=practice.admin_user_id||session?.user?.id;
     // Neuen Account anlegen falls editAccountMode === "new"
     if(editAccountMode==="new"&&ownerEmail&&ownerPassword){
       suppressAuthEvents.current=true;
@@ -1124,9 +1125,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       fields.user_id=sd?.user?.id||null;
       const storedPw=sessionStorage.getItem("_tfpw");
       if(storedPw&&practice.therapist_email){
-        const{error:reErr}=await supabase.auth.signInWithPassword({email:practice.therapist_email,password:storedPw});
-        if(reErr){alert("Re-Login fehlgeschlagen. Bitte neu einloggen.");setSaving(false);suppressAuthEvents.current=false;return;}
-        await new Promise(r=>setTimeout(r,400));
+        const{data:reData,error:reErr}=await supabase.auth.signInWithPassword({email:practice.therapist_email,password:storedPw});
+        if(reErr||!reData?.session){alert("Re-Login fehlgeschlagen. Bitte neu einloggen.");setSaving(false);suppressAuthEvents.current=false;return;}
+        adminUserIdUp=reData.session.user.id;
       }
       suppressAuthEvents.current=false;
       // user_invitations erst nach Re-Login als Admin schreiben
@@ -1139,7 +1140,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     }
     const{data,error}=await supabase.from("patients").update(fields).eq("id",id).select().single();
     if(error){alert("Fehler: "+error.message);setSaving(false);return;}
-    await loadAll(practice.admin_user_id||session?.user?.id);
+    await loadAll(adminUserIdUp);
     setSaving(false);closeSheet();
   };
 
@@ -1174,9 +1175,15 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
   const deletePatient=async(pid)=>{
     setDeleting(pid);
+    const pt=patients.find(p=>p.id===pid);
     for(const ex of exForPatient(pid))await supabase.from("exercise_logs").delete().eq("exercise_id",ex.id);
     await supabase.from("exercises").delete().eq("patient_id",pid);
     await supabase.from("patients").delete().eq("id",pid);
+    if(pt?.user_id){
+      await supabase.from("user_invitations").delete().eq("user_id",pt.user_id);
+      const{error:delErr}=await supabase.functions.invoke("delete-user",{body:{user_id:pt.user_id}});
+      if(delErr)console.warn("Auth-User konnte nicht gelöscht werden:",delErr.message);
+    }
     setExercises(prev=>prev.filter(e=>e.patient_id!==pid));
     setPatients(prev=>prev.filter(p=>p.id!==pid));
     if(selectedPatient?.id===pid)setSelectedPatient(null);
