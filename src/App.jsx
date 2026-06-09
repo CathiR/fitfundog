@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-08-056";
+const APP_VERSION = "2026-06-09-057";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -1093,7 +1093,6 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         if(reErr||!reData?.session){alert("Re-Login fehlgeschlagen. Bitte neu einloggen.");setSaving(false);suppressAuthEvents.current=false;return;}
         adminUserId=reData.session.user.id;
       }
-      suppressAuthEvents.current=false;
       // user_invitations erst nach Re-Login als Admin schreiben
       if(userId){
         await supabase.from("user_invitations").insert({user_id:userId,practice_id:practiceId});
@@ -1104,8 +1103,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       p_owner:newPatient.owner, p_condition:newPatient.condition, p_avatar:newPatient.avatar,
       p_user_id:userId, p_practice_id:practiceId
     });
-    if(error){alert("Fehler: "+error.message);setSaving(false);return;}
+    if(error){alert("Fehler: "+error.message);setSaving(false);suppressAuthEvents.current=false;return;}
     await loadAll(adminUserId);
+    suppressAuthEvents.current=false;
     setSaving(false);setNewPatient(EMPTY_PATIENT);closeSheet();
   };
 
@@ -1129,7 +1129,6 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         if(reErr||!reData?.session){alert("Re-Login fehlgeschlagen. Bitte neu einloggen.");setSaving(false);suppressAuthEvents.current=false;return;}
         adminUserIdUp=reData.session.user.id;
       }
-      suppressAuthEvents.current=false;
       // user_invitations erst nach Re-Login als Admin schreiben
       if(fields.user_id){
         const{data:ps2}=await supabase.from("practice_settings").select("id").eq("slug",PRACTICE_SLUG).maybeSingle();
@@ -1139,8 +1138,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       fields.user_id=_newUserId||null;
     }
     const{data,error}=await supabase.from("patients").update(fields).eq("id",id).select().single();
-    if(error){alert("Fehler: "+error.message);setSaving(false);return;}
+    if(error){alert("Fehler: "+error.message);setSaving(false);suppressAuthEvents.current=false;return;}
     await loadAll(adminUserIdUp);
+    suppressAuthEvents.current=false;
     setSaving(false);closeSheet();
   };
 
