@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-09-057";
+const APP_VERSION = "2026-06-10-058";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -296,7 +296,6 @@ const LoginScreen = ({practice,onLogin}) => {
     setLoading(true);setError("");
     const{error:err}=await supabase.auth.signInWithPassword({email,password});
     if(err)setError("Login fehlgeschlagen. Bitte Email und Passwort prüfen.");
-    else if(email===practice.therapist_email)sessionStorage.setItem("_tfpw",password);
     setLoading(false);
   };
   return(
@@ -482,6 +481,15 @@ export default function App() {
   const [selectedExercise,setSelectedExercise]=useState(null);
   const [selectedPatient,setSelectedPatient]=useState(null);
   const [saving,setSaving]=useState(false);
+  // ── Toast-System (seit 058): Erfolg verschwindet nach 3s, Fehler bleibt bis X ──
+  const [toasts,setToasts]=useState([]);
+  const toastIdRef=useRef(0);
+  const showToast=(type,message)=>{
+    const id=++toastIdRef.current;
+    setToasts(prev=>[...prev,{id,type,message}]);
+    if(type==="success")setTimeout(()=>setToasts(prev=>prev.filter(t2=>t2.id!==id)),3000);
+  };
+  const dismissToast=(id)=>setToasts(prev=>prev.filter(t2=>t2.id!==id));
   const [deleting,setDeleting]=useState(null);
   const [sheet,setSheet]=useState(null);
   const [sheetData,setSheetData]=useState(null);
@@ -533,7 +541,6 @@ export default function App() {
   const [showNewPw,setShowNewPw]=useState(false);
   const [showPasswordChange,setShowPasswordChange]=useState(false);
   const [newPassword,setNewPassword]=useState("");
-  const suppressAuthEvents=useRef(false);
 
   // ── Handle Android back button – close sheet/exercise instead of app ──
   useEffect(()=>{
@@ -581,7 +588,6 @@ export default function App() {
         setIsAdmin(false);
         setLoading(true);
       } else if(event==="SIGNED_IN"&&s){
-        if(suppressAuthEvents.current)return;
         setIsRecoveryMode(false);
         setSession(s);
         loadAll(s.user.id);
@@ -608,7 +614,7 @@ export default function App() {
   },[session]);
 
   async function loadAll(userId) {
-    setLoading(true);
+    if(!initialLoadDone.current)setLoading(true); // Vollbild-Loader nur beim ersten Laden (seit 058)
     const uid=userId;
     try{
       const [{data:pd},{data:ed},{data:ld},{data:ue},{data:hl},{data:fb},{data:ps}]=await Promise.all([
@@ -953,11 +959,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   };
 
   const changePassword=async()=>{
-    if(!newPassword||newPassword.length<6){alert("Passwort muss mindestens 6 Zeichen haben.");return;}
+    if(!newPassword||newPassword.length<6){showToast("error","Passwort muss mindestens 6 Zeichen haben.");return;}
     setSaving(true);
     const{error}=await supabase.auth.updateUser({password:newPassword,data:{must_change_password:false}});
-    if(error)alert("Fehler: "+error.message);
-    else{setMustChangePassword(false);setShowPasswordChange(false);setNewPassword("");}
+    if(error)showToast("error","Fehler: "+error.message);
+    else{setMustChangePassword(false);setShowPasswordChange(false);setNewPassword("");showToast("success","Passwort geändert");}
     setSaving(false);
   };
 
@@ -1003,11 +1009,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     // iOS: must be running as PWA (added to home screen)
     const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
     if(isIOS&&!isPWA()){
-      alert("Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.");
+      showToast("error","Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.");
       return;
     }
     if(!("serviceWorker" in navigator)||!("PushManager" in window)){
-      alert("Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.");
+      showToast("error","Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.");
       return;
     }
     setPushLoading(true);
@@ -1015,7 +1021,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       const reg=await navigator.serviceWorker.ready;
       const permission=await Notification.requestPermission();
       if(permission==="denied"){
-        alert("Benachrichtigungen sind blockiert. Bitte erlaube sie in den iPhone-Einstellungen unter Mitteilungen → FitFunDog.");
+        showToast("error","Benachrichtigungen sind blockiert. Bitte erlaube sie in den iPhone-Einstellungen unter Mitteilungen → FitFunDog.");
         setPushLoading(false);
         return;
       }
@@ -1035,7 +1041,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       setPushEnabled(true);
     }catch(e){
       console.error("enablePush error",e);
-      alert("Fehler beim Aktivieren: "+e.message);
+      showToast("error","Fehler beim Aktivieren: "+e.message);
     }
     setPushLoading(false);
   };
@@ -1070,30 +1076,25 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
     // practice_id direkt aus DB holen – nicht aus State (könnte noch nicht gesetzt sein)
     const{data:ps,error:psErr}=await supabase.from("practice_settings").select("id,admin_user_id,therapist_email").eq("slug",PRACTICE_SLUG).maybeSingle();
-    if(psErr||!ps){alert("Fehler: Praxis-Einstellungen konnten nicht geladen werden.");setSaving(false);return;}
+    if(psErr||!ps){showToast("error","Fehler: Praxis-Einstellungen konnten nicht geladen werden.");setSaving(false);return;}
     const practiceId=ps.id;
 
     let userId=null;
-    let adminUserId=ps.admin_user_id||session?.user?.id;
+    const adminUserId=ps.admin_user_id||session?.user?.id;
     if(newAccountMode==="existing"){
       userId=selectedExistingUserId||null;
     }else if(newAccountMode==="new"&&newPatient.ownerEmail&&newPatient.ownerPassword){
-      suppressAuthEvents.current=true;
-      const{data:sd,error:se}=await supabase.auth.signUp({
-        email:newPatient.ownerEmail,password:newPatient.ownerPassword,
-        options:{data:{must_change_password:newPatient.ownerPassword===newPatient.ownerEmail}}
+      // User serverseitig anlegen – Admin-Session bleibt unberuehrt (seit 058)
+      const{data:cu,error:cuErr}=await supabase.functions.invoke("create-user",{
+        body:{email:newPatient.ownerEmail,password:newPatient.ownerPassword,
+          must_change_password:newPatient.ownerPassword===newPatient.ownerEmail}
       });
-      if(se){alert("Account-Fehler: "+se.message);setSaving(false);suppressAuthEvents.current=false;return;}
-      userId=sd?.user?.id||null;
-      // Re-login als Admin – Session direkt aus Antwort verwenden
-      const storedPw=sessionStorage.getItem("_tfpw");
-      const therapistEmail=ps.therapist_email||practice.therapist_email;
-      if(storedPw&&therapistEmail){
-        const{data:reData,error:reErr}=await supabase.auth.signInWithPassword({email:therapistEmail,password:storedPw});
-        if(reErr||!reData?.session){alert("Re-Login fehlgeschlagen. Bitte neu einloggen.");setSaving(false);suppressAuthEvents.current=false;return;}
-        adminUserId=reData.session.user.id;
+      if(cuErr||cu?.error){
+        let msg=cu?.error||cuErr?.message||"Unbekannt";
+        if(cuErr?.context){try{const body=await cuErr.context.json();if(body?.error)msg=body.error;}catch(e){}}
+        showToast("error","Account-Fehler: "+msg);setSaving(false);return;
       }
-      // user_invitations erst nach Re-Login als Admin schreiben
+      userId=cu?.user_id||null;
       if(userId){
         await supabase.from("user_invitations").insert({user_id:userId,practice_id:practiceId});
       }
@@ -1103,9 +1104,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       p_owner:newPatient.owner, p_condition:newPatient.condition, p_avatar:newPatient.avatar,
       p_user_id:userId, p_practice_id:practiceId
     });
-    if(error){alert("Fehler: "+error.message);setSaving(false);suppressAuthEvents.current=false;return;}
+    if(error){showToast("error","Fehler: "+error.message);setSaving(false);return;}
     await loadAll(adminUserId);
-    suppressAuthEvents.current=false;
+    showToast("success","Patient angelegt");
     setSaving(false);setNewPatient(EMPTY_PATIENT);closeSheet();
   };
 
@@ -1113,23 +1114,20 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     if(!editPatientData?.name)return;
     setSaving(true);
     const{id,_newUserId,ownerEmail,ownerPassword,...fields}=editPatientData;
-    let adminUserIdUp=practice.admin_user_id||session?.user?.id;
+    const adminUserIdUp=practice.admin_user_id||session?.user?.id;
     // Neuen Account anlegen falls editAccountMode === "new"
     if(editAccountMode==="new"&&ownerEmail&&ownerPassword){
-      suppressAuthEvents.current=true;
-      const{data:sd,error:se}=await supabase.auth.signUp({
-        email:ownerEmail,password:ownerPassword,
-        options:{data:{must_change_password:ownerPassword===ownerEmail}}
+      // User serverseitig anlegen – Admin-Session bleibt unberuehrt (seit 058)
+      const{data:cu,error:cuErr}=await supabase.functions.invoke("create-user",{
+        body:{email:ownerEmail,password:ownerPassword,
+          must_change_password:ownerPassword===ownerEmail}
       });
-      if(se){alert("Account-Fehler: "+se.message);setSaving(false);suppressAuthEvents.current=false;return;}
-      fields.user_id=sd?.user?.id||null;
-      const storedPw=sessionStorage.getItem("_tfpw");
-      if(storedPw&&practice.therapist_email){
-        const{data:reData,error:reErr}=await supabase.auth.signInWithPassword({email:practice.therapist_email,password:storedPw});
-        if(reErr||!reData?.session){alert("Re-Login fehlgeschlagen. Bitte neu einloggen.");setSaving(false);suppressAuthEvents.current=false;return;}
-        adminUserIdUp=reData.session.user.id;
+      if(cuErr||cu?.error){
+        let msg=cu?.error||cuErr?.message||"Unbekannt";
+        if(cuErr?.context){try{const body=await cuErr.context.json();if(body?.error)msg=body.error;}catch(e){}}
+        showToast("error","Account-Fehler: "+msg);setSaving(false);return;
       }
-      // user_invitations erst nach Re-Login als Admin schreiben
+      fields.user_id=cu?.user_id||null;
       if(fields.user_id){
         const{data:ps2}=await supabase.from("practice_settings").select("id").eq("slug",PRACTICE_SLUG).maybeSingle();
         if(ps2?.id)await supabase.from("user_invitations").insert({user_id:fields.user_id,practice_id:ps2.id});
@@ -1138,9 +1136,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       fields.user_id=_newUserId||null;
     }
     const{data,error}=await supabase.from("patients").update(fields).eq("id",id).select().single();
-    if(error){alert("Fehler: "+error.message);setSaving(false);suppressAuthEvents.current=false;return;}
+    if(error){showToast("error","Fehler: "+error.message);setSaving(false);return;}
     await loadAll(adminUserIdUp);
-    suppressAuthEvents.current=false;
+    showToast("success","Patient gespeichert");
     setSaving(false);closeSheet();
   };
 
@@ -1162,7 +1160,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       await supabase.auth.signOut();
     }catch(e){
       console.error("deleteAccount error:",e);
-      alert(`Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter ${practice.contact_email} zur manuellen Löschung.`);
+      showToast("error",`Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter ${practice.contact_email} zur manuellen Löschung.`);
     }
     setSaving(false);
   };
@@ -1189,6 +1187,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     if(selectedPatient?.id===pid)setSelectedPatient(null);
     if(ownerPatient?.id===pid)setOwnerPatient(null);
     setDeleting(null);closeSheet();
+    showToast("success","Patient gelöscht");
   };
 
   const addExercise=async()=>{
@@ -1307,7 +1306,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     if(!newPlan.title)return;
     setSaving(true);
     const{data:planData,error:planErr}=await supabase.from("plan_templates").insert({title:newPlan.title,note:newPlan.note||null,practice_id:practice.id}).select().single();
-    if(planErr||!planData){alert("Fehler: "+(planErr?.message||"Unbekannt"));setSaving(false);return;}
+    if(planErr||!planData){showToast("error","Fehler: "+(planErr?.message||"Unbekannt"));setSaving(false);return;}
     // insert exercises
     if(planExerciseDraft.length>0){
       const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:planData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,sort_order:i,practice_id:practice.id}));
@@ -1542,7 +1541,25 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         .iBtn:hover{opacity:.8;}
         .mode-btn{flex:1;padding:9px 6px;border-radius:9px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;border:2px solid;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:4px;}
         .repeat-box{width:32px;height:32px;border-radius:8px;border:2px solid;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;}
+        @keyframes toastIn{from{opacity:0;transform:translateY(-12px);}to{opacity:1;transform:translateY(0);}}
       `}</style>
+
+      {/* TOASTS (seit 058) */}
+      {toasts.length>0&&(
+        <div style={{position:"fixed",top:12,left:"50%",transform:"translateX(-50%)",zIndex:300,display:"flex",flexDirection:"column",gap:8,width:"calc(100% - 28px)",maxWidth:452}}>
+          {toasts.map(t2=>(
+            <div key={t2.id} style={{display:"flex",alignItems:"flex-start",gap:10,background:t2.type==="error"?"#C0392B":DARK,color:"white",borderRadius:12,padding:"12px 14px",boxShadow:"0 6px 20px rgba(0,0,0,0.25)",animation:"toastIn .25s ease"}}>
+              <div style={{flexShrink:0,marginTop:1}}><Icon name={t2.type==="error"?"info":"check"} size={16} color={t2.type==="error"?"white":"#6EE7B7"}/></div>
+              <div style={{flex:1,fontFamily:"'DM Sans',sans-serif",fontSize:13,lineHeight:1.45}}>{t2.message}</div>
+              {t2.type==="error"&&(
+                <button onClick={()=>dismissToast(t2.id)} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"50%",width:24,height:24,minWidth:24,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+                  <Icon name="close" size={11} color="white"/>
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* HEADER */}
       <div style={{background:DARK,position:"sticky",top:0,zIndex:20}}>
