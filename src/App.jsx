@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-11-059";
+const APP_VERSION = "2026-06-11-061";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -541,6 +541,22 @@ export default function App() {
   const [showNewPw,setShowNewPw]=useState(false);
   const [showPasswordChange,setShowPasswordChange]=useState(false);
   const [newPassword,setNewPassword]=useState("");
+
+  // ── Scroll-Lock bei offenem Sheet (seit 061) ──
+  // Behebt iOS-WebKit-Bug: Caret wird in position:fixed-Sheets versetzt
+  // (unterhalb des Eingabefelds) gerendert, wenn die Seite dahinter
+  // gescrollt ist bzw. die Tastatur den Viewport verschiebt.
+  const anySheetOpen=!!(sheet||selectedExercise||viewTemplateData||planAssignDone||viewFeedbackEx||feedbackSheet||showAppFeedback||showDeleteAccount);
+  useEffect(()=>{
+    if(!anySheetOpen)return;
+    const y=window.scrollY;
+    const b=document.body.style;
+    b.position="fixed";b.top=`-${y}px`;b.left="0";b.right="0";b.width="100%";
+    return()=>{
+      b.position="";b.top="";b.left="";b.right="";b.width="";
+      window.scrollTo(0,y);
+    };
+  },[anySheetOpen]);
 
   // ── Handle Android back button – close sheet/exercise instead of app ──
   useEffect(()=>{
@@ -1548,8 +1564,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       {toasts.length>0&&(
         <div style={{position:"fixed",top:"calc(env(safe-area-inset-top) + 12px)",left:"50%",transform:"translateX(-50%)",zIndex:300,display:"flex",flexDirection:"column",gap:8,width:"calc(100% - 28px)",maxWidth:452}}>
           {toasts.map(t2=>(
-            <div key={t2.id} style={{display:"flex",alignItems:"flex-start",gap:10,background:t2.type==="error"?"#C0392B":DARK,color:"white",borderRadius:12,padding:"12px 14px",boxShadow:"0 6px 20px rgba(0,0,0,0.25)",animation:"toastIn .25s ease"}}>
-              <div style={{flexShrink:0,marginTop:1}}><Icon name={t2.type==="error"?"info":"check"} size={16} color={t2.type==="error"?"white":"#6EE7B7"}/></div>
+            <div key={t2.id} style={{display:"flex",alignItems:"flex-start",gap:10,background:t2.type==="error"?"#C0392B":"#E8F5E9",color:t2.type==="error"?"white":"#2E7D32",borderRadius:12,padding:"12px 14px",boxShadow:"0 6px 20px rgba(0,0,0,0.25)",animation:"toastIn .25s ease"}}>
+              <div style={{flexShrink:0,marginTop:1}}><Icon name={t2.type==="error"?"info":"check"} size={16} color={t2.type==="error"?"white":"#2E7D32"}/></div>
               <div style={{flex:1,fontFamily:"'DM Sans',sans-serif",fontSize:13,lineHeight:1.45}}>{t2.message}</div>
               {t2.type==="error"&&(
                 <button onClick={()=>dismissToast(t2.id)} style={{background:"rgba(255,255,255,0.15)",border:"none",borderRadius:"50%",width:24,height:24,minWidth:24,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
