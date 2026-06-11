@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-11-062";
+const APP_VERSION = "2026-06-11-063";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -187,6 +187,34 @@ const PatientHistory = ({ patExs, data, loading }) => {
       {data.feedbacks.length===0&&withSoll.length===0&&(
         <div style={{padding:"14px 0",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:13}}>Noch keine Daten — sobald der Besitzer Übungen abhakt oder Rückmeldungen gibt, erscheint hier der Verlauf.</div>
       )}
+    </div>
+  );
+};
+
+// ── Video-Upload (seit 063) ──
+const VIDEO_BUCKET_PATH = "/storage/v1/object/public/exercise-videos/";
+const isDirectVideo = (url) => !!url && (url.includes(VIDEO_BUCKET_PATH) || /\.(mp4|mov|webm)(\?|$)/i.test(url));
+
+const VideoUploadField = ({ id, value, uploading, onUpload, onRemove }) => {
+  const isOwn = !!value && value.includes(VIDEO_BUCKET_PATH);
+  return (
+    <div style={{marginTop:8}}>
+      {isOwn && (
+        <video src={value} controls playsInline preload="metadata" muted style={{width:"100%",borderRadius:10,background:"#102828",maxHeight:200,display:"block",marginBottom:8}}/>
+      )}
+      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+        <input id={id} type="file" accept="video/mp4,video/quicktime,video/webm" style={{display:"none"}}
+          onChange={e=>{const f=e.target.files?.[0];e.target.value="";if(f)onUpload(f);}}/>
+        <label htmlFor={uploading?undefined:id} className="btn" style={{display:"inline-flex",alignItems:"center",gap:6,background:BRAND+"18",borderRadius:10,padding:"9px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:MID,cursor:uploading?"default":"pointer",opacity:uploading?0.6:1}}>
+          <Icon name="play" size={13} color={MID}/>{uploading?"Wird hochgeladen...":(isOwn?"Video ersetzen":"Video hochladen")}
+        </label>
+        {isOwn && !uploading && (
+          <button className="btn" onClick={onRemove} style={{display:"inline-flex",alignItems:"center",gap:6,background:"#FFE8E8",borderRadius:10,padding:"9px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#C0392B"}}>
+            <Icon name="trash" size={13} color="#C0392B"/>Entfernen
+          </button>
+        )}
+      </div>
+      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:5}}>MP4/MOV/WebM, max. 25 MB — vorher als 720p exportieren</div>
     </div>
   );
 };
@@ -1281,6 +1309,30 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     if(!email)return;
     await supabase.auth.resetPasswordForEmail(email);
     setResetEmailSent(true);
+  };
+
+  // ── Video-Upload zu Supabase Storage (seit 063) ──
+  const [videoUploading,setVideoUploading]=useState(false);
+  const uploadExerciseVideo=async(file,setUrl)=>{
+    if(!["video/mp4","video/quicktime","video/webm"].includes(file.type)){showToast("error","Nur MP4, MOV oder WebM erlaubt.");return;}
+    if(file.size>25*1024*1024){showToast("error",`Video ist ${(file.size/1024/1024).toFixed(0)} MB — maximal 25 MB. Bitte vorher als 720p exportieren.`);return;}
+    setVideoUploading(true);
+    const ext=file.name.split(".").pop().toLowerCase()||"mp4";
+    const path=`${crypto.randomUUID()}.${ext}`;
+    const{error}=await supabase.storage.from("exercise-videos").upload(path,file,{contentType:file.type,cacheControl:"31536000"});
+    if(error){showToast("error","Upload fehlgeschlagen: "+error.message);setVideoUploading(false);return;}
+    const{data:pub}=supabase.storage.from("exercise-videos").getPublicUrl(path);
+    setUrl(pub.publicUrl);
+    setVideoUploading(false);
+    showToast("success","Video hochgeladen");
+  };
+  const removeExerciseVideo=async(url,setUrl)=>{
+    if(url&&url.includes(VIDEO_BUCKET_PATH)){
+      const path=decodeURIComponent(url.split(VIDEO_BUCKET_PATH)[1].split("?")[0]);
+      await supabase.storage.from("exercise-videos").remove([path]);
+    }
+    setUrl("");
+    showToast("success","Video entfernt");
   };
 
   // ── Verlaufs-Sheet: Logs + Feedback der letzten 12 Wochen laden (seit 062) ──
@@ -2456,12 +2508,17 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             {selectedExercise.image_url
               ?<div style={{width:"100%",borderRadius:14,overflow:"hidden",marginBottom:16,background:LIGHT}}><img src={selectedExercise.image_url} alt={exT(selectedExercise,"title")} style={{width:"100%",height:"auto",maxHeight:260,objectFit:"contain",display:"block"}}/></div>
               :<div style={{background:LIGHT,borderRadius:14,height:110,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}><Icon name="paw" size={48} color={ACCENT}/></div>}
+            {isDirectVideo(selectedExercise.video_url)&&(
+              <div style={{width:"100%",borderRadius:14,overflow:"hidden",marginBottom:16,background:"#102828"}}>
+                <video src={selectedExercise.video_url} controls playsInline preload="metadata" autoPlay muted loop style={{width:"100%",maxHeight:300,display:"block"}}/>
+              </div>
+            )}
             <div style={{display:"flex",gap:9,marginBottom:16}}>
               <div style={{flex:1,background:PALE,borderRadius:10,padding:"12px",textAlign:"center"}}>
                 <div style={{display:"flex",justifyContent:"center",marginBottom:3}}><Icon name="clock" size={18} color={BRAND}/></div>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828"}}>{selectedExercise.duration}</div>
               </div>
-              {selectedExercise.video_url&&(
+              {selectedExercise.video_url&&!isDirectVideo(selectedExercise.video_url)&&(
                 <a href={selectedExercise.video_url} target="_blank" rel="noreferrer" style={{flex:1,background:BRAND+"12",borderRadius:10,padding:"12px",textAlign:"center",textDecoration:"none",display:"flex",flexDirection:"column",alignItems:"center",gap:3,border:`1.5px solid ${BRAND}30`}}>
                   <Icon name="play" size={18} color={MID}/>
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:MID}}>{t.watchVideo}</div>
@@ -2683,7 +2740,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 ))}
               </div>
               <div><SL text="Bild-URL"/><input value={newTemplate.image_url} onChange={e=>setNewTemplate(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
-              <div><SL text="Video-URL (optional)"/><input value={newTemplate.video_url} onChange={e=>setNewTemplate(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/..." style={inp}/></div>
+              <div><SL text="Video (optional)"/><input value={newTemplate.video_url} onChange={e=>setNewTemplate(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/... oder hochladen" style={inp}/>
+                <VideoUploadField id="vidUpNew" value={newTemplate.video_url} uploading={videoUploading}
+                  onUpload={f=>uploadExerciseVideo(f,(u)=>setNewTemplate(p=>({...p,video_url:u})))}
+                  onRemove={()=>removeExerciseVideo(newTemplate.video_url,(u)=>setNewTemplate(p=>({...p,video_url:u})))}/></div>
               {/* Starter-Checkbox – nur FFD */}
               {practice.slug==="fitfundog"&&(
                 <label style={{display:"flex",alignItems:"flex-start",gap:10,background:newTemplate.is_starter?"#E8F5E9":"#F8F8F8",border:`1.5px solid ${newTemplate.is_starter?"#4CAF50":BORDER}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
@@ -2734,7 +2794,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 ))}
               </div>
               <div><SL text="Bild-URL"/><input value={editTemplateData.image_url||""} onChange={e=>setEditTemplateData(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
-              <div><SL text="Video-URL"/><input value={editTemplateData.video_url||""} onChange={e=>setEditTemplateData(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/..." style={inp}/></div>
+              <div><SL text="Video"/><input value={editTemplateData.video_url||""} onChange={e=>setEditTemplateData(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/... oder hochladen" style={inp}/>
+                <VideoUploadField id="vidUpEdit" value={editTemplateData.video_url||""} uploading={videoUploading}
+                  onUpload={f=>uploadExerciseVideo(f,(u)=>setEditTemplateData(p=>({...p,video_url:u})))}
+                  onRemove={()=>removeExerciseVideo(editTemplateData.video_url,(u)=>setEditTemplateData(p=>({...p,video_url:u})))}/></div>
               {/* Starter-Checkbox – nur FFD */}
               {practice.slug==="fitfundog"&&(
                 <label style={{display:"flex",alignItems:"flex-start",gap:10,background:editTemplateData.is_starter?"#E8F5E9":"#F8F8F8",border:`1.5px solid ${editTemplateData.is_starter?"#4CAF50":BORDER}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
@@ -2786,7 +2849,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 <img src={viewTemplateData.image_url} alt={viewTemplateData.title} style={{width:"100%",objectFit:"contain",display:"block"}}/>
               </div>
             )}
-            {viewTemplateData.video_url&&<a href={viewTemplateData.video_url} target="_blank" style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,fontFamily:"'DM Sans',sans-serif",fontSize:13,color:BRAND,textDecoration:"none"}}><Icon name="video" size={16} color={BRAND}/>Video ansehen</a>}
+            {viewTemplateData.video_url&&(isDirectVideo(viewTemplateData.video_url)
+              ?<video src={viewTemplateData.video_url} controls playsInline preload="metadata" muted style={{width:"100%",borderRadius:12,background:"#102828",maxHeight:260,display:"block",marginBottom:14}}/>
+              :<a href={viewTemplateData.video_url} target="_blank" style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,fontFamily:"'DM Sans',sans-serif",fontSize:13,color:BRAND,textDecoration:"none"}}><Icon name="play" size={16} color={BRAND}/>Video ansehen</a>)}
             {viewTemplateData.description&&(
               <div style={{marginBottom:16}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#102828",marginBottom:6}}>Beschreibung</div>
