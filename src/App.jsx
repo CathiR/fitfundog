@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-10-058";
+const APP_VERSION = "2026-06-11-059";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -1546,7 +1546,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
       {/* TOASTS (seit 058) */}
       {toasts.length>0&&(
-        <div style={{position:"fixed",top:12,left:"50%",transform:"translateX(-50%)",zIndex:300,display:"flex",flexDirection:"column",gap:8,width:"calc(100% - 28px)",maxWidth:452}}>
+        <div style={{position:"fixed",top:"calc(env(safe-area-inset-top) + 12px)",left:"50%",transform:"translateX(-50%)",zIndex:300,display:"flex",flexDirection:"column",gap:8,width:"calc(100% - 28px)",maxWidth:452}}>
           {toasts.map(t2=>(
             <div key={t2.id} style={{display:"flex",alignItems:"flex-start",gap:10,background:t2.type==="error"?"#C0392B":DARK,color:"white",borderRadius:12,padding:"12px 14px",boxShadow:"0 6px 20px rgba(0,0,0,0.25)",animation:"toastIn .25s ease"}}>
               <div style={{flexShrink:0,marginTop:1}}><Icon name={t2.type==="error"?"info":"check"} size={16} color={t2.type==="error"?"white":"#6EE7B7"}/></div>
