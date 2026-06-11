@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-11-060";
+const APP_VERSION = "2026-06-11-061";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -541,6 +541,22 @@ export default function App() {
   const [showNewPw,setShowNewPw]=useState(false);
   const [showPasswordChange,setShowPasswordChange]=useState(false);
   const [newPassword,setNewPassword]=useState("");
+
+  // ── Scroll-Lock bei offenem Sheet (seit 061) ──
+  // Behebt iOS-WebKit-Bug: Caret wird in position:fixed-Sheets versetzt
+  // (unterhalb des Eingabefelds) gerendert, wenn die Seite dahinter
+  // gescrollt ist bzw. die Tastatur den Viewport verschiebt.
+  const anySheetOpen=!!(sheet||selectedExercise||viewTemplateData||planAssignDone||viewFeedbackEx||feedbackSheet||showAppFeedback||showDeleteAccount);
+  useEffect(()=>{
+    if(!anySheetOpen)return;
+    const y=window.scrollY;
+    const b=document.body.style;
+    b.position="fixed";b.top=`-${y}px`;b.left="0";b.right="0";b.width="100%";
+    return()=>{
+      b.position="";b.top="";b.left="";b.right="";b.width="";
+      window.scrollTo(0,y);
+    };
+  },[anySheetOpen]);
 
   // ── Handle Android back button – close sheet/exercise instead of app ──
   useEffect(()=>{
