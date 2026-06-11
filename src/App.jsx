@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-11-061";
+const APP_VERSION = "2026-06-11-062";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -50,7 +50,7 @@ const getDifficultyColor=()=>({"Leicht":BRAND,"Mittel":MID,"Schwer":"#C0392B"});
 let difficultyColor=getDifficultyColor();
 
 // ── PatientCard OUTSIDE App to allow useState and avoid IIFE ──
-const PatientCard = ({ p, userEmail, info, patExs, onPrint, onMail, onEdit, onDelete }) => {
+const PatientCard = ({ p, userEmail, info, patExs, onPrint, onMail, onEdit, onDelete, onHistory }) => {
   const [open, setOpen] = useState(false);
   return (
     <div className="card" style={{padding:"13px 14px 12px"}}>
@@ -61,6 +61,7 @@ const PatientCard = ({ p, userEmail, info, patExs, onPrint, onMail, onEdit, onDe
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#102828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
         </div>
         <div style={{display:"flex",gap:4,flexShrink:0}}>
+          {info.count>0&&<button className="iBtn" title="Verlauf anzeigen" onClick={onHistory} style={{background:LIGHT}}><Icon name="chart" size={13} color={DARK}/></button>}
           <button className="iBtn" title="Übungsplan drucken" onClick={onPrint} style={{background:"#E8F5E9"}}><Icon name="print" size={13} color="#2E7D32"/></button>
           {userEmail&&<button className="iBtn" title="Plan-Info per Mail senden" onClick={onMail} style={{background:"#E3F2FD"}}><Icon name="mail" size={13} color="#1565C0"/></button>}
           <button className="iBtn" onClick={onEdit} style={{background:BRAND+"20"}}><Icon name="edit" size={13} color={MID}/></button>
@@ -93,7 +94,98 @@ const PatientCard = ({ p, userEmail, info, patExs, onPrint, onMail, onEdit, onDe
               <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,flexShrink:0}}>{new Date(ex.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})}</div>
             </div>
           ))}
+          <button className="btn" onClick={onHistory} style={{alignSelf:"flex-start",display:"inline-flex",alignItems:"center",gap:5,background:LIGHT,borderRadius:20,padding:"4px 11px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:DARK,marginTop:2}}>
+            <Icon name="chart" size={11} color={DARK}/>Verlauf anzeigen
+          </button>
         </div>
+      )}
+    </div>
+  );
+};
+
+// ── PatientHistory OUTSIDE App (seit 062): 12-Wochen-Verlauf Adhärenz + Schmerz ──
+const PatientHistory = ({ patExs, data, loading }) => {
+  if(loading)return <div style={{padding:30,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:13}}>Verlauf wird geladen...</div>;
+  if(!data)return null;
+  const fmtD=(d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  const monday=(d)=>{const x=new Date(d);const day=x.getDay();x.setDate(x.getDate()+(day===0?-6:1-day));x.setHours(0,0,0,0);return x;};
+  const thisMon=monday(new Date());
+  const weeks=[];
+  for(let i=11;i>=0;i--){
+    const start=new Date(thisMon);start.setDate(start.getDate()-7*i);
+    const end=new Date(start);end.setDate(end.getDate()+6);
+    const endNext=new Date(start);endNext.setDate(endNext.getDate()+7);
+    const sStr=fmtD(start),eStr=fmtD(end);
+    const active=patExs.filter(ex=>new Date(ex.created_at)<=endNext);
+    const soll=active.reduce((s,ex)=>s+(ex.repeat_count||1),0);
+    let ist=0;
+    for(const ex of active){
+      const n=data.logs.filter(l=>l.exercise_id===ex.id&&l.done&&l.done_date>=sStr&&l.done_date<=eStr).length;
+      ist+=Math.min(n,ex.repeat_count||1);
+    }
+    const fb=data.feedbacks.filter(f=>{const t=new Date(f.created_at);return t>=start&&t<endNext;});
+    const pain=fb.length?fb.reduce((s,f)=>s+(f.pain_level||0),0)/fb.length:null;
+    weeks.push({start,soll,ist,pct:soll>0?Math.min(100,Math.round(ist/soll*100)):null,pain});
+  }
+  const withSoll=weeks.filter(w=>w.pct!==null);
+  const avgPct=withSoll.length?Math.round(withSoll.reduce((s,w)=>s+w.pct,0)/withSoll.length):null;
+  const withPain=weeks.filter(w=>w.pain!==null);
+  const avgPain=withPain.length?(withPain.reduce((s,w)=>s+w.pain,0)/withPain.length).toFixed(1).replace(".",","):null;
+  // SVG-Geometrie: Schmerz-Lane oben (y 10..46), Balken-Lane (y 56..134)
+  const W=348,slot=W/12,barW=18;
+  const exTitle=(id)=>patExs.find(e=>e.id===id)?.title||"Übung";
+  return(
+    <div>
+      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12.5,color:MUTED,marginBottom:10}}>
+        Letzte 12 Wochen{avgPct!==null?<> · Ø <b style={{color:DARK}}>{avgPct}%</b> erledigt</>:null}{avgPain!==null?<> · Ø Schmerz <b style={{color:DARK}}>{avgPain}</b></>:null}
+      </div>
+      <svg viewBox={`0 0 ${W} 152`} style={{width:"100%",height:"auto",display:"block"}}>
+        {/* Trennlinie + 100%-Linie */}
+        <line x1="0" y1="50" x2={W} y2="50" stroke={BORDER} strokeWidth="1"/>
+        <line x1="0" y1="56" x2={W} y2="56" stroke={BORDER} strokeWidth="0.5" strokeDasharray="3 3"/>
+        {weeks.map((w,i)=>{
+          const cx=i*slot+slot/2;
+          const isNow=i===11;
+          return(
+            <g key={i}>
+              {w.pct!==null
+                ?<rect x={cx-barW/2} y={134-Math.max(3,w.pct*0.78)} width={barW} height={Math.max(3,w.pct*0.78)} rx="4" fill={BRAND} opacity={isNow?1:0.75}/>
+                :<rect x={cx-barW/2} y={131} width={barW} height={3} rx="1.5" fill={DISABLED||BORDER}/>}
+              {w.pain!==null&&(
+                <circle cx={cx} cy={46-(w.pain-1)/4*34} r="4.5" fill={w.pain>=4?"#C0392B":DARK}/>
+              )}
+              {(i%4===3||isNow)&&(
+                <text x={cx} y="148" textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize="9" fill={MUTED}>
+                  {isNow?"Jetzt":w.start.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+      <div style={{display:"flex",gap:14,flexWrap:"wrap",marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:3,background:BRAND,display:"inline-block"}}/>Erledigt (% pro Woche)</span>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:9,height:9,borderRadius:"50%",background:DARK,display:"inline-block"}}/>Ø Schmerz (1–5)</span>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:9,height:9,borderRadius:"50%",background:"#C0392B",display:"inline-block"}}/>Schmerz ab 4</span>
+      </div>
+      {data.feedbacks.length>0&&(
+        <div style={{marginTop:16,borderTop:`1px solid ${BORDER}`,paddingTop:12}}>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12.5,fontWeight:700,color:DARK,marginBottom:8}}>Letzte Rückmeldungen</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {data.feedbacks.slice(0,10).map(f=>(
+              <div key={f.id} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                <span className="tag" style={{background:f.pain_level>=4?"#FFE8E8":LIGHT,color:f.pain_level>=4?"#C0392B":DARK,flexShrink:0,fontWeight:700}}>{f.pain_level}/5</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#102828"}}>{exTitle(f.exercise_id)}{(f.comment||"")&&<> — <span style={{color:MUTED}}>{f.comment}</span></>}</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10.5,color:MUTED,marginTop:1}}>{new Date(f.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {data.feedbacks.length===0&&withSoll.length===0&&(
+        <div style={{padding:"14px 0",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:13}}>Noch keine Daten — sobald der Besitzer Übungen abhakt oder Rückmeldungen gibt, erscheint hier der Verlauf.</div>
       )}
     </div>
   );
@@ -165,6 +257,7 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
     belloff: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>,
     profile: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
     print: <svg {...s} viewBox='0 0 24 24' fill='none' stroke={color} strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'><polyline points='6 9 6 2 18 2 18 9'/><path d='M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2'/><rect x='6' y='14' width='12' height='8'/></svg>,
+    chart: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><line x1="5" y1="20" x2="5" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="19" y1="20" x2="19" y2="15"/><line x1="3" y1="20" x2="21" y2="20"/></svg>,
     star: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
     copy: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
   };
@@ -527,6 +620,9 @@ export default function App() {
   const [showAppFeedback,setShowAppFeedback]=useState(false);
   const [appFeedbackText,setAppFeedbackText]=useState("");
   const [showDeleteAccount,setShowDeleteAccount]=useState(false);
+  const [historyPatient,setHistoryPatient]=useState(null); // Verlaufs-Sheet (seit 062)
+  const [historyData,setHistoryData]=useState(null);
+  const [historyLoading,setHistoryLoading]=useState(false);
   const [deleteConfirmText,setDeleteConfirmText]=useState("");
   const [selectedExistingUserId,setSelectedExistingUserId]=useState("");
   const [resetEmailSent,setResetEmailSent]=useState(false);
@@ -546,7 +642,7 @@ export default function App() {
   // Behebt iOS-WebKit-Bug: Caret wird in position:fixed-Sheets versetzt
   // (unterhalb des Eingabefelds) gerendert, wenn die Seite dahinter
   // gescrollt ist bzw. die Tastatur den Viewport verschiebt.
-  const anySheetOpen=!!(sheet||selectedExercise||viewTemplateData||planAssignDone||viewFeedbackEx||feedbackSheet||showAppFeedback||showDeleteAccount);
+  const anySheetOpen=!!(sheet||selectedExercise||viewTemplateData||planAssignDone||viewFeedbackEx||feedbackSheet||showAppFeedback||showDeleteAccount||historyPatient);
   useEffect(()=>{
     if(!anySheetOpen)return;
     const y=window.scrollY;
@@ -1185,6 +1281,23 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     if(!email)return;
     await supabase.auth.resetPasswordForEmail(email);
     setResetEmailSent(true);
+  };
+
+  // ── Verlaufs-Sheet: Logs + Feedback der letzten 12 Wochen laden (seit 062) ──
+  const openHistory=async(p)=>{
+    setHistoryPatient(p);setHistoryLoading(true);setHistoryData(null);
+    const from=new Date();from.setDate(from.getDate()-7*12);from.setHours(0,0,0,0);
+    const fromStr=`${from.getFullYear()}-${String(from.getMonth()+1).padStart(2,"0")}-${String(from.getDate()).padStart(2,"0")}`;
+    const exIds=exercises.filter(e=>e.patient_id===p.id).map(e=>e.id);
+    let logs=[];
+    if(exIds.length){
+      const{data:lg,error:lgErr}=await supabase.from("exercise_logs").select("exercise_id,done_date,done").in("exercise_id",exIds).gte("done_date",fromStr);
+      if(lgErr){showToast("error","Fehler: "+lgErr.message);setHistoryLoading(false);return;}
+      logs=lg||[];
+    }
+    const{data:fb,error:fbErr}=await supabase.from("exercise_feedback").select("*").eq("patient_id",p.id).gte("created_at",from.toISOString()).order("created_at",{ascending:false});
+    if(fbErr){showToast("error","Fehler: "+fbErr.message);setHistoryLoading(false);return;}
+    setHistoryData({logs,feedbacks:fb||[]});setHistoryLoading(false);
   };
 
   const deletePatient=async(pid)=>{
@@ -1929,6 +2042,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       onMail={()=>openPlanMail(p,null)}
                       onEdit={()=>{setEditPatientData({...p});setEditAccountMode(p.user_id?"existing":"none");setResetEmailSent(false);setSheet("editPatient");}}
                       onDelete={()=>{setSheetData(p);setSheet("confirmDeletePt");}}
+                      onHistory={()=>openHistory(p)}
                     />
                   );
                 })}
@@ -2867,6 +2981,18 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       )}
 
       {/* SHEET: APP FEEDBACK */}
+      {historyPatient&&(
+        <div className="overlay">
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title={`Verlauf – ${historyPatient.name}`} onClose={()=>{setHistoryPatient(null);setHistoryData(null);}}/>
+            <PatientHistory
+              patExs={exercises.filter(e=>e.patient_id===historyPatient.id)}
+              data={historyData}
+              loading={historyLoading}
+            />
+          </div>
+        </div>
+      )}
       {showAppFeedback&&(
         <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
