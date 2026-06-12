@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-12-064";
+const APP_VERSION = "2026-06-12-066";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -170,6 +170,33 @@ const PatientHistory = ({ patExs, data, loading }) => {
         <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:9,height:9,borderRadius:"50%",background:DARK,display:"inline-block"}}/>Ø Schmerz (1–5)</span>
         <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:9,height:9,borderRadius:"50%",background:"#C0392B",display:"inline-block"}}/>Schmerz ab 4</span>
       </div>
+      {(data.surveys||[]).length>0&&(()=>{
+        const sv=data.surveys;
+        const latest=sv[sv.length-1],prev=sv.length>1?sv[sv.length-2]:null;
+        const delta=prev?latest.total_score-prev.total_score:null;
+        const svW=348,xs=sv.map((_,i)=>sv.length===1?svW/2:14+i*(svW-28)/(sv.length-1));
+        const ys=sv.map(x=>12+(x.total_score/52)*42);
+        return(
+        <div style={{marginTop:16,borderTop:`1px solid ${BORDER}`,paddingTop:12}}>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12.5,fontWeight:700,color:DARK,marginBottom:2}}>Mobilitäts-Check</div>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:8}}>
+            Score 0–52, niedriger = besser · Aktuell <b style={{color:DARK}}>{latest.total_score}</b>
+            {delta!==null&&<span style={{color:delta<0?"#2E7D32":delta>0?"#C0392B":MUTED,fontWeight:700}}> ({delta<0?"↓":delta>0?"↑":"±"}{Math.abs(delta)} seit letztem Mal)</span>}
+          </div>
+          <svg viewBox={`0 0 ${svW} 78`} style={{width:"100%",height:"auto",display:"block"}}>
+            <line x1="0" y1="58" x2={svW} y2="58" stroke={BORDER} strokeWidth="0.5"/>
+            {sv.length>1&&<polyline points={sv.map((_,i)=>`${xs[i]},${ys[i]}`).join(" ")} fill="none" stroke={BRAND} strokeWidth="2"/>}
+            {sv.map((x,i)=>(
+              <g key={x.id}>
+                <circle cx={xs[i]} cy={ys[i]} r="4.5" fill={DARK}/>
+                <text x={xs[i]} y={ys[i]-8} textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize="9.5" fontWeight="700" fill={DARK}>{x.total_score}</text>
+                {(i===0||i===sv.length-1)&&<text x={xs[i]} y="72" textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize="9" fill={MUTED}>{new Date(x.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</text>}
+              </g>
+            ))}
+          </svg>
+        </div>
+        );
+      })()}
       {data.feedbacks.length>0&&(
         <div style={{marginTop:16,borderTop:`1px solid ${BORDER}`,paddingTop:12}}>
           <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12.5,fontWeight:700,color:DARK,marginBottom:8}}>Letzte Rückmeldungen</div>
@@ -206,6 +233,60 @@ const exPhase = (ex) => {
   return "active";
 };
 const fmtShortDate = (iso) => { const [y,m,d] = iso.split("-"); return `${d}.${m}.`; };
+
+// ── Mobilitäts-Check (seit 066): 13 Fragen, Skala 0–4, Score 0–52 (niedriger = besser) ──
+const SURVEY_SCALE = {
+  de:["Gar nicht","Leicht","Mäßig","Stark","Sehr stark"],
+  en:["Not at all","Mild","Moderate","Severe","Very severe"],
+  es:["Nada","Leve","Moderado","Fuerte","Muy fuerte"]
+};
+const SURVEY_QUESTIONS = {
+  de:[
+    "Wie steif ist Ihr Hund nach dem Aufstehen aus dem Liegen?",
+    "Wie steif oder lahm ist Ihr Hund nach körperlicher Belastung?",
+    "Wie stark lahmt Ihr Hund beim normalen Gehen?",
+    "Wie stark lahmt Ihr Hund beim Traben oder Rennen?",
+    "Wie schwer fällt Ihrem Hund das Aufstehen?",
+    "Wie schwer fällt Ihrem Hund das Treppensteigen?",
+    "Wie schwer fällt Ihrem Hund das Springen (z.B. ins Auto, aufs Sofa)?",
+    "Wie stark ist die Spielfreude Ihres Hundes vermindert?",
+    "Wie stark ist die Lust auf Spaziergänge vermindert?",
+    "Wie stark mussten Sie Spaziergänge im Vergleich zu früher verkürzen?",
+    "Wie stark beeinträchtigt kaltes oder feuchtes Wetter die Beweglichkeit?",
+    "Wie erschöpft ist Ihr Hund nach Aktivität?",
+    "Wie stark ist Ihr Hund insgesamt im Alltag eingeschränkt?"
+  ],
+  en:[
+    "How stiff is your dog after getting up from lying down?",
+    "How stiff or lame is your dog after physical exercise?",
+    "How much does your dog limp when walking?",
+    "How much does your dog limp when trotting or running?",
+    "How difficult is it for your dog to get up?",
+    "How difficult is it for your dog to climb stairs?",
+    "How difficult is jumping for your dog (e.g. into the car, onto the sofa)?",
+    "How much is your dog's willingness to play reduced?",
+    "How much is your dog's enthusiasm for walks reduced?",
+    "How much have you had to shorten walks compared to before?",
+    "How much does cold or damp weather affect your dog's mobility?",
+    "How exhausted is your dog after activity?",
+    "How limited is your dog overall in everyday life?"
+  ],
+  es:[
+    "¿Qué tan rígido está su perro al levantarse después de estar tumbado?",
+    "¿Qué tan rígido o cojo está su perro después del ejercicio físico?",
+    "¿Cuánto cojea su perro al caminar?",
+    "¿Cuánto cojea su perro al trotar o correr?",
+    "¿Cuánto le cuesta a su perro levantarse?",
+    "¿Cuánto le cuesta a su perro subir escaleras?",
+    "¿Cuánto le cuesta a su perro saltar (p.ej. al coche, al sofá)?",
+    "¿Cuánto ha disminuido las ganas de jugar de su perro?",
+    "¿Cuánto ha disminuido el entusiasmo por los paseos?",
+    "¿Cuánto ha tenido que acortar los paseos en comparación con antes?",
+    "¿Cuánto afecta el clima frío o húmedo a la movilidad?",
+    "¿Qué tan agotado está su perro después de la actividad?",
+    "¿Qué tan limitado está su perro en general en el día a día?"
+  ]
+};
 
 const VideoUploadField = ({ id, value, uploading, onUpload, onRemove }) => {
   const isOwn = !!value && value.includes(VIDEO_BUCKET_PATH);
@@ -305,7 +386,7 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
 };
 
 const T = {
-  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", navAdmin:"Admin", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", phaseFrom:(d)=>`ab ${d}`, phaseEnded:"Phase beendet", markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt.",
+  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", navAdmin:"Admin", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", phaseFrom:(d)=>`ab ${d}`, phaseEnded:"Phase beendet", surveyCardTitle:(n)=>`Kurzer Check-up für ${n}`, surveyCardText:"13 kurze Fragen zur Beweglichkeit — ca. 3 Minuten. Hilft deiner Praxis, den Verlauf objektiv zu beurteilen.", surveyStart:"Jetzt ausfüllen", surveyTitle:"Mobilitäts-Check", surveyIntro:"Denke an die letzten 2 Wochen. 0 = gar nicht, 4 = sehr stark.", surveySubmit:"Absenden", surveyThanks:"Danke! Check-up gespeichert.", surveyProgress:(a,b)=>`${a} von ${b} beantwortet`, markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt.",
     plans:"Behandlungspläne", noPlans:"Noch keine Behandlungspläne erstellt.", noTemplates:"Noch keine Übungsvorlagen erstellt.", newExercise:"Neue Übung erstellen", editExercise:"Übung bearbeiten", addExercise:"Übung hinzufügen", printPlan:"Übungsplan drucken", searchPatient:"Patient suchen & auswählen", unknownExercise:"Unbekannte Übung", reminderActive:"Täglich aktiv — nur bei offenen Übungen", reminderInactive:"Erinnert dich täglich an deine Übungen", deleteAccount:"Konto löschen", deleteAccountConfirm:"Konto unwiderruflich löschen", deleting:"Wird gelöscht...", deleteWord:"LÖSCHEN", pwSecurityHint:"Aus Sicherheitsgründen bitte ein eigenes Passwort vergeben.", changePw:"Bitte Passwort ändern", feedbackPlaceholder:"Dein Feedback...", feedbackTitle:"Feedback geben", feedbackSub:"Dein Feedback hilft dabei die App weiterzuentwickeln.", feedbackSend:"Feedback senden", deleteAccountWarningTitle:"Achtung – diese Aktion ist unwiderruflich", deleteAccountWarningText:"Dein Konto und alle damit verbundenen Daten werden dauerhaft gelöscht. Deine Therapiedaten bleiben bei deiner Therapeutin erhalten.", deleteConfirmLabel:(word)=>`Zur Bestätigung "${word}" eingeben`,
     alertPwMin:"Passwort muss mindestens 6 Zeichen haben.", alertAddHomescreen:"Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.", alertNoPush:"Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.", alertPushBlocked:"Benachrichtigungen sind blockiert. Bitte erlaube sie in den iPhone-Einstellungen unter Mitteilungen → FitFunDog.", alertDeleteFail:"Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter info@fit-fun-dog.de zur manuellen Löschung.",
     noAccount:"Kein Konto? Bitte wende dich an deine Therapeutin.", forgotPw:"Passwort vergessen?", resetSent:"Reset-Email gesendet – bitte Postfach prüfen.", adminTitle:"Admin", adminSub:"Einstellungen & App-Verwaltung", legalTitle:"Rechtliches", feedbackAppTitle:"Feedback zur App", feedbackAppSub:"Direkt an die Entwicklerin senden.",
@@ -319,7 +400,7 @@ const T = {
     categories:["Regeneration","Balance","Kräftigung","Koordination","Mobilisation"],
     targetRegions:["Ganzer Körper","Hinterhand","Vorderhand","Rumpf","Vorderpfoten","Rücken"],
     difficulties:["Leicht","Mittel","Schwer"] },
-  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", navAdmin:"Admin", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", phaseFrom:(d)=>`from ${d}`, phaseEnded:"Phase ended", markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress.",
+  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", navAdmin:"Admin", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", phaseFrom:(d)=>`from ${d}`, phaseEnded:"Phase ended", surveyCardTitle:(n)=>`Quick check-up for ${n}`, surveyCardText:"13 short questions about mobility — approx. 3 minutes. Helps your practice track progress objectively.", surveyStart:"Start now", surveyTitle:"Mobility Check", surveyIntro:"Think about the last 2 weeks. 0 = not at all, 4 = very severe.", surveySubmit:"Submit", surveyThanks:"Thanks! Check-up saved.", surveyProgress:(a,b)=>`${a} of ${b} answered`, markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress.",
     plans:"Treatment Plans", noPlans:"No treatment plans created yet.", noTemplates:"No exercise templates created yet.", newExercise:"New exercise", editExercise:"Edit exercise", addExercise:"Add exercise", printPlan:"Print plan", searchPatient:"Search & select patient", unknownExercise:"Unknown exercise", reminderActive:"Active daily — only when exercises are open", reminderInactive:"Reminds you daily of your exercises", deleteAccount:"Delete account", deleteAccountConfirm:"Permanently delete account", deleting:"Deleting...", deleteWord:"DELETE", pwSecurityHint:"For security reasons please set your own password.", changePw:"Please change password", feedbackPlaceholder:"Your feedback...", feedbackTitle:"Give feedback", feedbackSub:"Your feedback helps improve the app.", feedbackSend:"Send feedback", deleteAccountWarningTitle:"Warning – this action is irreversible", deleteAccountWarningText:"Your account and all associated data will be permanently deleted. Your therapy data will remain with your therapist.", deleteConfirmLabel:(word)=>`Type "${word}" to confirm`,
     alertPwMin:"Password must be at least 6 characters.", alertAddHomescreen:"Please add the app to your home screen first (Safari → Share → Add to Home Screen). Then open the app via the home screen icon and activate reminders again.", alertNoPush:"Your browser does not support push notifications. Please use Safari on iOS 16.4+ or Chrome on Android.", alertPushBlocked:"Notifications are blocked. Please allow them in iPhone Settings under Notifications → FitFunDog.", alertDeleteFail:"Your account cannot be deleted automatically. Please contact your therapist at info@fit-fun-dog.de for manual deletion.",
     noAccount:"No account? Please contact your therapist.", forgotPw:"Forgot password?", resetSent:"Reset email sent – please check your inbox.", adminTitle:"Admin", adminSub:"Settings & App management", legalTitle:"Legal", feedbackAppTitle:"App feedback", feedbackAppSub:"Send directly to the developer.",
@@ -333,7 +414,7 @@ const T = {
     categories:["Regeneration","Balance","Strengthening","Coordination","Mobilisation"],
     targetRegions:["Whole body","Hindquarters","Forequarters","Core","Front paws","Back"],
     difficulties:["Easy","Medium","Hard"] },
-  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", navAdmin:"Admin", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", phaseFrom:(d)=>`desde ${d}`, phaseEnded:"Fase finalizada", markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes para el entrenamiento", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento. Sin descanso suficiente, el sobreentrenamiento reemplaza al progreso.",
+  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", navAdmin:"Admin", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", phaseFrom:(d)=>`desde ${d}`, phaseEnded:"Fase finalizada", surveyCardTitle:(n)=>`Chequeo rápido para ${n}`, surveyCardText:"13 preguntas breves sobre movilidad — aprox. 3 minutos. Ayuda a tu clínica a evaluar el progreso objetivamente.", surveyStart:"Empezar", surveyTitle:"Chequeo de movilidad", surveyIntro:"Piensa en las últimas 2 semanas. 0 = nada, 4 = muy fuerte.", surveySubmit:"Enviar", surveyThanks:"¡Gracias! Chequeo guardado.", surveyProgress:(a,b)=>`${a} de ${b} respondidas`, markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes para el entrenamiento", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento. Sin descanso suficiente, el sobreentrenamiento reemplaza al progreso.",
     plans:"Planes de tratamiento", noPlans:"Aún no hay planes de tratamiento.", noTemplates:"Aún no hay plantillas de ejercicios.", newExercise:"Nuevo ejercicio", editExercise:"Editar ejercicio", addExercise:"Añadir ejercicio", printPlan:"Imprimir plan", searchPatient:"Buscar y seleccionar paciente", unknownExercise:"Ejercicio desconocido", reminderActive:"Activo diariamente — solo si hay ejercicios pendientes", reminderInactive:"Te recuerda tus ejercicios cada día", deleteAccount:"Eliminar cuenta", deleteAccountConfirm:"Eliminar cuenta permanentemente", deleting:"Eliminando...", deleteWord:"ELIMINAR", pwSecurityHint:"Por seguridad, establece tu propia contraseña.", changePw:"Por favor cambia la contraseña", feedbackPlaceholder:"Tu comentario...", feedbackTitle:"Dar feedback", feedbackSub:"Tu feedback ayuda a mejorar la app.", feedbackSend:"Enviar feedback", deleteAccountWarningTitle:"Atención – esta acción es irreversible", deleteAccountWarningText:"Tu cuenta y todos los datos asociados serán eliminados permanentemente. Tus datos de terapia permanecerán con tu terapeuta.", deleteConfirmLabel:(word)=>`Escribe "${word}" para confirmar`,
     alertPwMin:"La contraseña debe tener al menos 6 caracteres.", alertAddHomescreen:"Por favor añade primero la app a tu pantalla de inicio (Safari → Compartir → Añadir a pantalla de inicio). Luego abre la app desde el icono y activa los recordatorios.", alertNoPush:"Tu navegador no admite notificaciones push. Usa Safari en iOS 16.4+ o Chrome en Android.", alertPushBlocked:"Las notificaciones están bloqueadas. Actívalas en Ajustes del iPhone en Notificaciones → FitFunDog.", alertDeleteFail:"Tu cuenta no puede eliminarse automáticamente. Contacta a tu terapeuta en info@fit-fun-dog.de para la eliminación manual.",
     noAccount:"¿Sin cuenta? Contacta a tu terapeuta.", forgotPw:"¿Olvidaste tu contraseña?", resetSent:"Email enviado – revisa tu bandeja de entrada.", adminTitle:"Admin", adminSub:"Ajustes y gestión de la app", legalTitle:"Legal", feedbackAppTitle:"Feedback de la app", feedbackAppSub:"Enviar directamente a la desarrolladora.",
@@ -664,6 +745,9 @@ export default function App() {
   const [appFeedbackText,setAppFeedbackText]=useState("");
   const [showDeleteAccount,setShowDeleteAccount]=useState(false);
   const [historyPatient,setHistoryPatient]=useState(null); // Verlaufs-Sheet (seit 062)
+  const [surveys,setSurveys]=useState([]);                 // Mobilitäts-Check (seit 066)
+  const [surveySheet,setSurveySheet]=useState(false);
+  const [surveyAnswers,setSurveyAnswers]=useState({});
   const [historyData,setHistoryData]=useState(null);
   const [historyLoading,setHistoryLoading]=useState(false);
   const [deleteConfirmText,setDeleteConfirmText]=useState("");
@@ -685,7 +769,7 @@ export default function App() {
   // Behebt iOS-WebKit-Bug: Caret wird in position:fixed-Sheets versetzt
   // (unterhalb des Eingabefelds) gerendert, wenn die Seite dahinter
   // gescrollt ist bzw. die Tastatur den Viewport verschiebt.
-  const anySheetOpen=!!(sheet||selectedExercise||viewTemplateData||planAssignDone||viewFeedbackEx||feedbackSheet||showAppFeedback||showDeleteAccount||historyPatient);
+  const anySheetOpen=!!(sheet||selectedExercise||viewTemplateData||planAssignDone||viewFeedbackEx||feedbackSheet||showAppFeedback||showDeleteAccount||historyPatient||surveySheet);
   useEffect(()=>{
     if(!anySheetOpen)return;
     const y=window.scrollY;
@@ -741,6 +825,7 @@ export default function App() {
         setPatients([]);setExercises([]);setDoneLogs([]);setHistoryLogs([]);setFeedbacks([]);setTemplates([]);
         setOwnerPatient(null);setSelectedPatient(null);
         setIsAdmin(false);
+        setView("owner"); // View zurücksetzen — sonst erbt der nächste (Besitzer-)Login einen Admin-View und sieht eine leere Seite (Fix 065)
         setLoading(true);
       } else if(event==="SIGNED_IN"&&s){
         setIsRecoveryMode(false);
@@ -772,7 +857,7 @@ export default function App() {
     if(!initialLoadDone.current)setLoading(true); // Vollbild-Loader nur beim ersten Laden (seit 058)
     const uid=userId;
     try{
-      const [{data:pd},{data:ed},{data:ld},{data:ue},{data:hl},{data:fb},{data:ps}]=await Promise.all([
+      const [{data:pd},{data:ed},{data:ld},{data:ue},{data:hl},{data:fb},{data:ps},{data:sv}]=await Promise.all([
         supabase.from("patients").select("*").order("name"),
         supabase.from("exercises").select("*").order("created_at"),
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
@@ -780,6 +865,7 @@ export default function App() {
         supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-111);return d.toISOString().split("T")[0];})()),
         supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false}),
         supabase.from("practice_settings").select("*").eq("slug",PRACTICE_SLUG).maybeSingle(),
+        supabase.from("outcome_surveys").select("*").order("created_at",{ascending:false}),
       ]);
       // Plan-Queries explizit nach practice_id filtern – ps.id erst hier bekannt
       const practiceId=ps?.id;
@@ -801,6 +887,7 @@ export default function App() {
         difficultyColor=getDifficultyColor();
         const adminNow=!!(ps.admin_user_id&&uid===ps.admin_user_id);
         setIsAdmin(adminNow);
+        if(!adminNow)setView(v=>(v==="therapist"||v==="admin")?"owner":v); // Besitzer landen immer auf Home (Fix 065)
         if(adminNow&&!sessionStorage.getItem("_adminLanded")){setView("therapist");setPracticeTab("assign");sessionStorage.setItem("_adminLanded","1");}
         initialLoadDone.current=true;
         // Browser-Tab-Titel + Favicon
@@ -822,6 +909,7 @@ export default function App() {
       setFeedbacks(fb||[]);
       setTemplates(td||[]);
       setUserEmails(ue||[]);
+      setSurveys(sv||[]);
       setPlanTemplates(ptd||[]);
       setPlanTemplateExercises(pte||[]);
 
@@ -1088,6 +1176,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     setSheet(null);setSheetData(null);setSelectedTemplate(null);
     setAssignFilterCats([]);setAssignFilterRegions([]);
     setDuration("");setRepeatCount(1);
+    setAssignFrom("");setAssignUntil("");
     setEditTemplateData(null);setEditPatientData(null);
     setNewAccountMode("new");setSelectedExistingUserId("");
     setResetEmailSent(false);setUserSearch("");
@@ -1367,7 +1456,29 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     }
     const{data:fb,error:fbErr}=await supabase.from("exercise_feedback").select("*").eq("patient_id",p.id).gte("created_at",from.toISOString()).order("created_at",{ascending:false});
     if(fbErr){showToast("error","Fehler: "+fbErr.message);setHistoryLoading(false);return;}
-    setHistoryData({logs,feedbacks:fb||[]});setHistoryLoading(false);
+    const{data:svh}=await supabase.from("outcome_surveys").select("*").eq("patient_id",p.id).order("created_at",{ascending:true}).limit(24);
+    setHistoryData({logs,feedbacks:fb||[],surveys:svh||[]});setHistoryLoading(false);
+  };
+
+  // Mobilitäts-Check fällig? (seit 066) — surveys ist created_at-absteigend sortiert
+  const surveyDueFor=(p)=>{
+    if(!p?.survey_type)return false;
+    const last=surveys.find(sv=>sv.patient_id===p.id);
+    if(!last)return true;
+    return (Date.now()-new Date(last.created_at).getTime())>=28*24*3600*1000;
+  };
+
+  const submitSurvey=async()=>{
+    const qs=SURVEY_QUESTIONS[lang]||SURVEY_QUESTIONS.de;
+    if(!ownerPatient||Object.keys(surveyAnswers).length<qs.length)return;
+    setSaving(true);
+    const total=qs.reduce((sum,_,i)=>sum+(surveyAnswers[i]||0),0);
+    const{data,error}=await supabase.from("outcome_surveys")
+      .insert({patient_id:ownerPatient.id,practice_id:practice.id,survey_type:"mobility",answers:surveyAnswers,total_score:total})
+      .select().single();
+    if(error){showToast("error","Fehler: "+error.message);}
+    else{setSurveys(prev=>[data,...prev]);showToast("success",t.surveyThanks);setSurveySheet(false);setSurveyAnswers({});}
+    setSaving(false);
   };
 
   const deletePatient=async(pid)=>{
@@ -1564,7 +1675,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       setExercises(prev=>[...prev,...newExercises]);
       setPlanAssignDone({patient:planAssignPatient,plan:planAssignState.plan});
     }
-    setSaving(false);setPlanAssignState(null);setPlanAssignPatient(null);setPlanAssignSearch("");setPlanAssignStartDate(todayLocalStr());
+    // Patient bleibt ausgewählt (Fix 065) — nur Plan-Auswahl + Startdatum zurücksetzen
+    setSaving(false);setPlanAssignState(null);setPlanAssignStartDate(todayLocalStr());
   };
 
   const saveMailTemplate=async()=>{
@@ -1870,6 +1982,16 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 <div style={{marginLeft:"auto",flexShrink:0}}>
                   <Icon name="check" size={22} color="#6EE7B7"/>
                 </div>
+              </div>
+            )}
+            {/* ── Mobilitäts-Check fällig (seit 066) ── */}
+            {surveyDueFor(ownerPatient)&&(
+              <div className="card" style={{padding:"14px 16px",marginBottom:10,border:`1.5px solid ${BRAND}`,background:LIGHT}}>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:4}}>{t.surveyCardTitle(ownerPatient.name)}</div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12.5,color:MUTED,marginBottom:10}}>{t.surveyCardText}</div>
+                <button className="btn" onClick={()=>{setSurveyAnswers({});setSurveySheet(true);}} style={{background:BRAND,color:"#102828",borderRadius:10,padding:"10px 16px",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,display:"inline-flex",alignItems:"center",gap:6}}>
+                  <Icon name="check" size={14} color="#102828"/>{t.surveyStart}
+                </button>
               </div>
             )}
             {/* ── Stat tiles ── */}
@@ -2296,7 +2418,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 {/* 1. Patient suchen & auswählen */}
                 <div style={{marginBottom:14}}>
                   <SL text="Patient suchen & auswählen"/>
-                  <SearchInput value={planAssignSearch} onChange={val=>{setPlanAssignSearch(val);setPlanAssignPatient(null);}} placeholder="Name oder Besitzer..."/>
+                  <SearchInput value={planAssignSearch} onChange={setPlanAssignSearch} placeholder="Name oder Besitzer..."/>
                   <CustomSelect value={planAssignPatient?.id||""} onChange={e=>{setPlanAssignPatient(patients.find(p=>p.id===e.target.value)||null);setPlanAssignState(null);}}>
                     <option value="">Patient auswählen...</option>
                     {patients.filter(p=>{const q=planAssignSearch.trim().toLowerCase();return !planAssignSearch||(p.name||"").toLowerCase().includes(q)||(p.owner||"").toLowerCase().includes(q);}).map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
@@ -2607,28 +2729,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={t.assignBtn} onClose={closeSheet}/>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                <div style={{flex:1}}><SL text={t.step1}/>
-                  <CustomSelect value={selectedPatient?.id||""} onChange={e=>setSelectedPatient(patients.find(p=>p.id===e.target.value)||null)}>
-                    <option value="">{t.selectPatient}</option>
-                    {patients.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
-                  </CustomSelect>
-                </div>
-              </div>
-              <div style={{display:"flex",gap:8}}>
-                <div style={{flex:1}}><SL text={t.step3}/><input value={duration} onChange={e=>setDuration(e.target.value)} placeholder={t.freqPh} style={inp}/>
-                  <div style={{display:"flex",gap:8,marginTop:8}}>
-                    <div style={{flex:1}}><SL text="Aktiv von (optional)"/><input type="date" value={assignFrom} onChange={e=>setAssignFrom(e.target.value)} style={inp}/></div>
-                    <div style={{flex:1}}><SL text="bis (optional)"/><input type="date" value={assignUntil} onChange={e=>setAssignUntil(e.target.value)} style={inp}/></div>
-                  </div></div>
-                <div style={{flex:"0 0 auto"}}>
-                  <SL text={t.step4}/>
-                  <div style={{display:"flex",alignItems:"center",gap:6,height:46}}>
-                    <button className="btn" onClick={()=>setRepeatCount(Math.max(1,repeatCount-1))} style={{width:32,height:32,borderRadius:8,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:DARK}}>−</button>
-                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:DARK,minWidth:28,textAlign:"center"}}>{repeatCount}x</span>
-                    <button className="btn" onClick={()=>setRepeatCount(Math.min(7,repeatCount+1))} style={{width:32,height:32,borderRadius:8,background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:"#102828"}}>+</button>
-                  </div>
-                </div>
+              <div><SL text={t.step1}/>
+                <CustomSelect value={selectedPatient?.id||""} onChange={e=>setSelectedPatient(patients.find(p=>p.id===e.target.value)||null)}>
+                  <option value="">{t.selectPatient}</option>
+                  {patients.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
+                </CustomSelect>
               </div>
               <div>
                 <SL text={t.step2}/>
@@ -2646,6 +2751,30 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     </div>
                   ))}
                   {filteredTemplates.length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:ACCENT,textAlign:"center",padding:"12px 0"}}>{t.noCategoryEx}</div>}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+                <div style={{flex:1,minWidth:0}}><SL text={t.step3}/><input value={duration} onChange={e=>setDuration(e.target.value)} placeholder={t.freqPh} style={{...inp,height:46,boxSizing:"border-box"}}/></div>
+                <div style={{flexShrink:0}}>
+                  <SL text={t.step4}/>
+                  <div style={{display:"flex",alignItems:"center",gap:6,height:46}}>
+                    <button className="btn" onClick={()=>setRepeatCount(Math.max(1,repeatCount-1))} style={{width:32,height:32,borderRadius:8,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:DARK}}>−</button>
+                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:DARK,minWidth:28,textAlign:"center"}}>{repeatCount}x</span>
+                    <button className="btn" onClick={()=>setRepeatCount(Math.min(7,repeatCount+1))} style={{width:32,height:32,borderRadius:8,background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:"#102828"}}>+</button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <SL text="Aktive Phase (optional)"/>
+                <div style={{display:"flex",gap:8}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:4}}>von</div>
+                    <input type="date" value={assignFrom} onChange={e=>setAssignFrom(e.target.value)} style={{...inp,width:"100%",height:46,boxSizing:"border-box"}}/>
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:4}}>bis</div>
+                    <input type="date" value={assignUntil} onChange={e=>setAssignUntil(e.target.value)} style={{...inp,width:"100%",height:46,boxSizing:"border-box"}}/>
+                  </div>
                 </div>
               </div>
               <button className="btn" onClick={addExercise} disabled={saving} style={{width:"100%",padding:"14px",borderRadius:12,background:selectedTemplate&&selectedPatient&&duration?BRAND:BORDER,color:selectedTemplate&&selectedPatient&&duration?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
@@ -2707,6 +2836,15 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               ))}
               <div><SL text="Diagnose"/><textarea value={editPatientData.condition||""} onChange={e=>setEditPatientData(p=>({...p,condition:e.target.value}))} rows={4} style={{...inp,resize:"vertical",lineHeight:1.5}}/></div>
               <div><SL text="Emoji"/><input value={editPatientData.avatar||""} onChange={e=>setEditPatientData(p=>({...p,avatar:e.target.value}))} style={{...inp,width:60,textAlign:"center"}}/></div>
+              <div onClick={()=>setEditPatientData(p=>({...p,survey_type:p.survey_type?null:"mobility"}))} style={{display:"inline-flex",alignItems:"flex-start",gap:8,cursor:"pointer"}}>
+                <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${editPatientData.survey_type?BRAND:BORDER}`,background:editPatientData.survey_type?BRAND:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
+                  {editPatientData.survey_type&&<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#102828" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+                <div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,color:"#102828"}}>Mobilitäts-Check aktivieren</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>Besitzer wird alle 4 Wochen um 13 kurze Fragen gebeten (Score 0–52)</div>
+                </div>
+              </div>
               <div style={{background:LIGHT,borderRadius:12,padding:"14px"}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:DARK,marginBottom:10}}>Login-Konto</div>
                 {editPatientData.user_id&&getUserEmail(editPatientData.user_id)&&(
@@ -2994,6 +3132,43 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       )}
 
       {/* SHEET: PLAN ZUGEWIESEN – MAIL SENDEN */}
+      {/* SHEET: MOBILITAETS-CHECK (Owner, seit 066) */}
+      {surveySheet&&ownerPatient&&(()=>{
+        const qs=SURVEY_QUESTIONS[lang]||SURVEY_QUESTIONS.de;
+        const scale=SURVEY_SCALE[lang]||SURVEY_SCALE.de;
+        const answered=Object.keys(surveyAnswers).length;
+        const complete=answered>=qs.length;
+        return(
+        <div className="overlay">
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title={t.surveyTitle} onClose={()=>setSurveySheet(false)}/>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12.5,color:MUTED,marginBottom:14}}>{t.surveyIntro}</div>
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              {qs.map((q,i)=>(
+                <div key={i}>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,color:"#102828",marginBottom:7}}>{i+1}. {q}</div>
+                  <div style={{display:"flex",gap:5}}>
+                    {scale.map((lab,v)=>(
+                      <button key={v} className="btn" onClick={()=>setSurveyAnswers(a=>({...a,[i]:v}))}
+                        style={{flex:1,padding:"7px 2px",borderRadius:9,border:`1.5px solid ${surveyAnswers[i]===v?BRAND:BORDER}`,background:surveyAnswers[i]===v?BRAND:"white",fontFamily:"'DM Sans',sans-serif",lineHeight:1.25,textAlign:"center"}}>
+                        <div style={{fontSize:13,fontWeight:700,color:surveyAnswers[i]===v?"#102828":DARK}}>{v}</div>
+                        <div style={{fontSize:9,fontWeight:500,color:surveyAnswers[i]===v?"#102828":MUTED}}>{lab}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,textAlign:"center",margin:"14px 0 10px"}}>{t.surveyProgress(answered,qs.length)}</div>
+            <button className="btn" onClick={submitSurvey} disabled={saving||!complete}
+              style={{width:"100%",padding:"14px",borderRadius:12,background:complete?BRAND:BORDER,color:complete?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+              {saving?t.saving:t.surveySubmit}
+            </button>
+          </div>
+        </div>
+        );
+      })()}
+
       {planAssignDone&&(
         <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
