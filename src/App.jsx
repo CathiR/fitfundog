@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-11-063";
+const APP_VERSION = "2026-06-12-064";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -116,7 +116,9 @@ const PatientHistory = ({ patExs, data, loading }) => {
     const end=new Date(start);end.setDate(end.getDate()+6);
     const endNext=new Date(start);endNext.setDate(endNext.getDate()+7);
     const sStr=fmtD(start),eStr=fmtD(end);
-    const active=patExs.filter(ex=>new Date(ex.created_at)<=endNext);
+    const active=patExs.filter(ex=>new Date(ex.created_at)<=endNext
+      &&(!ex.active_from||ex.active_from<=eStr)
+      &&(!ex.active_until||ex.active_until>=sStr));
     const soll=active.reduce((s,ex)=>s+(ex.repeat_count||1),0);
     let ist=0;
     for(const ex of active){
@@ -194,6 +196,16 @@ const PatientHistory = ({ patExs, data, loading }) => {
 // ── Video-Upload (seit 063) ──
 const VIDEO_BUCKET_PATH = "/storage/v1/object/public/exercise-videos/";
 const isDirectVideo = (url) => !!url && (url.includes(VIDEO_BUCKET_PATH) || /\.(mp4|mov|webm)(\?|$)/i.test(url));
+
+// ── Phasen-Logik (seit 064): aktive Zeitfenster pro Übung ──
+const todayLocalStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+const exPhase = (ex) => {
+  const t = todayLocalStr();
+  if (ex.active_from && t < ex.active_from) return "upcoming";
+  if (ex.active_until && t > ex.active_until) return "ended";
+  return "active";
+};
+const fmtShortDate = (iso) => { const [y,m,d] = iso.split("-"); return `${d}.${m}.`; };
 
 const VideoUploadField = ({ id, value, uploading, onUpload, onRemove }) => {
   const isOwn = !!value && value.includes(VIDEO_BUCKET_PATH);
@@ -293,7 +305,7 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
 };
 
 const T = {
-  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", navAdmin:"Admin", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt.",
+  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", navAdmin:"Admin", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", phaseFrom:(d)=>`ab ${d}`, phaseEnded:"Phase beendet", markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt.",
     plans:"Behandlungspläne", noPlans:"Noch keine Behandlungspläne erstellt.", noTemplates:"Noch keine Übungsvorlagen erstellt.", newExercise:"Neue Übung erstellen", editExercise:"Übung bearbeiten", addExercise:"Übung hinzufügen", printPlan:"Übungsplan drucken", searchPatient:"Patient suchen & auswählen", unknownExercise:"Unbekannte Übung", reminderActive:"Täglich aktiv — nur bei offenen Übungen", reminderInactive:"Erinnert dich täglich an deine Übungen", deleteAccount:"Konto löschen", deleteAccountConfirm:"Konto unwiderruflich löschen", deleting:"Wird gelöscht...", deleteWord:"LÖSCHEN", pwSecurityHint:"Aus Sicherheitsgründen bitte ein eigenes Passwort vergeben.", changePw:"Bitte Passwort ändern", feedbackPlaceholder:"Dein Feedback...", feedbackTitle:"Feedback geben", feedbackSub:"Dein Feedback hilft dabei die App weiterzuentwickeln.", feedbackSend:"Feedback senden", deleteAccountWarningTitle:"Achtung – diese Aktion ist unwiderruflich", deleteAccountWarningText:"Dein Konto und alle damit verbundenen Daten werden dauerhaft gelöscht. Deine Therapiedaten bleiben bei deiner Therapeutin erhalten.", deleteConfirmLabel:(word)=>`Zur Bestätigung "${word}" eingeben`,
     alertPwMin:"Passwort muss mindestens 6 Zeichen haben.", alertAddHomescreen:"Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.", alertNoPush:"Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.", alertPushBlocked:"Benachrichtigungen sind blockiert. Bitte erlaube sie in den iPhone-Einstellungen unter Mitteilungen → FitFunDog.", alertDeleteFail:"Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter info@fit-fun-dog.de zur manuellen Löschung.",
     noAccount:"Kein Konto? Bitte wende dich an deine Therapeutin.", forgotPw:"Passwort vergessen?", resetSent:"Reset-Email gesendet – bitte Postfach prüfen.", adminTitle:"Admin", adminSub:"Einstellungen & App-Verwaltung", legalTitle:"Rechtliches", feedbackAppTitle:"Feedback zur App", feedbackAppSub:"Direkt an die Entwicklerin senden.",
@@ -307,7 +319,7 @@ const T = {
     categories:["Regeneration","Balance","Kräftigung","Koordination","Mobilisation"],
     targetRegions:["Ganzer Körper","Hinterhand","Vorderhand","Rumpf","Vorderpfoten","Rücken"],
     difficulties:["Leicht","Mittel","Schwer"] },
-  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", navAdmin:"Admin", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress.",
+  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", navAdmin:"Admin", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", phaseFrom:(d)=>`from ${d}`, phaseEnded:"Phase ended", markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress.",
     plans:"Treatment Plans", noPlans:"No treatment plans created yet.", noTemplates:"No exercise templates created yet.", newExercise:"New exercise", editExercise:"Edit exercise", addExercise:"Add exercise", printPlan:"Print plan", searchPatient:"Search & select patient", unknownExercise:"Unknown exercise", reminderActive:"Active daily — only when exercises are open", reminderInactive:"Reminds you daily of your exercises", deleteAccount:"Delete account", deleteAccountConfirm:"Permanently delete account", deleting:"Deleting...", deleteWord:"DELETE", pwSecurityHint:"For security reasons please set your own password.", changePw:"Please change password", feedbackPlaceholder:"Your feedback...", feedbackTitle:"Give feedback", feedbackSub:"Your feedback helps improve the app.", feedbackSend:"Send feedback", deleteAccountWarningTitle:"Warning – this action is irreversible", deleteAccountWarningText:"Your account and all associated data will be permanently deleted. Your therapy data will remain with your therapist.", deleteConfirmLabel:(word)=>`Type "${word}" to confirm`,
     alertPwMin:"Password must be at least 6 characters.", alertAddHomescreen:"Please add the app to your home screen first (Safari → Share → Add to Home Screen). Then open the app via the home screen icon and activate reminders again.", alertNoPush:"Your browser does not support push notifications. Please use Safari on iOS 16.4+ or Chrome on Android.", alertPushBlocked:"Notifications are blocked. Please allow them in iPhone Settings under Notifications → FitFunDog.", alertDeleteFail:"Your account cannot be deleted automatically. Please contact your therapist at info@fit-fun-dog.de for manual deletion.",
     noAccount:"No account? Please contact your therapist.", forgotPw:"Forgot password?", resetSent:"Reset email sent – please check your inbox.", adminTitle:"Admin", adminSub:"Settings & App management", legalTitle:"Legal", feedbackAppTitle:"App feedback", feedbackAppSub:"Send directly to the developer.",
@@ -321,7 +333,7 @@ const T = {
     categories:["Regeneration","Balance","Strengthening","Coordination","Mobilisation"],
     targetRegions:["Whole body","Hindquarters","Forequarters","Core","Front paws","Back"],
     difficulties:["Easy","Medium","Hard"] },
-  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", navAdmin:"Admin", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes para el entrenamiento", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento. Sin descanso suficiente, el sobreentrenamiento reemplaza al progreso.",
+  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", navAdmin:"Admin", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", phaseFrom:(d)=>`desde ${d}`, phaseEnded:"Fase finalizada", markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes para el entrenamiento", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento. Sin descanso suficiente, el sobreentrenamiento reemplaza al progreso.",
     plans:"Planes de tratamiento", noPlans:"Aún no hay planes de tratamiento.", noTemplates:"Aún no hay plantillas de ejercicios.", newExercise:"Nuevo ejercicio", editExercise:"Editar ejercicio", addExercise:"Añadir ejercicio", printPlan:"Imprimir plan", searchPatient:"Buscar y seleccionar paciente", unknownExercise:"Ejercicio desconocido", reminderActive:"Activo diariamente — solo si hay ejercicios pendientes", reminderInactive:"Te recuerda tus ejercicios cada día", deleteAccount:"Eliminar cuenta", deleteAccountConfirm:"Eliminar cuenta permanentemente", deleting:"Eliminando...", deleteWord:"ELIMINAR", pwSecurityHint:"Por seguridad, establece tu propia contraseña.", changePw:"Por favor cambia la contraseña", feedbackPlaceholder:"Tu comentario...", feedbackTitle:"Dar feedback", feedbackSub:"Tu feedback ayuda a mejorar la app.", feedbackSend:"Enviar feedback", deleteAccountWarningTitle:"Atención – esta acción es irreversible", deleteAccountWarningText:"Tu cuenta y todos los datos asociados serán eliminados permanentemente. Tus datos de terapia permanecerán con tu terapeuta.", deleteConfirmLabel:(word)=>`Escribe "${word}" para confirmar`,
     alertPwMin:"La contraseña debe tener al menos 6 caracteres.", alertAddHomescreen:"Por favor añade primero la app a tu pantalla de inicio (Safari → Compartir → Añadir a pantalla de inicio). Luego abre la app desde el icono y activa los recordatorios.", alertNoPush:"Tu navegador no admite notificaciones push. Usa Safari en iOS 16.4+ o Chrome en Android.", alertPushBlocked:"Las notificaciones están bloqueadas. Actívalas en Ajustes del iPhone en Notificaciones → FitFunDog.", alertDeleteFail:"Tu cuenta no puede eliminarse automáticamente. Contacta a tu terapeuta en info@fit-fun-dog.de para la eliminación manual.",
     noAccount:"¿Sin cuenta? Contacta a tu terapeuta.", forgotPw:"¿Olvidaste tu contraseña?", resetSent:"Email enviado – revisa tu bandeja de entrada.", adminTitle:"Admin", adminSub:"Ajustes y gestión de la app", legalTitle:"Legal", feedbackAppTitle:"Feedback de la app", feedbackAppSub:"Enviar directamente a la desarrolladora.",
@@ -617,6 +629,8 @@ export default function App() {
   const [selectedTemplate,setSelectedTemplate]=useState(null);
   const [duration,setDuration]=useState("");
   const [repeatCount,setRepeatCount]=useState(1);
+  const [assignFrom,setAssignFrom]=useState("");   // optionales Aktiv-Fenster (seit 064)
+  const [assignUntil,setAssignUntil]=useState("");
   const [newPatient,setNewPatient]=useState(EMPTY_PATIENT);
   const [editPatientData,setEditPatientData]=useState(null);
   const [newTemplate,setNewTemplate]=useState(EMPTY_TEMPLATE);
@@ -631,6 +645,7 @@ export default function App() {
   const [selectedPlanTemplate,setSelectedPlanTemplate]=useState(null);
   const [planAssignState,setPlanAssignState]=useState(null);
   const [planAssignPatient,setPlanAssignPatient]=useState(null);
+  const [planAssignStartDate,setPlanAssignStartDate]=useState(todayLocalStr()); // Startdatum für Phasen (seit 064)
   const [planAssignSearch,setPlanAssignSearch]=useState("");
   const [planAssignDone,setPlanAssignDone]=useState(null); // {patient, plan} nach erfolgreicher Zuweisung
   const [mailTemplate,setMailTemplate]=useState({subject:"",body:""});
@@ -967,6 +982,7 @@ ${patExercises.map((ex) => `
       ${(ex.categories||[]).map(c=>`<span class="tag">${tCat(c)}</span>`).join("")}
       ${ex.difficulty ? `<span class="tag tag-diff-${ex.difficulty.toLowerCase()}">${tDiff(ex.difficulty)}</span>` : ""}
       ${ex.repeat_count ? `<span class="tag tag-freq">${ex.repeat_count}${labelPerWeek}</span>` : ""}
+      ${ex.active_from||ex.active_until ? `<span class="tag tag-freq">${ex.active_from?fmtShortDate(ex.active_from):""}–${ex.active_until?fmtShortDate(ex.active_until):""}</span>` : ""}
       ${ex.duration ? `<span class="tag">${ex.duration}</span>` : ""}
     </div>
     ${exT(ex,"description") ? `<div class="ex-desc">${exT(ex,"description")}</div>` : ""}
@@ -1085,6 +1101,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const isFullyDone=(ex)=>getDoneCountThisWeek(ex.id)>=(ex.repeat_count||1);
 
   const toggleRepeat=async(eid,repeatCount)=>{
+    const _ex=exercises.find(e=>e.id===eid);
+    if(_ex&&exPhase(_ex)!=="active")return; // upcoming/beendete Phasen nicht abhakbar (seit 064)
     const currentCount=getDoneCountThisWeek(eid);
     const maxCount=repeatCount||1;
     if(currentCount<maxCount){
@@ -1385,9 +1403,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       instructions_en:selectedTemplate.instructions_en||null,
       title_es:selectedTemplate.title_es||null,description_es:selectedTemplate.description_es||null,
       instructions_es:selectedTemplate.instructions_es||null,
+      active_from:assignFrom||null,active_until:assignUntil||null,
       practice_id:practice.id
     }).select().single();
-    if(!error&&data)setExercises(prev=>[...prev,data]);
+    if(!error&&data){setExercises(prev=>[...prev,data]);setAssignFrom("");setAssignUntil("");}
     setSaving(false);closeSheet();
   };
 
@@ -1490,7 +1509,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     if(planErr||!planData){showToast("error","Fehler: "+(planErr?.message||"Unbekannt"));setSaving(false);return;}
     // insert exercises
     if(planExerciseDraft.length>0){
-      const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:planData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,sort_order:i,practice_id:practice.id}));
+      const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:planData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,start_week:ex.start_week||null,end_week:ex.end_week||null,sort_order:i,practice_id:practice.id}));
       await supabase.from("plan_template_exercises").insert(rows);
     }
     await loadAll(practice.admin_user_id||session?.user?.id);
@@ -1504,7 +1523,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     // Replace exercises: delete old, insert new
     await supabase.from("plan_template_exercises").delete().eq("plan_template_id",editPlanData.id);
     if(planExerciseDraft.length>0){
-      const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:editPlanData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,sort_order:i,practice_id:practice.id}));
+      const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:editPlanData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,start_week:ex.start_week||null,end_week:ex.end_week||null,sort_order:i,practice_id:practice.id}));
       await supabase.from("plan_template_exercises").insert(rows);
     }
     await loadAll(practice.admin_user_id||session?.user?.id);
@@ -1523,7 +1542,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const assignPlanToPatient=async()=>{
     if(!planAssignState||!planAssignPatient)return;
     setSaving(true);
+    const startBase=planAssignStartDate||todayLocalStr();
+    const addDays=(iso,n)=>{const d=new Date(iso+"T00:00:00");d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
     const rows=planAssignState.exercises.map(ex=>({
+      active_from:ex.start_week?addDays(startBase,(ex.start_week-1)*7):null,
+      active_until:ex.end_week?addDays(startBase,ex.end_week*7-1):null,
       patient_id:planAssignPatient.id,
       title:ex.title,categories:ex.categories||[],target_regions:ex.target_regions||[],
       difficulty:ex.difficulty,description:ex.description,instructions:ex.instructions||[],
@@ -1541,7 +1564,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       setExercises(prev=>[...prev,...newExercises]);
       setPlanAssignDone({patient:planAssignPatient,plan:planAssignState.plan});
     }
-    setSaving(false);setPlanAssignState(null);setPlanAssignPatient(null);setPlanAssignSearch("");
+    setSaving(false);setPlanAssignState(null);setPlanAssignPatient(null);setPlanAssignSearch("");setPlanAssignStartDate(todayLocalStr());
   };
 
   const saveMailTemplate=async()=>{
@@ -1588,8 +1611,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
   const PAIN_COLORS=["","#2E7D32","#8BC34A","#FF9800","#F44336","#B71C1C"];
   const ownerExs=ownerPatient?exForPatient(ownerPatient.id):[];
-  const doneCount=ownerExs.filter(e=>isFullyDone(e)).length;
-  const totalCount=ownerExs.length;
+  const ownerActiveExs=ownerExs.filter(e=>exPhase(e)==="active"); // nur aktive Phasen zählen (seit 064)
+  const doneCount=ownerActiveExs.filter(e=>isFullyDone(e)).length;
+  const totalCount=ownerActiveExs.length;
   const progress=totalCount>0?(doneCount/totalCount)*100:0;
   const allDone=totalCount>0&&doneCount===totalCount;
 
@@ -1920,14 +1944,17 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 const rc=ex.repeat_count||1;
                 const doneNow=getDoneCountThisWeek(ex.id);
                 const fullyDone=doneNow>=rc;
+                const phase=exPhase(ex);
                 return(
-                  <div key={ex.id} className="card ex-card" onClick={()=>setSelectedExercise(ex)} style={{padding:"14px",opacity:fullyDone?0.65:1}}>
+                  <div key={ex.id} className="card ex-card" onClick={()=>setSelectedExercise(ex)} style={{padding:"14px",opacity:fullyDone||phase!=="active"?0.6:1}}>
                     <div style={{display:"flex",gap:12,alignItems:"center"}}>
                       {ex.image_url?<img src={ex.image_url} alt={ex.title} style={{width:50,height:50,borderRadius:12,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2}}/>
                         :<div style={{width:50,height:50,borderRadius:12,background:BRAND+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={22} color={BRAND}/></div>}
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600,lineHeight:1.3,textDecoration:fullyDone?"line-through":"none",color:fullyDone?ACCENT:"#102828",marginBottom:5}}>{exT(ex,"title")}</div>
                         <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:7}}>
+                          {phase==="upcoming"&&<span className="tag" style={{background:ACCENT+"30",color:DARK,fontWeight:700}}>{t.phaseFrom(fmtShortDate(ex.active_from))}</span>}
+                          {phase==="ended"&&<span className="tag" style={{background:LIGHT,color:MUTED,fontWeight:700}}>{t.phaseEnded}</span>}
                           {(ex.categories||[]).slice(0,2).map(c=><span key={c} className="tag" style={{background:BRAND+"20",color:BRAND}}>{tCat(c)}</span>)}
                           <span className="tag" style={{background:(difficultyColor[ex.difficulty]||BRAND)+"20",color:difficultyColor[ex.difficulty]||BRAND}}>{tDiff(ex.difficulty)}</span>
                           <span className="tag" style={{background:LIGHT,color:MUTED}}>⏱ {ex.duration}</span>
@@ -1940,7 +1967,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                               const checked=i<doneNow;
                               return(
                                 <button key={i} className="repeat-box" onClick={e=>{e.stopPropagation();toggleRepeat(ex.id,rc);}}
-                                  style={{borderColor:checked?BRAND:BORDER,background:checked?BRAND:"white",width:28,height:28}}>
+                                  style={{borderColor:checked?BRAND:BORDER,background:checked?BRAND:"white",width:28,height:28,cursor:phase==="active"?"pointer":"default",opacity:phase==="active"?1:0.45}}>
                                   {checked&&<Icon name="check" size={13} color="white"/>}
                                 </button>
                               );
@@ -2166,7 +2193,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       </button>
                           <button className="iBtn" onClick={()=>{
                             setEditPlanData({...plan});
-                            const draft=planExs.map(pe=>({exercise_template_id:pe.exercise_template_id,default_duration:pe.default_duration||"",default_repeat_count:pe.default_repeat_count||1,sort_order:pe.sort_order}));
+                            const draft=planExs.map(pe=>({exercise_template_id:pe.exercise_template_id,default_duration:pe.default_duration||"",default_repeat_count:pe.default_repeat_count||1,start_week:pe.start_week||"",end_week:pe.end_week||"",sort_order:pe.sort_order}));
                             setPlanExerciseDraft(draft);setSelectedPlanTemplate(null);setSheet("editPlan");
                           }} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
                           <button className="iBtn" onClick={()=>{setSheetData(plan);setSheet("confirmDeletePlan");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
@@ -2322,6 +2349,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                           <div key={idx} style={{background:PALE,borderRadius:10,padding:"8px 10px",border:`1.5px solid ${LIGHT}`}}>
                             <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828",marginBottom:6}}>{exT(ex,"title")}</div>
                             <div style={{display:"flex",alignItems:"center",gap:6}}>
+                              {(ex.start_week||ex.end_week)&&<span className="tag" style={{background:ACCENT+"30",color:DARK,flexShrink:0,fontWeight:700}}>Wo. {ex.start_week||1}{ex.end_week?`–${ex.end_week}`:"+"}</span>}
                               <input value={ex.duration} onChange={e=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,duration:e.target.value}:x)}))} placeholder="Dauer..." style={{...inp,fontSize:16,padding:"4px 8px",flex:1}}/>
                               <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
                                 <button className="btn" onClick={()=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,repeat_count:Math.max(1,(x.repeat_count||1)-1)}:x)}))} style={{width:22,height:22,borderRadius:5,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:DARK}}>−</button>
@@ -2332,6 +2360,13 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {planAssignState&&planAssignState.exercises.some(e=>e.start_week||e.end_week)&&(
+                    <div style={{marginBottom:12}}>
+                      <SL text="Plan-Start (Woche 1 beginnt am)"/>
+                      <input type="date" value={planAssignStartDate} onChange={e=>setPlanAssignStartDate(e.target.value)} style={inp}/>
                     </div>
                   )}
 
@@ -2581,7 +2616,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 </div>
               </div>
               <div style={{display:"flex",gap:8}}>
-                <div style={{flex:1}}><SL text={t.step3}/><input value={duration} onChange={e=>setDuration(e.target.value)} placeholder={t.freqPh} style={inp}/></div>
+                <div style={{flex:1}}><SL text={t.step3}/><input value={duration} onChange={e=>setDuration(e.target.value)} placeholder={t.freqPh} style={inp}/>
+                  <div style={{display:"flex",gap:8,marginTop:8}}>
+                    <div style={{flex:1}}><SL text="Aktiv von (optional)"/><input type="date" value={assignFrom} onChange={e=>setAssignFrom(e.target.value)} style={inp}/></div>
+                    <div style={{flex:1}}><SL text="bis (optional)"/><input type="date" value={assignUntil} onChange={e=>setAssignUntil(e.target.value)} style={inp}/></div>
+                  </div></div>
                 <div style={{flex:"0 0 auto"}}>
                   <SL text={t.step4}/>
                   <div style={{display:"flex",alignItems:"center",gap:6,height:46}}>
@@ -2908,6 +2947,13 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                           <button className="btn" onClick={()=>setPlanExerciseDraft(prev=>prev.filter((_,i)=>i!==idx))} style={{width:22,height:22,borderRadius:5,background:"#FFE8E8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                             <Icon name="trash" size={11} color="#C0392B"/>
                           </button>
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6}}>
+                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,flexShrink:0}}>Phase: Woche</span>
+                          <input type="number" min="1" max="52" value={ex.start_week||""} onChange={e=>setPlanExerciseDraft(prev=>prev.map((x,i)=>i===idx?{...x,start_week:e.target.value?parseInt(e.target.value):""}:x))} placeholder="von" style={{...inp,fontSize:16,padding:"4px 8px",width:62}}/>
+                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>bis</span>
+                          <input type="number" min="1" max="52" value={ex.end_week||""} onChange={e=>setPlanExerciseDraft(prev=>prev.map((x,i)=>i===idx?{...x,end_week:e.target.value?parseInt(e.target.value):""}:x))} placeholder="bis" style={{...inp,fontSize:16,padding:"4px 8px",width:62}}/>
+                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:10.5,color:MUTED}}>(leer = immer)</span>
                         </div>
                       </div>
                     );
