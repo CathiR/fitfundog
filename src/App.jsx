@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-11-061";
+const APP_VERSION = "2026-06-12-066";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -50,7 +50,7 @@ const getDifficultyColor=()=>({"Leicht":BRAND,"Mittel":MID,"Schwer":"#C0392B"});
 let difficultyColor=getDifficultyColor();
 
 // ── PatientCard OUTSIDE App to allow useState and avoid IIFE ──
-const PatientCard = ({ p, userEmail, info, patExs, onPrint, onMail, onEdit, onDelete }) => {
+const PatientCard = ({ p, userEmail, info, patExs, onPrint, onMail, onEdit, onDelete, onHistory }) => {
   const [open, setOpen] = useState(false);
   return (
     <div className="card" style={{padding:"13px 14px 12px"}}>
@@ -61,6 +61,7 @@ const PatientCard = ({ p, userEmail, info, patExs, onPrint, onMail, onEdit, onDe
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:"#102828",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
         </div>
         <div style={{display:"flex",gap:4,flexShrink:0}}>
+          {info.count>0&&<button className="iBtn" title="Verlauf anzeigen" onClick={onHistory} style={{background:LIGHT}}><Icon name="chart" size={13} color={DARK}/></button>}
           <button className="iBtn" title="Übungsplan drucken" onClick={onPrint} style={{background:"#E8F5E9"}}><Icon name="print" size={13} color="#2E7D32"/></button>
           {userEmail&&<button className="iBtn" title="Plan-Info per Mail senden" onClick={onMail} style={{background:"#E3F2FD"}}><Icon name="mail" size={13} color="#1565C0"/></button>}
           <button className="iBtn" onClick={onEdit} style={{background:BRAND+"20"}}><Icon name="edit" size={13} color={MID}/></button>
@@ -93,8 +94,220 @@ const PatientCard = ({ p, userEmail, info, patExs, onPrint, onMail, onEdit, onDe
               <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,flexShrink:0}}>{new Date(ex.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})}</div>
             </div>
           ))}
+          <button className="btn" onClick={onHistory} style={{alignSelf:"flex-start",display:"inline-flex",alignItems:"center",gap:5,background:LIGHT,borderRadius:20,padding:"4px 11px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:DARK,marginTop:2}}>
+            <Icon name="chart" size={11} color={DARK}/>Verlauf anzeigen
+          </button>
         </div>
       )}
+    </div>
+  );
+};
+
+// ── PatientHistory OUTSIDE App (seit 062): 12-Wochen-Verlauf Adhärenz + Schmerz ──
+const PatientHistory = ({ patExs, data, loading }) => {
+  if(loading)return <div style={{padding:30,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:13}}>Verlauf wird geladen...</div>;
+  if(!data)return null;
+  const fmtD=(d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  const monday=(d)=>{const x=new Date(d);const day=x.getDay();x.setDate(x.getDate()+(day===0?-6:1-day));x.setHours(0,0,0,0);return x;};
+  const thisMon=monday(new Date());
+  const weeks=[];
+  for(let i=11;i>=0;i--){
+    const start=new Date(thisMon);start.setDate(start.getDate()-7*i);
+    const end=new Date(start);end.setDate(end.getDate()+6);
+    const endNext=new Date(start);endNext.setDate(endNext.getDate()+7);
+    const sStr=fmtD(start),eStr=fmtD(end);
+    const active=patExs.filter(ex=>new Date(ex.created_at)<=endNext
+      &&(!ex.active_from||ex.active_from<=eStr)
+      &&(!ex.active_until||ex.active_until>=sStr));
+    const soll=active.reduce((s,ex)=>s+(ex.repeat_count||1),0);
+    let ist=0;
+    for(const ex of active){
+      const n=data.logs.filter(l=>l.exercise_id===ex.id&&l.done&&l.done_date>=sStr&&l.done_date<=eStr).length;
+      ist+=Math.min(n,ex.repeat_count||1);
+    }
+    const fb=data.feedbacks.filter(f=>{const t=new Date(f.created_at);return t>=start&&t<endNext;});
+    const pain=fb.length?fb.reduce((s,f)=>s+(f.pain_level||0),0)/fb.length:null;
+    weeks.push({start,soll,ist,pct:soll>0?Math.min(100,Math.round(ist/soll*100)):null,pain});
+  }
+  const withSoll=weeks.filter(w=>w.pct!==null);
+  const avgPct=withSoll.length?Math.round(withSoll.reduce((s,w)=>s+w.pct,0)/withSoll.length):null;
+  const withPain=weeks.filter(w=>w.pain!==null);
+  const avgPain=withPain.length?(withPain.reduce((s,w)=>s+w.pain,0)/withPain.length).toFixed(1).replace(".",","):null;
+  // SVG-Geometrie: Schmerz-Lane oben (y 10..46), Balken-Lane (y 56..134)
+  const W=348,slot=W/12,barW=18;
+  const exTitle=(id)=>patExs.find(e=>e.id===id)?.title||"Übung";
+  return(
+    <div>
+      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12.5,color:MUTED,marginBottom:10}}>
+        Letzte 12 Wochen{avgPct!==null?<> · Ø <b style={{color:DARK}}>{avgPct}%</b> erledigt</>:null}{avgPain!==null?<> · Ø Schmerz <b style={{color:DARK}}>{avgPain}</b></>:null}
+      </div>
+      <svg viewBox={`0 0 ${W} 152`} style={{width:"100%",height:"auto",display:"block"}}>
+        {/* Trennlinie + 100%-Linie */}
+        <line x1="0" y1="50" x2={W} y2="50" stroke={BORDER} strokeWidth="1"/>
+        <line x1="0" y1="56" x2={W} y2="56" stroke={BORDER} strokeWidth="0.5" strokeDasharray="3 3"/>
+        {weeks.map((w,i)=>{
+          const cx=i*slot+slot/2;
+          const isNow=i===11;
+          return(
+            <g key={i}>
+              {w.pct!==null
+                ?<rect x={cx-barW/2} y={134-Math.max(3,w.pct*0.78)} width={barW} height={Math.max(3,w.pct*0.78)} rx="4" fill={BRAND} opacity={isNow?1:0.75}/>
+                :<rect x={cx-barW/2} y={131} width={barW} height={3} rx="1.5" fill={DISABLED||BORDER}/>}
+              {w.pain!==null&&(
+                <circle cx={cx} cy={46-(w.pain-1)/4*34} r="4.5" fill={w.pain>=4?"#C0392B":DARK}/>
+              )}
+              {(i%4===3||isNow)&&(
+                <text x={cx} y="148" textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize="9" fill={MUTED}>
+                  {isNow?"Jetzt":w.start.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}
+                </text>
+              )}
+            </g>
+          );
+        })}
+      </svg>
+      <div style={{display:"flex",gap:14,flexWrap:"wrap",marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:3,background:BRAND,display:"inline-block"}}/>Erledigt (% pro Woche)</span>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:9,height:9,borderRadius:"50%",background:DARK,display:"inline-block"}}/>Ø Schmerz (1–5)</span>
+        <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:9,height:9,borderRadius:"50%",background:"#C0392B",display:"inline-block"}}/>Schmerz ab 4</span>
+      </div>
+      {(data.surveys||[]).length>0&&(()=>{
+        const sv=data.surveys;
+        const latest=sv[sv.length-1],prev=sv.length>1?sv[sv.length-2]:null;
+        const delta=prev?latest.total_score-prev.total_score:null;
+        const svW=348,xs=sv.map((_,i)=>sv.length===1?svW/2:14+i*(svW-28)/(sv.length-1));
+        const ys=sv.map(x=>12+(x.total_score/52)*42);
+        return(
+        <div style={{marginTop:16,borderTop:`1px solid ${BORDER}`,paddingTop:12}}>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12.5,fontWeight:700,color:DARK,marginBottom:2}}>Mobilitäts-Check</div>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:8}}>
+            Score 0–52, niedriger = besser · Aktuell <b style={{color:DARK}}>{latest.total_score}</b>
+            {delta!==null&&<span style={{color:delta<0?"#2E7D32":delta>0?"#C0392B":MUTED,fontWeight:700}}> ({delta<0?"↓":delta>0?"↑":"±"}{Math.abs(delta)} seit letztem Mal)</span>}
+          </div>
+          <svg viewBox={`0 0 ${svW} 78`} style={{width:"100%",height:"auto",display:"block"}}>
+            <line x1="0" y1="58" x2={svW} y2="58" stroke={BORDER} strokeWidth="0.5"/>
+            {sv.length>1&&<polyline points={sv.map((_,i)=>`${xs[i]},${ys[i]}`).join(" ")} fill="none" stroke={BRAND} strokeWidth="2"/>}
+            {sv.map((x,i)=>(
+              <g key={x.id}>
+                <circle cx={xs[i]} cy={ys[i]} r="4.5" fill={DARK}/>
+                <text x={xs[i]} y={ys[i]-8} textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize="9.5" fontWeight="700" fill={DARK}>{x.total_score}</text>
+                {(i===0||i===sv.length-1)&&<text x={xs[i]} y="72" textAnchor="middle" fontFamily="'DM Sans',sans-serif" fontSize="9" fill={MUTED}>{new Date(x.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"})}</text>}
+              </g>
+            ))}
+          </svg>
+        </div>
+        );
+      })()}
+      {data.feedbacks.length>0&&(
+        <div style={{marginTop:16,borderTop:`1px solid ${BORDER}`,paddingTop:12}}>
+          <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12.5,fontWeight:700,color:DARK,marginBottom:8}}>Letzte Rückmeldungen</div>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {data.feedbacks.slice(0,10).map(f=>(
+              <div key={f.id} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                <span className="tag" style={{background:f.pain_level>=4?"#FFE8E8":LIGHT,color:f.pain_level>=4?"#C0392B":DARK,flexShrink:0,fontWeight:700}}>{f.pain_level}/5</span>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"#102828"}}>{exTitle(f.exercise_id)}{(f.comment||"")&&<> — <span style={{color:MUTED}}>{f.comment}</span></>}</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10.5,color:MUTED,marginTop:1}}>{new Date(f.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {data.feedbacks.length===0&&withSoll.length===0&&(
+        <div style={{padding:"14px 0",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:13}}>Noch keine Daten — sobald der Besitzer Übungen abhakt oder Rückmeldungen gibt, erscheint hier der Verlauf.</div>
+      )}
+    </div>
+  );
+};
+
+// ── Video-Upload (seit 063) ──
+const VIDEO_BUCKET_PATH = "/storage/v1/object/public/exercise-videos/";
+const isDirectVideo = (url) => !!url && (url.includes(VIDEO_BUCKET_PATH) || /\.(mp4|mov|webm)(\?|$)/i.test(url));
+
+// ── Phasen-Logik (seit 064): aktive Zeitfenster pro Übung ──
+const todayLocalStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+const exPhase = (ex) => {
+  const t = todayLocalStr();
+  if (ex.active_from && t < ex.active_from) return "upcoming";
+  if (ex.active_until && t > ex.active_until) return "ended";
+  return "active";
+};
+const fmtShortDate = (iso) => { const [y,m,d] = iso.split("-"); return `${d}.${m}.`; };
+
+// ── Mobilitäts-Check (seit 066): 13 Fragen, Skala 0–4, Score 0–52 (niedriger = besser) ──
+const SURVEY_SCALE = {
+  de:["Gar nicht","Leicht","Mäßig","Stark","Sehr stark"],
+  en:["Not at all","Mild","Moderate","Severe","Very severe"],
+  es:["Nada","Leve","Moderado","Fuerte","Muy fuerte"]
+};
+const SURVEY_QUESTIONS = {
+  de:[
+    "Wie steif ist Ihr Hund nach dem Aufstehen aus dem Liegen?",
+    "Wie steif oder lahm ist Ihr Hund nach körperlicher Belastung?",
+    "Wie stark lahmt Ihr Hund beim normalen Gehen?",
+    "Wie stark lahmt Ihr Hund beim Traben oder Rennen?",
+    "Wie schwer fällt Ihrem Hund das Aufstehen?",
+    "Wie schwer fällt Ihrem Hund das Treppensteigen?",
+    "Wie schwer fällt Ihrem Hund das Springen (z.B. ins Auto, aufs Sofa)?",
+    "Wie stark ist die Spielfreude Ihres Hundes vermindert?",
+    "Wie stark ist die Lust auf Spaziergänge vermindert?",
+    "Wie stark mussten Sie Spaziergänge im Vergleich zu früher verkürzen?",
+    "Wie stark beeinträchtigt kaltes oder feuchtes Wetter die Beweglichkeit?",
+    "Wie erschöpft ist Ihr Hund nach Aktivität?",
+    "Wie stark ist Ihr Hund insgesamt im Alltag eingeschränkt?"
+  ],
+  en:[
+    "How stiff is your dog after getting up from lying down?",
+    "How stiff or lame is your dog after physical exercise?",
+    "How much does your dog limp when walking?",
+    "How much does your dog limp when trotting or running?",
+    "How difficult is it for your dog to get up?",
+    "How difficult is it for your dog to climb stairs?",
+    "How difficult is jumping for your dog (e.g. into the car, onto the sofa)?",
+    "How much is your dog's willingness to play reduced?",
+    "How much is your dog's enthusiasm for walks reduced?",
+    "How much have you had to shorten walks compared to before?",
+    "How much does cold or damp weather affect your dog's mobility?",
+    "How exhausted is your dog after activity?",
+    "How limited is your dog overall in everyday life?"
+  ],
+  es:[
+    "¿Qué tan rígido está su perro al levantarse después de estar tumbado?",
+    "¿Qué tan rígido o cojo está su perro después del ejercicio físico?",
+    "¿Cuánto cojea su perro al caminar?",
+    "¿Cuánto cojea su perro al trotar o correr?",
+    "¿Cuánto le cuesta a su perro levantarse?",
+    "¿Cuánto le cuesta a su perro subir escaleras?",
+    "¿Cuánto le cuesta a su perro saltar (p.ej. al coche, al sofá)?",
+    "¿Cuánto ha disminuido las ganas de jugar de su perro?",
+    "¿Cuánto ha disminuido el entusiasmo por los paseos?",
+    "¿Cuánto ha tenido que acortar los paseos en comparación con antes?",
+    "¿Cuánto afecta el clima frío o húmedo a la movilidad?",
+    "¿Qué tan agotado está su perro después de la actividad?",
+    "¿Qué tan limitado está su perro en general en el día a día?"
+  ]
+};
+
+const VideoUploadField = ({ id, value, uploading, onUpload, onRemove }) => {
+  const isOwn = !!value && value.includes(VIDEO_BUCKET_PATH);
+  return (
+    <div style={{marginTop:8}}>
+      {isOwn && (
+        <video src={value} controls playsInline preload="metadata" muted style={{width:"100%",borderRadius:10,background:"#102828",maxHeight:200,display:"block",marginBottom:8}}/>
+      )}
+      <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+        <input id={id} type="file" accept="video/mp4,video/quicktime,video/webm" style={{display:"none"}}
+          onChange={e=>{const f=e.target.files?.[0];e.target.value="";if(f)onUpload(f);}}/>
+        <label htmlFor={uploading?undefined:id} className="btn" style={{display:"inline-flex",alignItems:"center",gap:6,background:BRAND+"18",borderRadius:10,padding:"9px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:MID,cursor:uploading?"default":"pointer",opacity:uploading?0.6:1}}>
+          <Icon name="play" size={13} color={MID}/>{uploading?"Wird hochgeladen...":(isOwn?"Video ersetzen":"Video hochladen")}
+        </label>
+        {isOwn && !uploading && (
+          <button className="btn" onClick={onRemove} style={{display:"inline-flex",alignItems:"center",gap:6,background:"#FFE8E8",borderRadius:10,padding:"9px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#C0392B"}}>
+            <Icon name="trash" size={13} color="#C0392B"/>Entfernen
+          </button>
+        )}
+      </div>
+      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:5}}>MP4/MOV/WebM, max. 25 MB — vorher als 720p exportieren</div>
     </div>
   );
 };
@@ -165,6 +378,7 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
     belloff: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M18.63 13A17.89 17.89 0 0 1 18 8"/><path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"/><path d="M18 8a6 6 0 0 0-9.33-5"/><line x1="1" y1="1" x2="23" y2="23"/></svg>,
     profile: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
     print: <svg {...s} viewBox='0 0 24 24' fill='none' stroke={color} strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'><polyline points='6 9 6 2 18 2 18 9'/><path d='M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2'/><rect x='6' y='14' width='12' height='8'/></svg>,
+    chart: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round"><line x1="5" y1="20" x2="5" y2="12"/><line x1="12" y1="20" x2="12" y2="6"/><line x1="19" y1="20" x2="19" y2="15"/><line x1="3" y1="20" x2="21" y2="20"/></svg>,
     star: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
     copy: <svg {...s} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
   };
@@ -172,7 +386,7 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
 };
 
 const T = {
-  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", navAdmin:"Admin", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt.",
+  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", navAdmin:"Admin", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", phaseFrom:(d)=>`ab ${d}`, phaseEnded:"Phase beendet", surveyCardTitle:(n)=>`Kurzer Check-up für ${n}`, surveyCardText:"13 kurze Fragen zur Beweglichkeit — ca. 3 Minuten. Hilft deiner Praxis, den Verlauf objektiv zu beurteilen.", surveyStart:"Jetzt ausfüllen", surveyTitle:"Mobilitäts-Check", surveyIntro:"Denke an die letzten 2 Wochen. 0 = gar nicht, 4 = sehr stark.", surveySubmit:"Absenden", surveyThanks:"Danke! Check-up gespeichert.", surveyProgress:(a,b)=>`${a} von ${b} beantwortet`, markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt.",
     plans:"Behandlungspläne", noPlans:"Noch keine Behandlungspläne erstellt.", noTemplates:"Noch keine Übungsvorlagen erstellt.", newExercise:"Neue Übung erstellen", editExercise:"Übung bearbeiten", addExercise:"Übung hinzufügen", printPlan:"Übungsplan drucken", searchPatient:"Patient suchen & auswählen", unknownExercise:"Unbekannte Übung", reminderActive:"Täglich aktiv — nur bei offenen Übungen", reminderInactive:"Erinnert dich täglich an deine Übungen", deleteAccount:"Konto löschen", deleteAccountConfirm:"Konto unwiderruflich löschen", deleting:"Wird gelöscht...", deleteWord:"LÖSCHEN", pwSecurityHint:"Aus Sicherheitsgründen bitte ein eigenes Passwort vergeben.", changePw:"Bitte Passwort ändern", feedbackPlaceholder:"Dein Feedback...", feedbackTitle:"Feedback geben", feedbackSub:"Dein Feedback hilft dabei die App weiterzuentwickeln.", feedbackSend:"Feedback senden", deleteAccountWarningTitle:"Achtung – diese Aktion ist unwiderruflich", deleteAccountWarningText:"Dein Konto und alle damit verbundenen Daten werden dauerhaft gelöscht. Deine Therapiedaten bleiben bei deiner Therapeutin erhalten.", deleteConfirmLabel:(word)=>`Zur Bestätigung "${word}" eingeben`,
     alertPwMin:"Passwort muss mindestens 6 Zeichen haben.", alertAddHomescreen:"Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.", alertNoPush:"Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.", alertPushBlocked:"Benachrichtigungen sind blockiert. Bitte erlaube sie in den iPhone-Einstellungen unter Mitteilungen → FitFunDog.", alertDeleteFail:"Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter info@fit-fun-dog.de zur manuellen Löschung.",
     noAccount:"Kein Konto? Bitte wende dich an deine Therapeutin.", forgotPw:"Passwort vergessen?", resetSent:"Reset-Email gesendet – bitte Postfach prüfen.", adminTitle:"Admin", adminSub:"Einstellungen & App-Verwaltung", legalTitle:"Rechtliches", feedbackAppTitle:"Feedback zur App", feedbackAppSub:"Direkt an die Entwicklerin senden.",
@@ -186,7 +400,7 @@ const T = {
     categories:["Regeneration","Balance","Kräftigung","Koordination","Mobilisation"],
     targetRegions:["Ganzer Körper","Hinterhand","Vorderhand","Rumpf","Vorderpfoten","Rücken"],
     difficulties:["Leicht","Mittel","Schwer"] },
-  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", navAdmin:"Admin", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress.",
+  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", navAdmin:"Admin", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", phaseFrom:(d)=>`from ${d}`, phaseEnded:"Phase ended", surveyCardTitle:(n)=>`Quick check-up for ${n}`, surveyCardText:"13 short questions about mobility — approx. 3 minutes. Helps your practice track progress objectively.", surveyStart:"Start now", surveyTitle:"Mobility Check", surveyIntro:"Think about the last 2 weeks. 0 = not at all, 4 = very severe.", surveySubmit:"Submit", surveyThanks:"Thanks! Check-up saved.", surveyProgress:(a,b)=>`${a} of ${b} answered`, markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress.",
     plans:"Treatment Plans", noPlans:"No treatment plans created yet.", noTemplates:"No exercise templates created yet.", newExercise:"New exercise", editExercise:"Edit exercise", addExercise:"Add exercise", printPlan:"Print plan", searchPatient:"Search & select patient", unknownExercise:"Unknown exercise", reminderActive:"Active daily — only when exercises are open", reminderInactive:"Reminds you daily of your exercises", deleteAccount:"Delete account", deleteAccountConfirm:"Permanently delete account", deleting:"Deleting...", deleteWord:"DELETE", pwSecurityHint:"For security reasons please set your own password.", changePw:"Please change password", feedbackPlaceholder:"Your feedback...", feedbackTitle:"Give feedback", feedbackSub:"Your feedback helps improve the app.", feedbackSend:"Send feedback", deleteAccountWarningTitle:"Warning – this action is irreversible", deleteAccountWarningText:"Your account and all associated data will be permanently deleted. Your therapy data will remain with your therapist.", deleteConfirmLabel:(word)=>`Type "${word}" to confirm`,
     alertPwMin:"Password must be at least 6 characters.", alertAddHomescreen:"Please add the app to your home screen first (Safari → Share → Add to Home Screen). Then open the app via the home screen icon and activate reminders again.", alertNoPush:"Your browser does not support push notifications. Please use Safari on iOS 16.4+ or Chrome on Android.", alertPushBlocked:"Notifications are blocked. Please allow them in iPhone Settings under Notifications → FitFunDog.", alertDeleteFail:"Your account cannot be deleted automatically. Please contact your therapist at info@fit-fun-dog.de for manual deletion.",
     noAccount:"No account? Please contact your therapist.", forgotPw:"Forgot password?", resetSent:"Reset email sent – please check your inbox.", adminTitle:"Admin", adminSub:"Settings & App management", legalTitle:"Legal", feedbackAppTitle:"App feedback", feedbackAppSub:"Send directly to the developer.",
@@ -200,7 +414,7 @@ const T = {
     categories:["Regeneration","Balance","Strengthening","Coordination","Mobilisation"],
     targetRegions:["Whole body","Hindquarters","Forequarters","Core","Front paws","Back"],
     difficulties:["Easy","Medium","Hard"] },
-  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", navAdmin:"Admin", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes para el entrenamiento", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento. Sin descanso suficiente, el sobreentrenamiento reemplaza al progreso.",
+  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", navAdmin:"Admin", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", phaseFrom:(d)=>`desde ${d}`, phaseEnded:"Fase finalizada", surveyCardTitle:(n)=>`Chequeo rápido para ${n}`, surveyCardText:"13 preguntas breves sobre movilidad — aprox. 3 minutos. Ayuda a tu clínica a evaluar el progreso objetivamente.", surveyStart:"Empezar", surveyTitle:"Chequeo de movilidad", surveyIntro:"Piensa en las últimas 2 semanas. 0 = nada, 4 = muy fuerte.", surveySubmit:"Enviar", surveyThanks:"¡Gracias! Chequeo guardado.", surveyProgress:(a,b)=>`${a} de ${b} respondidas`, markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes para el entrenamiento", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento. Sin descanso suficiente, el sobreentrenamiento reemplaza al progreso.",
     plans:"Planes de tratamiento", noPlans:"Aún no hay planes de tratamiento.", noTemplates:"Aún no hay plantillas de ejercicios.", newExercise:"Nuevo ejercicio", editExercise:"Editar ejercicio", addExercise:"Añadir ejercicio", printPlan:"Imprimir plan", searchPatient:"Buscar y seleccionar paciente", unknownExercise:"Ejercicio desconocido", reminderActive:"Activo diariamente — solo si hay ejercicios pendientes", reminderInactive:"Te recuerda tus ejercicios cada día", deleteAccount:"Eliminar cuenta", deleteAccountConfirm:"Eliminar cuenta permanentemente", deleting:"Eliminando...", deleteWord:"ELIMINAR", pwSecurityHint:"Por seguridad, establece tu propia contraseña.", changePw:"Por favor cambia la contraseña", feedbackPlaceholder:"Tu comentario...", feedbackTitle:"Dar feedback", feedbackSub:"Tu feedback ayuda a mejorar la app.", feedbackSend:"Enviar feedback", deleteAccountWarningTitle:"Atención – esta acción es irreversible", deleteAccountWarningText:"Tu cuenta y todos los datos asociados serán eliminados permanentemente. Tus datos de terapia permanecerán con tu terapeuta.", deleteConfirmLabel:(word)=>`Escribe "${word}" para confirmar`,
     alertPwMin:"La contraseña debe tener al menos 6 caracteres.", alertAddHomescreen:"Por favor añade primero la app a tu pantalla de inicio (Safari → Compartir → Añadir a pantalla de inicio). Luego abre la app desde el icono y activa los recordatorios.", alertNoPush:"Tu navegador no admite notificaciones push. Usa Safari en iOS 16.4+ o Chrome en Android.", alertPushBlocked:"Las notificaciones están bloqueadas. Actívalas en Ajustes del iPhone en Notificaciones → FitFunDog.", alertDeleteFail:"Tu cuenta no puede eliminarse automáticamente. Contacta a tu terapeuta en info@fit-fun-dog.de para la eliminación manual.",
     noAccount:"¿Sin cuenta? Contacta a tu terapeuta.", forgotPw:"¿Olvidaste tu contraseña?", resetSent:"Email enviado – revisa tu bandeja de entrada.", adminTitle:"Admin", adminSub:"Ajustes y gestión de la app", legalTitle:"Legal", feedbackAppTitle:"Feedback de la app", feedbackAppSub:"Enviar directamente a la desarrolladora.",
@@ -496,6 +710,8 @@ export default function App() {
   const [selectedTemplate,setSelectedTemplate]=useState(null);
   const [duration,setDuration]=useState("");
   const [repeatCount,setRepeatCount]=useState(1);
+  const [assignFrom,setAssignFrom]=useState("");   // optionales Aktiv-Fenster (seit 064)
+  const [assignUntil,setAssignUntil]=useState("");
   const [newPatient,setNewPatient]=useState(EMPTY_PATIENT);
   const [editPatientData,setEditPatientData]=useState(null);
   const [newTemplate,setNewTemplate]=useState(EMPTY_TEMPLATE);
@@ -510,6 +726,7 @@ export default function App() {
   const [selectedPlanTemplate,setSelectedPlanTemplate]=useState(null);
   const [planAssignState,setPlanAssignState]=useState(null);
   const [planAssignPatient,setPlanAssignPatient]=useState(null);
+  const [planAssignStartDate,setPlanAssignStartDate]=useState(todayLocalStr()); // Startdatum für Phasen (seit 064)
   const [planAssignSearch,setPlanAssignSearch]=useState("");
   const [planAssignDone,setPlanAssignDone]=useState(null); // {patient, plan} nach erfolgreicher Zuweisung
   const [mailTemplate,setMailTemplate]=useState({subject:"",body:""});
@@ -527,6 +744,12 @@ export default function App() {
   const [showAppFeedback,setShowAppFeedback]=useState(false);
   const [appFeedbackText,setAppFeedbackText]=useState("");
   const [showDeleteAccount,setShowDeleteAccount]=useState(false);
+  const [historyPatient,setHistoryPatient]=useState(null); // Verlaufs-Sheet (seit 062)
+  const [surveys,setSurveys]=useState([]);                 // Mobilitäts-Check (seit 066)
+  const [surveySheet,setSurveySheet]=useState(false);
+  const [surveyAnswers,setSurveyAnswers]=useState({});
+  const [historyData,setHistoryData]=useState(null);
+  const [historyLoading,setHistoryLoading]=useState(false);
   const [deleteConfirmText,setDeleteConfirmText]=useState("");
   const [selectedExistingUserId,setSelectedExistingUserId]=useState("");
   const [resetEmailSent,setResetEmailSent]=useState(false);
@@ -546,7 +769,7 @@ export default function App() {
   // Behebt iOS-WebKit-Bug: Caret wird in position:fixed-Sheets versetzt
   // (unterhalb des Eingabefelds) gerendert, wenn die Seite dahinter
   // gescrollt ist bzw. die Tastatur den Viewport verschiebt.
-  const anySheetOpen=!!(sheet||selectedExercise||viewTemplateData||planAssignDone||viewFeedbackEx||feedbackSheet||showAppFeedback||showDeleteAccount);
+  const anySheetOpen=!!(sheet||selectedExercise||viewTemplateData||planAssignDone||viewFeedbackEx||feedbackSheet||showAppFeedback||showDeleteAccount||historyPatient||surveySheet);
   useEffect(()=>{
     if(!anySheetOpen)return;
     const y=window.scrollY;
@@ -602,6 +825,7 @@ export default function App() {
         setPatients([]);setExercises([]);setDoneLogs([]);setHistoryLogs([]);setFeedbacks([]);setTemplates([]);
         setOwnerPatient(null);setSelectedPatient(null);
         setIsAdmin(false);
+        setView("owner"); // View zurücksetzen — sonst erbt der nächste (Besitzer-)Login einen Admin-View und sieht eine leere Seite (Fix 065)
         setLoading(true);
       } else if(event==="SIGNED_IN"&&s){
         setIsRecoveryMode(false);
@@ -633,7 +857,7 @@ export default function App() {
     if(!initialLoadDone.current)setLoading(true); // Vollbild-Loader nur beim ersten Laden (seit 058)
     const uid=userId;
     try{
-      const [{data:pd},{data:ed},{data:ld},{data:ue},{data:hl},{data:fb},{data:ps}]=await Promise.all([
+      const [{data:pd},{data:ed},{data:ld},{data:ue},{data:hl},{data:fb},{data:ps},{data:sv}]=await Promise.all([
         supabase.from("patients").select("*").order("name"),
         supabase.from("exercises").select("*").order("created_at"),
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
@@ -641,6 +865,7 @@ export default function App() {
         supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-111);return d.toISOString().split("T")[0];})()),
         supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false}),
         supabase.from("practice_settings").select("*").eq("slug",PRACTICE_SLUG).maybeSingle(),
+        supabase.from("outcome_surveys").select("*").order("created_at",{ascending:false}),
       ]);
       // Plan-Queries explizit nach practice_id filtern – ps.id erst hier bekannt
       const practiceId=ps?.id;
@@ -662,6 +887,7 @@ export default function App() {
         difficultyColor=getDifficultyColor();
         const adminNow=!!(ps.admin_user_id&&uid===ps.admin_user_id);
         setIsAdmin(adminNow);
+        if(!adminNow)setView(v=>(v==="therapist"||v==="admin")?"owner":v); // Besitzer landen immer auf Home (Fix 065)
         if(adminNow&&!sessionStorage.getItem("_adminLanded")){setView("therapist");setPracticeTab("assign");sessionStorage.setItem("_adminLanded","1");}
         initialLoadDone.current=true;
         // Browser-Tab-Titel + Favicon
@@ -683,6 +909,7 @@ export default function App() {
       setFeedbacks(fb||[]);
       setTemplates(td||[]);
       setUserEmails(ue||[]);
+      setSurveys(sv||[]);
       setPlanTemplates(ptd||[]);
       setPlanTemplateExercises(pte||[]);
 
@@ -843,6 +1070,7 @@ ${patExercises.map((ex) => `
       ${(ex.categories||[]).map(c=>`<span class="tag">${tCat(c)}</span>`).join("")}
       ${ex.difficulty ? `<span class="tag tag-diff-${ex.difficulty.toLowerCase()}">${tDiff(ex.difficulty)}</span>` : ""}
       ${ex.repeat_count ? `<span class="tag tag-freq">${ex.repeat_count}${labelPerWeek}</span>` : ""}
+      ${ex.active_from||ex.active_until ? `<span class="tag tag-freq">${ex.active_from?fmtShortDate(ex.active_from):""}–${ex.active_until?fmtShortDate(ex.active_until):""}</span>` : ""}
       ${ex.duration ? `<span class="tag">${ex.duration}</span>` : ""}
     </div>
     ${exT(ex,"description") ? `<div class="ex-desc">${exT(ex,"description")}</div>` : ""}
@@ -948,6 +1176,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     setSheet(null);setSheetData(null);setSelectedTemplate(null);
     setAssignFilterCats([]);setAssignFilterRegions([]);
     setDuration("");setRepeatCount(1);
+    setAssignFrom("");setAssignUntil("");
     setEditTemplateData(null);setEditPatientData(null);
     setNewAccountMode("new");setSelectedExistingUserId("");
     setResetEmailSent(false);setUserSearch("");
@@ -961,6 +1190,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const isFullyDone=(ex)=>getDoneCountThisWeek(ex.id)>=(ex.repeat_count||1);
 
   const toggleRepeat=async(eid,repeatCount)=>{
+    const _ex=exercises.find(e=>e.id===eid);
+    if(_ex&&exPhase(_ex)!=="active")return; // upcoming/beendete Phasen nicht abhakbar (seit 064)
     const currentCount=getDoneCountThisWeek(eid);
     const maxCount=repeatCount||1;
     if(currentCount<maxCount){
@@ -1187,6 +1418,69 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     setResetEmailSent(true);
   };
 
+  // ── Video-Upload zu Supabase Storage (seit 063) ──
+  const [videoUploading,setVideoUploading]=useState(false);
+  const uploadExerciseVideo=async(file,setUrl)=>{
+    if(!["video/mp4","video/quicktime","video/webm"].includes(file.type)){showToast("error","Nur MP4, MOV oder WebM erlaubt.");return;}
+    if(file.size>25*1024*1024){showToast("error",`Video ist ${(file.size/1024/1024).toFixed(0)} MB — maximal 25 MB. Bitte vorher als 720p exportieren.`);return;}
+    setVideoUploading(true);
+    const ext=file.name.split(".").pop().toLowerCase()||"mp4";
+    const path=`${crypto.randomUUID()}.${ext}`;
+    const{error}=await supabase.storage.from("exercise-videos").upload(path,file,{contentType:file.type,cacheControl:"31536000"});
+    if(error){showToast("error","Upload fehlgeschlagen: "+error.message);setVideoUploading(false);return;}
+    const{data:pub}=supabase.storage.from("exercise-videos").getPublicUrl(path);
+    setUrl(pub.publicUrl);
+    setVideoUploading(false);
+    showToast("success","Video hochgeladen");
+  };
+  const removeExerciseVideo=async(url,setUrl)=>{
+    if(url&&url.includes(VIDEO_BUCKET_PATH)){
+      const path=decodeURIComponent(url.split(VIDEO_BUCKET_PATH)[1].split("?")[0]);
+      await supabase.storage.from("exercise-videos").remove([path]);
+    }
+    setUrl("");
+    showToast("success","Video entfernt");
+  };
+
+  // ── Verlaufs-Sheet: Logs + Feedback der letzten 12 Wochen laden (seit 062) ──
+  const openHistory=async(p)=>{
+    setHistoryPatient(p);setHistoryLoading(true);setHistoryData(null);
+    const from=new Date();from.setDate(from.getDate()-7*12);from.setHours(0,0,0,0);
+    const fromStr=`${from.getFullYear()}-${String(from.getMonth()+1).padStart(2,"0")}-${String(from.getDate()).padStart(2,"0")}`;
+    const exIds=exercises.filter(e=>e.patient_id===p.id).map(e=>e.id);
+    let logs=[];
+    if(exIds.length){
+      const{data:lg,error:lgErr}=await supabase.from("exercise_logs").select("exercise_id,done_date,done").in("exercise_id",exIds).gte("done_date",fromStr);
+      if(lgErr){showToast("error","Fehler: "+lgErr.message);setHistoryLoading(false);return;}
+      logs=lg||[];
+    }
+    const{data:fb,error:fbErr}=await supabase.from("exercise_feedback").select("*").eq("patient_id",p.id).gte("created_at",from.toISOString()).order("created_at",{ascending:false});
+    if(fbErr){showToast("error","Fehler: "+fbErr.message);setHistoryLoading(false);return;}
+    const{data:svh}=await supabase.from("outcome_surveys").select("*").eq("patient_id",p.id).order("created_at",{ascending:true}).limit(24);
+    setHistoryData({logs,feedbacks:fb||[],surveys:svh||[]});setHistoryLoading(false);
+  };
+
+  // Mobilitäts-Check fällig? (seit 066) — surveys ist created_at-absteigend sortiert
+  const surveyDueFor=(p)=>{
+    if(!p?.survey_type)return false;
+    const last=surveys.find(sv=>sv.patient_id===p.id);
+    if(!last)return true;
+    return (Date.now()-new Date(last.created_at).getTime())>=28*24*3600*1000;
+  };
+
+  const submitSurvey=async()=>{
+    const qs=SURVEY_QUESTIONS[lang]||SURVEY_QUESTIONS.de;
+    if(!ownerPatient||Object.keys(surveyAnswers).length<qs.length)return;
+    setSaving(true);
+    const total=qs.reduce((sum,_,i)=>sum+(surveyAnswers[i]||0),0);
+    const{data,error}=await supabase.from("outcome_surveys")
+      .insert({patient_id:ownerPatient.id,practice_id:practice.id,survey_type:"mobility",answers:surveyAnswers,total_score:total})
+      .select().single();
+    if(error){showToast("error","Fehler: "+error.message);}
+    else{setSurveys(prev=>[data,...prev]);showToast("success",t.surveyThanks);setSurveySheet(false);setSurveyAnswers({});}
+    setSaving(false);
+  };
+
   const deletePatient=async(pid)=>{
     setDeleting(pid);
     const pt=patients.find(p=>p.id===pid);
@@ -1220,9 +1514,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       instructions_en:selectedTemplate.instructions_en||null,
       title_es:selectedTemplate.title_es||null,description_es:selectedTemplate.description_es||null,
       instructions_es:selectedTemplate.instructions_es||null,
+      active_from:assignFrom||null,active_until:assignUntil||null,
       practice_id:practice.id
     }).select().single();
-    if(!error&&data)setExercises(prev=>[...prev,data]);
+    if(!error&&data){setExercises(prev=>[...prev,data]);setAssignFrom("");setAssignUntil("");}
     setSaving(false);closeSheet();
   };
 
@@ -1325,7 +1620,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     if(planErr||!planData){showToast("error","Fehler: "+(planErr?.message||"Unbekannt"));setSaving(false);return;}
     // insert exercises
     if(planExerciseDraft.length>0){
-      const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:planData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,sort_order:i,practice_id:practice.id}));
+      const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:planData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,start_week:ex.start_week||null,end_week:ex.end_week||null,sort_order:i,practice_id:practice.id}));
       await supabase.from("plan_template_exercises").insert(rows);
     }
     await loadAll(practice.admin_user_id||session?.user?.id);
@@ -1339,7 +1634,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     // Replace exercises: delete old, insert new
     await supabase.from("plan_template_exercises").delete().eq("plan_template_id",editPlanData.id);
     if(planExerciseDraft.length>0){
-      const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:editPlanData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,sort_order:i,practice_id:practice.id}));
+      const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:editPlanData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,start_week:ex.start_week||null,end_week:ex.end_week||null,sort_order:i,practice_id:practice.id}));
       await supabase.from("plan_template_exercises").insert(rows);
     }
     await loadAll(practice.admin_user_id||session?.user?.id);
@@ -1358,7 +1653,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const assignPlanToPatient=async()=>{
     if(!planAssignState||!planAssignPatient)return;
     setSaving(true);
+    const startBase=planAssignStartDate||todayLocalStr();
+    const addDays=(iso,n)=>{const d=new Date(iso+"T00:00:00");d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;};
     const rows=planAssignState.exercises.map(ex=>({
+      active_from:ex.start_week?addDays(startBase,(ex.start_week-1)*7):null,
+      active_until:ex.end_week?addDays(startBase,ex.end_week*7-1):null,
       patient_id:planAssignPatient.id,
       title:ex.title,categories:ex.categories||[],target_regions:ex.target_regions||[],
       difficulty:ex.difficulty,description:ex.description,instructions:ex.instructions||[],
@@ -1376,7 +1675,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       setExercises(prev=>[...prev,...newExercises]);
       setPlanAssignDone({patient:planAssignPatient,plan:planAssignState.plan});
     }
-    setSaving(false);setPlanAssignState(null);setPlanAssignPatient(null);setPlanAssignSearch("");
+    // Patient bleibt ausgewählt (Fix 065) — nur Plan-Auswahl + Startdatum zurücksetzen
+    setSaving(false);setPlanAssignState(null);setPlanAssignStartDate(todayLocalStr());
   };
 
   const saveMailTemplate=async()=>{
@@ -1423,8 +1723,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
   const PAIN_COLORS=["","#2E7D32","#8BC34A","#FF9800","#F44336","#B71C1C"];
   const ownerExs=ownerPatient?exForPatient(ownerPatient.id):[];
-  const doneCount=ownerExs.filter(e=>isFullyDone(e)).length;
-  const totalCount=ownerExs.length;
+  const ownerActiveExs=ownerExs.filter(e=>exPhase(e)==="active"); // nur aktive Phasen zählen (seit 064)
+  const doneCount=ownerActiveExs.filter(e=>isFullyDone(e)).length;
+  const totalCount=ownerActiveExs.length;
   const progress=totalCount>0?(doneCount/totalCount)*100:0;
   const allDone=totalCount>0&&doneCount===totalCount;
 
@@ -1683,6 +1984,16 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 </div>
               </div>
             )}
+            {/* ── Mobilitäts-Check fällig (seit 066) ── */}
+            {surveyDueFor(ownerPatient)&&(
+              <div className="card" style={{padding:"14px 16px",marginBottom:10,border:`1.5px solid ${BRAND}`,background:LIGHT}}>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:4}}>{t.surveyCardTitle(ownerPatient.name)}</div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12.5,color:MUTED,marginBottom:10}}>{t.surveyCardText}</div>
+                <button className="btn" onClick={()=>{setSurveyAnswers({});setSurveySheet(true);}} style={{background:BRAND,color:"#102828",borderRadius:10,padding:"10px 16px",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,display:"inline-flex",alignItems:"center",gap:6}}>
+                  <Icon name="check" size={14} color="#102828"/>{t.surveyStart}
+                </button>
+              </div>
+            )}
             {/* ── Stat tiles ── */}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
               {/* Tile 1: Wochenfortschritt */}
@@ -1755,14 +2066,17 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 const rc=ex.repeat_count||1;
                 const doneNow=getDoneCountThisWeek(ex.id);
                 const fullyDone=doneNow>=rc;
+                const phase=exPhase(ex);
                 return(
-                  <div key={ex.id} className="card ex-card" onClick={()=>setSelectedExercise(ex)} style={{padding:"14px",opacity:fullyDone?0.65:1}}>
+                  <div key={ex.id} className="card ex-card" onClick={()=>setSelectedExercise(ex)} style={{padding:"14px",opacity:fullyDone||phase!=="active"?0.6:1}}>
                     <div style={{display:"flex",gap:12,alignItems:"center"}}>
                       {ex.image_url?<img src={ex.image_url} alt={ex.title} style={{width:50,height:50,borderRadius:12,objectFit:"contain",flexShrink:0,background:LIGHT,padding:2}}/>
                         :<div style={{width:50,height:50,borderRadius:12,background:BRAND+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="paw" size={22} color={BRAND}/></div>}
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600,lineHeight:1.3,textDecoration:fullyDone?"line-through":"none",color:fullyDone?ACCENT:"#102828",marginBottom:5}}>{exT(ex,"title")}</div>
                         <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:7}}>
+                          {phase==="upcoming"&&<span className="tag" style={{background:ACCENT+"30",color:DARK,fontWeight:700}}>{t.phaseFrom(fmtShortDate(ex.active_from))}</span>}
+                          {phase==="ended"&&<span className="tag" style={{background:LIGHT,color:MUTED,fontWeight:700}}>{t.phaseEnded}</span>}
                           {(ex.categories||[]).slice(0,2).map(c=><span key={c} className="tag" style={{background:BRAND+"20",color:BRAND}}>{tCat(c)}</span>)}
                           <span className="tag" style={{background:(difficultyColor[ex.difficulty]||BRAND)+"20",color:difficultyColor[ex.difficulty]||BRAND}}>{tDiff(ex.difficulty)}</span>
                           <span className="tag" style={{background:LIGHT,color:MUTED}}>⏱ {ex.duration}</span>
@@ -1775,7 +2089,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                               const checked=i<doneNow;
                               return(
                                 <button key={i} className="repeat-box" onClick={e=>{e.stopPropagation();toggleRepeat(ex.id,rc);}}
-                                  style={{borderColor:checked?BRAND:BORDER,background:checked?BRAND:"white",width:28,height:28}}>
+                                  style={{borderColor:checked?BRAND:BORDER,background:checked?BRAND:"white",width:28,height:28,cursor:phase==="active"?"pointer":"default",opacity:phase==="active"?1:0.45}}>
                                   {checked&&<Icon name="check" size={13} color="white"/>}
                                 </button>
                               );
@@ -1929,6 +2243,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       onMail={()=>openPlanMail(p,null)}
                       onEdit={()=>{setEditPatientData({...p});setEditAccountMode(p.user_id?"existing":"none");setResetEmailSent(false);setSheet("editPatient");}}
                       onDelete={()=>{setSheetData(p);setSheet("confirmDeletePt");}}
+                      onHistory={()=>openHistory(p)}
                     />
                   );
                 })}
@@ -2000,7 +2315,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       </button>
                           <button className="iBtn" onClick={()=>{
                             setEditPlanData({...plan});
-                            const draft=planExs.map(pe=>({exercise_template_id:pe.exercise_template_id,default_duration:pe.default_duration||"",default_repeat_count:pe.default_repeat_count||1,sort_order:pe.sort_order}));
+                            const draft=planExs.map(pe=>({exercise_template_id:pe.exercise_template_id,default_duration:pe.default_duration||"",default_repeat_count:pe.default_repeat_count||1,start_week:pe.start_week||"",end_week:pe.end_week||"",sort_order:pe.sort_order}));
                             setPlanExerciseDraft(draft);setSelectedPlanTemplate(null);setSheet("editPlan");
                           }} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>
                           <button className="iBtn" onClick={()=>{setSheetData(plan);setSheet("confirmDeletePlan");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
@@ -2103,7 +2418,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 {/* 1. Patient suchen & auswählen */}
                 <div style={{marginBottom:14}}>
                   <SL text="Patient suchen & auswählen"/>
-                  <SearchInput value={planAssignSearch} onChange={val=>{setPlanAssignSearch(val);setPlanAssignPatient(null);}} placeholder="Name oder Besitzer..."/>
+                  <SearchInput value={planAssignSearch} onChange={setPlanAssignSearch} placeholder="Name oder Besitzer..."/>
                   <CustomSelect value={planAssignPatient?.id||""} onChange={e=>{setPlanAssignPatient(patients.find(p=>p.id===e.target.value)||null);setPlanAssignState(null);}}>
                     <option value="">Patient auswählen...</option>
                     {patients.filter(p=>{const q=planAssignSearch.trim().toLowerCase();return !planAssignSearch||(p.name||"").toLowerCase().includes(q)||(p.owner||"").toLowerCase().includes(q);}).map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
@@ -2156,6 +2471,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                           <div key={idx} style={{background:PALE,borderRadius:10,padding:"8px 10px",border:`1.5px solid ${LIGHT}`}}>
                             <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828",marginBottom:6}}>{exT(ex,"title")}</div>
                             <div style={{display:"flex",alignItems:"center",gap:6}}>
+                              {(ex.start_week||ex.end_week)&&<span className="tag" style={{background:ACCENT+"30",color:DARK,flexShrink:0,fontWeight:700}}>Wo. {ex.start_week||1}{ex.end_week?`–${ex.end_week}`:"+"}</span>}
                               <input value={ex.duration} onChange={e=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,duration:e.target.value}:x)}))} placeholder="Dauer..." style={{...inp,fontSize:16,padding:"4px 8px",flex:1}}/>
                               <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
                                 <button className="btn" onClick={()=>setPlanAssignState(prev=>({...prev,exercises:prev.exercises.map((x,i)=>i===idx?{...x,repeat_count:Math.max(1,(x.repeat_count||1)-1)}:x)}))} style={{width:22,height:22,borderRadius:5,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:14,fontWeight:700,color:DARK}}>−</button>
@@ -2166,6 +2482,13 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+
+                  {planAssignState&&planAssignState.exercises.some(e=>e.start_week||e.end_week)&&(
+                    <div style={{marginBottom:12}}>
+                      <SL text="Plan-Start (Woche 1 beginnt am)"/>
+                      <input type="date" value={planAssignStartDate} onChange={e=>setPlanAssignStartDate(e.target.value)} style={inp}/>
                     </div>
                   )}
 
@@ -2342,12 +2665,17 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             {selectedExercise.image_url
               ?<div style={{width:"100%",borderRadius:14,overflow:"hidden",marginBottom:16,background:LIGHT}}><img src={selectedExercise.image_url} alt={exT(selectedExercise,"title")} style={{width:"100%",height:"auto",maxHeight:260,objectFit:"contain",display:"block"}}/></div>
               :<div style={{background:LIGHT,borderRadius:14,height:110,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:16}}><Icon name="paw" size={48} color={ACCENT}/></div>}
+            {isDirectVideo(selectedExercise.video_url)&&(
+              <div style={{width:"100%",borderRadius:14,overflow:"hidden",marginBottom:16,background:"#102828"}}>
+                <video src={selectedExercise.video_url} controls playsInline preload="metadata" autoPlay muted loop style={{width:"100%",maxHeight:300,display:"block"}}/>
+              </div>
+            )}
             <div style={{display:"flex",gap:9,marginBottom:16}}>
               <div style={{flex:1,background:PALE,borderRadius:10,padding:"12px",textAlign:"center"}}>
                 <div style={{display:"flex",justifyContent:"center",marginBottom:3}}><Icon name="clock" size={18} color={BRAND}/></div>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:"#102828"}}>{selectedExercise.duration}</div>
               </div>
-              {selectedExercise.video_url&&(
+              {selectedExercise.video_url&&!isDirectVideo(selectedExercise.video_url)&&(
                 <a href={selectedExercise.video_url} target="_blank" rel="noreferrer" style={{flex:1,background:BRAND+"12",borderRadius:10,padding:"12px",textAlign:"center",textDecoration:"none",display:"flex",flexDirection:"column",alignItems:"center",gap:3,border:`1.5px solid ${BRAND}30`}}>
                   <Icon name="play" size={18} color={MID}/>
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:600,color:MID}}>{t.watchVideo}</div>
@@ -2401,24 +2729,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={t.assignBtn} onClose={closeSheet}/>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <div style={{display:"flex",gap:8,alignItems:"center"}}>
-                <div style={{flex:1}}><SL text={t.step1}/>
-                  <CustomSelect value={selectedPatient?.id||""} onChange={e=>setSelectedPatient(patients.find(p=>p.id===e.target.value)||null)}>
-                    <option value="">{t.selectPatient}</option>
-                    {patients.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
-                  </CustomSelect>
-                </div>
-              </div>
-              <div style={{display:"flex",gap:8}}>
-                <div style={{flex:1}}><SL text={t.step3}/><input value={duration} onChange={e=>setDuration(e.target.value)} placeholder={t.freqPh} style={inp}/></div>
-                <div style={{flex:"0 0 auto"}}>
-                  <SL text={t.step4}/>
-                  <div style={{display:"flex",alignItems:"center",gap:6,height:46}}>
-                    <button className="btn" onClick={()=>setRepeatCount(Math.max(1,repeatCount-1))} style={{width:32,height:32,borderRadius:8,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:DARK}}>−</button>
-                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:DARK,minWidth:28,textAlign:"center"}}>{repeatCount}x</span>
-                    <button className="btn" onClick={()=>setRepeatCount(Math.min(7,repeatCount+1))} style={{width:32,height:32,borderRadius:8,background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:"#102828"}}>+</button>
-                  </div>
-                </div>
+              <div><SL text={t.step1}/>
+                <CustomSelect value={selectedPatient?.id||""} onChange={e=>setSelectedPatient(patients.find(p=>p.id===e.target.value)||null)}>
+                  <option value="">{t.selectPatient}</option>
+                  {patients.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
+                </CustomSelect>
               </div>
               <div>
                 <SL text={t.step2}/>
@@ -2436,6 +2751,30 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     </div>
                   ))}
                   {filteredTemplates.length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:ACCENT,textAlign:"center",padding:"12px 0"}}>{t.noCategoryEx}</div>}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
+                <div style={{flex:1,minWidth:0}}><SL text={t.step3}/><input value={duration} onChange={e=>setDuration(e.target.value)} placeholder={t.freqPh} style={{...inp,height:46,boxSizing:"border-box"}}/></div>
+                <div style={{flexShrink:0}}>
+                  <SL text={t.step4}/>
+                  <div style={{display:"flex",alignItems:"center",gap:6,height:46}}>
+                    <button className="btn" onClick={()=>setRepeatCount(Math.max(1,repeatCount-1))} style={{width:32,height:32,borderRadius:8,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:DARK}}>−</button>
+                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:DARK,minWidth:28,textAlign:"center"}}>{repeatCount}x</span>
+                    <button className="btn" onClick={()=>setRepeatCount(Math.min(7,repeatCount+1))} style={{width:32,height:32,borderRadius:8,background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:"#102828"}}>+</button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <SL text="Aktive Phase (optional)"/>
+                <div style={{display:"flex",gap:8}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:4}}>von</div>
+                    <input type="date" value={assignFrom} onChange={e=>setAssignFrom(e.target.value)} style={{...inp,width:"100%",height:46,boxSizing:"border-box"}}/>
+                  </div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:4}}>bis</div>
+                    <input type="date" value={assignUntil} onChange={e=>setAssignUntil(e.target.value)} style={{...inp,width:"100%",height:46,boxSizing:"border-box"}}/>
+                  </div>
                 </div>
               </div>
               <button className="btn" onClick={addExercise} disabled={saving} style={{width:"100%",padding:"14px",borderRadius:12,background:selectedTemplate&&selectedPatient&&duration?BRAND:BORDER,color:selectedTemplate&&selectedPatient&&duration?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
@@ -2497,6 +2836,15 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               ))}
               <div><SL text="Diagnose"/><textarea value={editPatientData.condition||""} onChange={e=>setEditPatientData(p=>({...p,condition:e.target.value}))} rows={4} style={{...inp,resize:"vertical",lineHeight:1.5}}/></div>
               <div><SL text="Emoji"/><input value={editPatientData.avatar||""} onChange={e=>setEditPatientData(p=>({...p,avatar:e.target.value}))} style={{...inp,width:60,textAlign:"center"}}/></div>
+              <div onClick={()=>setEditPatientData(p=>({...p,survey_type:p.survey_type?null:"mobility"}))} style={{display:"inline-flex",alignItems:"flex-start",gap:8,cursor:"pointer"}}>
+                <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${editPatientData.survey_type?BRAND:BORDER}`,background:editPatientData.survey_type?BRAND:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
+                  {editPatientData.survey_type&&<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#102828" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                </div>
+                <div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,color:"#102828"}}>Mobilitäts-Check aktivieren</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>Besitzer wird alle 4 Wochen um 13 kurze Fragen gebeten (Score 0–52)</div>
+                </div>
+              </div>
               <div style={{background:LIGHT,borderRadius:12,padding:"14px"}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:DARK,marginBottom:10}}>Login-Konto</div>
                 {editPatientData.user_id&&getUserEmail(editPatientData.user_id)&&(
@@ -2569,7 +2917,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 ))}
               </div>
               <div><SL text="Bild-URL"/><input value={newTemplate.image_url} onChange={e=>setNewTemplate(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
-              <div><SL text="Video-URL (optional)"/><input value={newTemplate.video_url} onChange={e=>setNewTemplate(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/..." style={inp}/></div>
+              <div><SL text="Video (optional)"/><input value={newTemplate.video_url} onChange={e=>setNewTemplate(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/... oder hochladen" style={inp}/>
+                <VideoUploadField id="vidUpNew" value={newTemplate.video_url} uploading={videoUploading}
+                  onUpload={f=>uploadExerciseVideo(f,(u)=>setNewTemplate(p=>({...p,video_url:u})))}
+                  onRemove={()=>removeExerciseVideo(newTemplate.video_url,(u)=>setNewTemplate(p=>({...p,video_url:u})))}/></div>
               {/* Starter-Checkbox – nur FFD */}
               {practice.slug==="fitfundog"&&(
                 <label style={{display:"flex",alignItems:"flex-start",gap:10,background:newTemplate.is_starter?"#E8F5E9":"#F8F8F8",border:`1.5px solid ${newTemplate.is_starter?"#4CAF50":BORDER}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
@@ -2620,7 +2971,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 ))}
               </div>
               <div><SL text="Bild-URL"/><input value={editTemplateData.image_url||""} onChange={e=>setEditTemplateData(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
-              <div><SL text="Video-URL"/><input value={editTemplateData.video_url||""} onChange={e=>setEditTemplateData(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/..." style={inp}/></div>
+              <div><SL text="Video"/><input value={editTemplateData.video_url||""} onChange={e=>setEditTemplateData(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/... oder hochladen" style={inp}/>
+                <VideoUploadField id="vidUpEdit" value={editTemplateData.video_url||""} uploading={videoUploading}
+                  onUpload={f=>uploadExerciseVideo(f,(u)=>setEditTemplateData(p=>({...p,video_url:u})))}
+                  onRemove={()=>removeExerciseVideo(editTemplateData.video_url,(u)=>setEditTemplateData(p=>({...p,video_url:u})))}/></div>
               {/* Starter-Checkbox – nur FFD */}
               {practice.slug==="fitfundog"&&(
                 <label style={{display:"flex",alignItems:"flex-start",gap:10,background:editTemplateData.is_starter?"#E8F5E9":"#F8F8F8",border:`1.5px solid ${editTemplateData.is_starter?"#4CAF50":BORDER}`,borderRadius:12,padding:"12px 14px",cursor:"pointer"}}>
@@ -2672,7 +3026,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 <img src={viewTemplateData.image_url} alt={viewTemplateData.title} style={{width:"100%",objectFit:"contain",display:"block"}}/>
               </div>
             )}
-            {viewTemplateData.video_url&&<a href={viewTemplateData.video_url} target="_blank" style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,fontFamily:"'DM Sans',sans-serif",fontSize:13,color:BRAND,textDecoration:"none"}}><Icon name="video" size={16} color={BRAND}/>Video ansehen</a>}
+            {viewTemplateData.video_url&&(isDirectVideo(viewTemplateData.video_url)
+              ?<video src={viewTemplateData.video_url} controls playsInline preload="metadata" muted style={{width:"100%",borderRadius:12,background:"#102828",maxHeight:260,display:"block",marginBottom:14}}/>
+              :<a href={viewTemplateData.video_url} target="_blank" style={{display:"flex",alignItems:"center",gap:8,marginBottom:14,fontFamily:"'DM Sans',sans-serif",fontSize:13,color:BRAND,textDecoration:"none"}}><Icon name="play" size={16} color={BRAND}/>Video ansehen</a>)}
             {viewTemplateData.description&&(
               <div style={{marginBottom:16}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:"#102828",marginBottom:6}}>Beschreibung</div>
@@ -2730,6 +3086,13 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                             <Icon name="trash" size={11} color="#C0392B"/>
                           </button>
                         </div>
+                        <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6}}>
+                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,flexShrink:0}}>Phase: Woche</span>
+                          <input type="number" min="1" max="52" value={ex.start_week||""} onChange={e=>setPlanExerciseDraft(prev=>prev.map((x,i)=>i===idx?{...x,start_week:e.target.value?parseInt(e.target.value):""}:x))} placeholder="von" style={{...inp,fontSize:16,padding:"4px 8px",width:62}}/>
+                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>bis</span>
+                          <input type="number" min="1" max="52" value={ex.end_week||""} onChange={e=>setPlanExerciseDraft(prev=>prev.map((x,i)=>i===idx?{...x,end_week:e.target.value?parseInt(e.target.value):""}:x))} placeholder="bis" style={{...inp,fontSize:16,padding:"4px 8px",width:62}}/>
+                          <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:10.5,color:MUTED}}>(leer = immer)</span>
+                        </div>
                       </div>
                     );
                   })}
@@ -2769,6 +3132,43 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       )}
 
       {/* SHEET: PLAN ZUGEWIESEN – MAIL SENDEN */}
+      {/* SHEET: MOBILITAETS-CHECK (Owner, seit 066) */}
+      {surveySheet&&ownerPatient&&(()=>{
+        const qs=SURVEY_QUESTIONS[lang]||SURVEY_QUESTIONS.de;
+        const scale=SURVEY_SCALE[lang]||SURVEY_SCALE.de;
+        const answered=Object.keys(surveyAnswers).length;
+        const complete=answered>=qs.length;
+        return(
+        <div className="overlay">
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title={t.surveyTitle} onClose={()=>setSurveySheet(false)}/>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12.5,color:MUTED,marginBottom:14}}>{t.surveyIntro}</div>
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              {qs.map((q,i)=>(
+                <div key={i}>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,color:"#102828",marginBottom:7}}>{i+1}. {q}</div>
+                  <div style={{display:"flex",gap:5}}>
+                    {scale.map((lab,v)=>(
+                      <button key={v} className="btn" onClick={()=>setSurveyAnswers(a=>({...a,[i]:v}))}
+                        style={{flex:1,padding:"7px 2px",borderRadius:9,border:`1.5px solid ${surveyAnswers[i]===v?BRAND:BORDER}`,background:surveyAnswers[i]===v?BRAND:"white",fontFamily:"'DM Sans',sans-serif",lineHeight:1.25,textAlign:"center"}}>
+                        <div style={{fontSize:13,fontWeight:700,color:surveyAnswers[i]===v?"#102828":DARK}}>{v}</div>
+                        <div style={{fontSize:9,fontWeight:500,color:surveyAnswers[i]===v?"#102828":MUTED}}>{lab}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,textAlign:"center",margin:"14px 0 10px"}}>{t.surveyProgress(answered,qs.length)}</div>
+            <button className="btn" onClick={submitSurvey} disabled={saving||!complete}
+              style={{width:"100%",padding:"14px",borderRadius:12,background:complete?BRAND:BORDER,color:complete?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+              {saving?t.saving:t.surveySubmit}
+            </button>
+          </div>
+        </div>
+        );
+      })()}
+
       {planAssignDone&&(
         <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
@@ -2867,6 +3267,18 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       )}
 
       {/* SHEET: APP FEEDBACK */}
+      {historyPatient&&(
+        <div className="overlay">
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title={`Verlauf – ${historyPatient.name}`} onClose={()=>{setHistoryPatient(null);setHistoryData(null);}}/>
+            <PatientHistory
+              patExs={exercises.filter(e=>e.patient_id===historyPatient.id)}
+              data={historyData}
+              loading={historyLoading}
+            />
+          </div>
+        </div>
+      )}
       {showAppFeedback&&(
         <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
