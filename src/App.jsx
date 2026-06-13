@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-12-066";
+const APP_VERSION = "2026-06-12-068";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -1824,6 +1824,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const getUserEmail=(uid)=>userEmails.find(u=>u.id===uid)?.email||null;
 
   const inp={width:"100%",padding:"11px 14px",borderRadius:10,border:`1.5px solid ${BORDER}`,fontSize:16,fontFamily:"'DM Sans',sans-serif",outline:"none",background:"white",color:"#102828",WebkitTextFillColor:"#102828",boxSizing:"border-box"};
+  // Kompakter Datums-Style (seit 067): kleinere Schrift + minWidth:0, damit date-Inputs das Sheet nicht sprengen
+  const dateInp={width:"100%",minWidth:0,padding:"8px 6px",borderRadius:9,border:`1.5px solid ${BORDER}`,fontSize:14,fontFamily:"'DM Sans',sans-serif",outline:"none",background:"white",color:"#102828",WebkitTextFillColor:"#102828",boxSizing:"border-box",textAlign:"center"};
   const SL=({text})=><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>{text}</div>;
   const SheetHeader=({title,onClose})=>(<div style={{position:"sticky",top:0,zIndex:10,background:"white",display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:18,paddingBottom:12,borderBottom:`1px solid ${BORDER}`}}><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:"#102828",flex:1}}>{title}</div><button onClick={onClose} style={{background:LIGHT,borderRadius:"50%",width:32,height:32,minWidth:32,minHeight:32,border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="close" size={14} color={MUTED}/></button></div>);
 
@@ -2488,7 +2490,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   {planAssignState&&planAssignState.exercises.some(e=>e.start_week||e.end_week)&&(
                     <div style={{marginBottom:12}}>
                       <SL text="Plan-Start (Woche 1 beginnt am)"/>
-                      <input type="date" value={planAssignStartDate} onChange={e=>setPlanAssignStartDate(e.target.value)} style={inp}/>
+                      <input type="date" value={planAssignStartDate} onChange={e=>setPlanAssignStartDate(e.target.value)} style={{...dateInp,maxWidth:200,margin:"0 auto",display:"block"}}/>
                     </div>
                   )}
 
@@ -2768,12 +2770,18 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 <SL text="Aktive Phase (optional)"/>
                 <div style={{display:"flex",gap:8}}>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:4}}>von</div>
-                    <input type="date" value={assignFrom} onChange={e=>setAssignFrom(e.target.value)} style={{...inp,width:"100%",height:46,boxSizing:"border-box"}}/>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4,minHeight:18}}>
+                      <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>von</span>
+                      {assignFrom&&<button className="btn" onClick={()=>setAssignFrom("")} style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,padding:"0 4px",lineHeight:1}}>× löschen</button>}
+                    </div>
+                    <input type="date" value={assignFrom} onChange={e=>setAssignFrom(e.target.value)} style={dateInp}/>
                   </div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:4}}>bis</div>
-                    <input type="date" value={assignUntil} onChange={e=>setAssignUntil(e.target.value)} style={{...inp,width:"100%",height:46,boxSizing:"border-box"}}/>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4,minHeight:18}}>
+                      <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>bis</span>
+                      {assignUntil&&<button className="btn" onClick={()=>setAssignUntil("")} style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,padding:"0 4px",lineHeight:1}}>× löschen</button>}
+                    </div>
+                    <input type="date" value={assignUntil} onChange={e=>setAssignUntil(e.target.value)} style={dateInp}/>
                   </div>
                 </div>
               </div>
