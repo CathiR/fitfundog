@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-12-071";
+const APP_VERSION = "2026-06-14-072";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -752,6 +752,7 @@ export default function App() {
   const [eduTab,setEduTab]=useState("library");            // Admin-Untertab: library | assign
   const [eduAssignPatient,setEduAssignPatient]=useState(null);
   const [eduAssignSearch,setEduAssignSearch]=useState("");
+  const [eduOnlyWithSheets,setEduOnlyWithSheets]=useState(false);
   const [newSheet,setNewSheet]=useState(EMPTY_SHEET);
   const [editSheetData,setEditSheetData]=useState(null);
   const [selectedSheet,setSelectedSheet]=useState(null);   // Besitzer-Detailansicht
@@ -2666,15 +2667,20 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
               {eduTab==="assign"&&(<>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK,marginBottom:12}}>Merkblätter zuweisen</div>
-                <SearchInput value={eduAssignSearch} onChange={setEduAssignSearch} placeholder="Patient oder Besitzer..."/>
-                {(()=>{const q=eduAssignSearch.trim().toLowerCase();const list=q?patients.filter(p=>(p.name||"").toLowerCase().includes(q)||(p.owner||"").toLowerCase().includes(q)):patients;
-                  return(<div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14}}>
-                    {list.map(p=>(
-                      <button key={p.id} className="btn" onClick={()=>setEduAssignPatient(eduAssignPatient?.id===p.id?null:p)} style={{textAlign:"left",padding:"10px 12px",borderRadius:10,border:`1.5px solid ${eduAssignPatient?.id===p.id?BRAND:BORDER}`,background:eduAssignPatient?.id===p.id?LIGHT:"white",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,color:"#102828"}}>
-                        {p.avatar||"🐾"} {patLabel(p)}
-                      </button>
-                    ))}
-                  </div>);})()}
+                <div style={{marginBottom:14}}>
+                  <SL text="Patient suchen & auswählen"/>
+                  <SearchInput value={eduAssignSearch} onChange={v=>{setEduAssignSearch(v);setEduAssignPatient(null);}} placeholder="Name oder Besitzer..."/>
+                  <CustomSelect value={eduAssignPatient?.id||""} onChange={e=>setEduAssignPatient(patients.find(p=>p.id===e.target.value)||null)}>
+                    <option value="">Patient auswählen...</option>
+                    {(()=>{const q=eduAssignSearch.trim().toLowerCase();let list=q?patients.filter(p=>(p.name||"").toLowerCase().includes(q)||(p.owner||"").toLowerCase().includes(q)):patients;if(eduOnlyWithSheets)list=list.filter(p=>sheetAssignedIds(p.id).length>0);return list.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>);})()}
+                  </CustomSelect>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10,cursor:"pointer"}} onClick={()=>{setEduOnlyWithSheets(v=>!v);setEduAssignPatient(null);}}>
+                    <div style={{width:18,height:18,borderRadius:5,border:`1.5px solid ${eduOnlyWithSheets?BRAND:BORDER}`,background:eduOnlyWithSheets?BRAND:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      {eduOnlyWithSheets&&<Icon name="check" size={11} color="white"/>}
+                    </div>
+                    <span style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:DARK}}>Nur Patienten mit Merkblatt</span>
+                  </div>
+                </div>
                 {eduAssignPatient
                   ?(<><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:10}}>Angehakte Merkblätter sieht <b style={{color:DARK}}>{eduAssignPatient.name}</b> im Info-Bereich.</div>
                       <div style={{display:"flex",flexDirection:"column",gap:8}}>
