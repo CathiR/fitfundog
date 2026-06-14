@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-12-068";
+const APP_VERSION = "2026-06-12-070";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -45,6 +45,7 @@ const ICON_BASE = "https://tkgwdmntglzfeulpgfpw.supabase.co/storage/v1/object/pu
 const CATEGORIES = ["Regeneration", "Balance", "Kräftigung", "Koordination", "Mobilisation"];
 const TARGET_REGIONS = ["Ganzer Körper", "Hinterhand", "Vorderhand", "Rumpf", "Vorderpfoten", "Rücken"];
 const EMPTY_PATIENT = { name: "", breed: "", age: "", owner: "", condition: "", avatar: "🐕", ownerEmail: "", ownerPassword: "" };
+const EMPTY_SHEET = { title:"", title_en:"", title_es:"", key_points:["","",""], content:"", content_en:"", content_es:"", image_url:"", is_global:false };
 const EMPTY_TEMPLATE = { title: "", categories: [], target_regions: [], difficulty: "Leicht", description: "", instructions: [""], image_url: "", video_url: "" };
 const getDifficultyColor=()=>({"Leicht":BRAND,"Mittel":MID,"Schwer":"#C0392B"});
 let difficultyColor=getDifficultyColor();
@@ -386,7 +387,7 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
 };
 
 const T = {
-  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", navAdmin:"Admin", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", phaseFrom:(d)=>`ab ${d}`, phaseEnded:"Phase beendet", surveyCardTitle:(n)=>`Kurzer Check-up für ${n}`, surveyCardText:"13 kurze Fragen zur Beweglichkeit — ca. 3 Minuten. Hilft deiner Praxis, den Verlauf objektiv zu beurteilen.", surveyStart:"Jetzt ausfüllen", surveyTitle:"Mobilitäts-Check", surveyIntro:"Denke an die letzten 2 Wochen. 0 = gar nicht, 4 = sehr stark.", surveySubmit:"Absenden", surveyThanks:"Danke! Check-up gespeichert.", surveyProgress:(a,b)=>`${a} von ${b} beantwortet`, markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt.",
+  de: { appSub:"Tierphysiotherapie & Osteopathie", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", navAdmin:"Admin", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", phaseFrom:(d)=>`ab ${d}`, phaseEnded:"Phase beendet", surveyCardTitle:(n)=>`Kurzer Check-up für ${n}`, surveyCardText:"13 kurze Fragen zur Beweglichkeit — ca. 3 Minuten. Hilft deiner Praxis, den Verlauf objektiv zu beurteilen.", surveyStart:"Jetzt ausfüllen", surveyTitle:"Mobilitäts-Check", surveyIntro:"Denke an die letzten 2 Wochen. 0 = gar nicht, 4 = sehr stark.", surveySubmit:"Absenden", surveyThanks:"Danke! Check-up gespeichert.", surveyProgress:(a,b)=>`${a} von ${b} beantwortet`, markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", tabKnowledge:"Wissenswertes", pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt.",
     plans:"Behandlungspläne", noPlans:"Noch keine Behandlungspläne erstellt.", noTemplates:"Noch keine Übungsvorlagen erstellt.", newExercise:"Neue Übung erstellen", editExercise:"Übung bearbeiten", addExercise:"Übung hinzufügen", printPlan:"Übungsplan drucken", searchPatient:"Patient suchen & auswählen", unknownExercise:"Unbekannte Übung", reminderActive:"Täglich aktiv — nur bei offenen Übungen", reminderInactive:"Erinnert dich täglich an deine Übungen", deleteAccount:"Konto löschen", deleteAccountConfirm:"Konto unwiderruflich löschen", deleting:"Wird gelöscht...", deleteWord:"LÖSCHEN", pwSecurityHint:"Aus Sicherheitsgründen bitte ein eigenes Passwort vergeben.", changePw:"Bitte Passwort ändern", feedbackPlaceholder:"Dein Feedback...", feedbackTitle:"Feedback geben", feedbackSub:"Dein Feedback hilft dabei die App weiterzuentwickeln.", feedbackSend:"Feedback senden", deleteAccountWarningTitle:"Achtung – diese Aktion ist unwiderruflich", deleteAccountWarningText:"Dein Konto und alle damit verbundenen Daten werden dauerhaft gelöscht. Deine Therapiedaten bleiben bei deiner Therapeutin erhalten.", deleteConfirmLabel:(word)=>`Zur Bestätigung "${word}" eingeben`,
     alertPwMin:"Passwort muss mindestens 6 Zeichen haben.", alertAddHomescreen:"Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.", alertNoPush:"Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.", alertPushBlocked:"Benachrichtigungen sind blockiert. Bitte erlaube sie in den iPhone-Einstellungen unter Mitteilungen → FitFunDog.", alertDeleteFail:"Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter info@fit-fun-dog.de zur manuellen Löschung.",
     noAccount:"Kein Konto? Bitte wende dich an deine Therapeutin.", forgotPw:"Passwort vergessen?", resetSent:"Reset-Email gesendet – bitte Postfach prüfen.", adminTitle:"Admin", adminSub:"Einstellungen & App-Verwaltung", legalTitle:"Rechtliches", feedbackAppTitle:"Feedback zur App", feedbackAppSub:"Direkt an die Entwicklerin senden.",
@@ -400,7 +401,7 @@ const T = {
     categories:["Regeneration","Balance","Kräftigung","Koordination","Mobilisation"],
     targetRegions:["Ganzer Körper","Hinterhand","Vorderhand","Rumpf","Vorderpfoten","Rücken"],
     difficulties:["Leicht","Mittel","Schwer"] },
-  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", navAdmin:"Admin", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", phaseFrom:(d)=>`from ${d}`, phaseEnded:"Phase ended", surveyCardTitle:(n)=>`Quick check-up for ${n}`, surveyCardText:"13 short questions about mobility — approx. 3 minutes. Helps your practice track progress objectively.", surveyStart:"Start now", surveyTitle:"Mobility Check", surveyIntro:"Think about the last 2 weeks. 0 = not at all, 4 = very severe.", surveySubmit:"Submit", surveyThanks:"Thanks! Check-up saved.", surveyProgress:(a,b)=>`${a} of ${b} answered`, markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress.",
+  en: { appSub:"Animal Physiotherapy & Osteopathy", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", navAdmin:"Admin", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", phaseFrom:(d)=>`from ${d}`, phaseEnded:"Phase ended", surveyCardTitle:(n)=>`Quick check-up for ${n}`, surveyCardText:"13 short questions about mobility — approx. 3 minutes. Helps your practice track progress objectively.", surveyStart:"Start now", surveyTitle:"Mobility Check", surveyIntro:"Think about the last 2 weeks. 0 = not at all, 4 = very severe.", surveySubmit:"Submit", surveyThanks:"Thanks! Check-up saved.", surveyProgress:(a,b)=>`${a} of ${b} answered`, markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", tabKnowledge:"Knowledge", pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress.",
     plans:"Treatment Plans", noPlans:"No treatment plans created yet.", noTemplates:"No exercise templates created yet.", newExercise:"New exercise", editExercise:"Edit exercise", addExercise:"Add exercise", printPlan:"Print plan", searchPatient:"Search & select patient", unknownExercise:"Unknown exercise", reminderActive:"Active daily — only when exercises are open", reminderInactive:"Reminds you daily of your exercises", deleteAccount:"Delete account", deleteAccountConfirm:"Permanently delete account", deleting:"Deleting...", deleteWord:"DELETE", pwSecurityHint:"For security reasons please set your own password.", changePw:"Please change password", feedbackPlaceholder:"Your feedback...", feedbackTitle:"Give feedback", feedbackSub:"Your feedback helps improve the app.", feedbackSend:"Send feedback", deleteAccountWarningTitle:"Warning – this action is irreversible", deleteAccountWarningText:"Your account and all associated data will be permanently deleted. Your therapy data will remain with your therapist.", deleteConfirmLabel:(word)=>`Type "${word}" to confirm`,
     alertPwMin:"Password must be at least 6 characters.", alertAddHomescreen:"Please add the app to your home screen first (Safari → Share → Add to Home Screen). Then open the app via the home screen icon and activate reminders again.", alertNoPush:"Your browser does not support push notifications. Please use Safari on iOS 16.4+ or Chrome on Android.", alertPushBlocked:"Notifications are blocked. Please allow them in iPhone Settings under Notifications → FitFunDog.", alertDeleteFail:"Your account cannot be deleted automatically. Please contact your therapist at info@fit-fun-dog.de for manual deletion.",
     noAccount:"No account? Please contact your therapist.", forgotPw:"Forgot password?", resetSent:"Reset email sent – please check your inbox.", adminTitle:"Admin", adminSub:"Settings & App management", legalTitle:"Legal", feedbackAppTitle:"App feedback", feedbackAppSub:"Send directly to the developer.",
@@ -414,7 +415,7 @@ const T = {
     categories:["Regeneration","Balance","Strengthening","Coordination","Mobilisation"],
     targetRegions:["Whole body","Hindquarters","Forequarters","Core","Front paws","Back"],
     difficulties:["Easy","Medium","Hard"] },
-  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", navAdmin:"Admin", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", phaseFrom:(d)=>`desde ${d}`, phaseEnded:"Fase finalizada", surveyCardTitle:(n)=>`Chequeo rápido para ${n}`, surveyCardText:"13 preguntas breves sobre movilidad — aprox. 3 minutos. Ayuda a tu clínica a evaluar el progreso objetivamente.", surveyStart:"Empezar", surveyTitle:"Chequeo de movilidad", surveyIntro:"Piensa en las últimas 2 semanas. 0 = nada, 4 = muy fuerte.", surveySubmit:"Enviar", surveyThanks:"¡Gracias! Chequeo guardado.", surveyProgress:(a,b)=>`${a} de ${b} respondidas`, markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes para el entrenamiento", tabTips:"Consejos", tabPause:"Descanso", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento. Sin descanso suficiente, el sobreentrenamiento reemplaza al progreso.",
+  es: { appSub:"Fisioterapia & Osteopatía Animal", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", navAdmin:"Admin", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", phaseFrom:(d)=>`desde ${d}`, phaseEnded:"Fase finalizada", surveyCardTitle:(n)=>`Chequeo rápido para ${n}`, surveyCardText:"13 preguntas breves sobre movilidad — aprox. 3 minutos. Ayuda a tu clínica a evaluar el progreso objetivamente.", surveyStart:"Empezar", surveyTitle:"Chequeo de movilidad", surveyIntro:"Piensa en las últimas 2 semanas. 0 = nada, 4 = muy fuerte.", surveySubmit:"Enviar", surveyThanks:"¡Gracias! Chequeo guardado.", surveyProgress:(a,b)=>`${a} de ${b} respondidas`, markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes para el entrenamiento", tabTips:"Consejos", tabPause:"Descanso", tabKnowledge:"Información", pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento. Sin descanso suficiente, el sobreentrenamiento reemplaza al progreso.",
     plans:"Planes de tratamiento", noPlans:"Aún no hay planes de tratamiento.", noTemplates:"Aún no hay plantillas de ejercicios.", newExercise:"Nuevo ejercicio", editExercise:"Editar ejercicio", addExercise:"Añadir ejercicio", printPlan:"Imprimir plan", searchPatient:"Buscar y seleccionar paciente", unknownExercise:"Ejercicio desconocido", reminderActive:"Activo diariamente — solo si hay ejercicios pendientes", reminderInactive:"Te recuerda tus ejercicios cada día", deleteAccount:"Eliminar cuenta", deleteAccountConfirm:"Eliminar cuenta permanentemente", deleting:"Eliminando...", deleteWord:"ELIMINAR", pwSecurityHint:"Por seguridad, establece tu propia contraseña.", changePw:"Por favor cambia la contraseña", feedbackPlaceholder:"Tu comentario...", feedbackTitle:"Dar feedback", feedbackSub:"Tu feedback ayuda a mejorar la app.", feedbackSend:"Enviar feedback", deleteAccountWarningTitle:"Atención – esta acción es irreversible", deleteAccountWarningText:"Tu cuenta y todos los datos asociados serán eliminados permanentemente. Tus datos de terapia permanecerán con tu terapeuta.", deleteConfirmLabel:(word)=>`Escribe "${word}" para confirmar`,
     alertPwMin:"La contraseña debe tener al menos 6 caracteres.", alertAddHomescreen:"Por favor añade primero la app a tu pantalla de inicio (Safari → Compartir → Añadir a pantalla de inicio). Luego abre la app desde el icono y activa los recordatorios.", alertNoPush:"Tu navegador no admite notificaciones push. Usa Safari en iOS 16.4+ o Chrome en Android.", alertPushBlocked:"Las notificaciones están bloqueadas. Actívalas en Ajustes del iPhone en Notificaciones → FitFunDog.", alertDeleteFail:"Tu cuenta no puede eliminarse automáticamente. Contacta a tu terapeuta en info@fit-fun-dog.de para la eliminación manual.",
     noAccount:"¿Sin cuenta? Contacta a tu terapeuta.", forgotPw:"¿Olvidaste tu contraseña?", resetSent:"Email enviado – revisa tu bandeja de entrada.", adminTitle:"Admin", adminSub:"Ajustes y gestión de la app", legalTitle:"Legal", feedbackAppTitle:"Feedback de la app", feedbackAppSub:"Enviar directamente a la desarrolladora.",
@@ -746,6 +747,14 @@ export default function App() {
   const [showDeleteAccount,setShowDeleteAccount]=useState(false);
   const [historyPatient,setHistoryPatient]=useState(null); // Verlaufs-Sheet (seit 062)
   const [surveys,setSurveys]=useState([]);                 // Mobilitäts-Check (seit 066)
+  const [eduSheets,setEduSheets]=useState([]);             // Edukations-Merkblätter (seit 069)
+  const [patientEdu,setPatientEdu]=useState([]);           // Zuweisungen Merkblatt->Patient
+  const [eduTab,setEduTab]=useState("library");            // Admin-Untertab: library | assign
+  const [eduAssignPatient,setEduAssignPatient]=useState(null);
+  const [eduAssignSearch,setEduAssignSearch]=useState("");
+  const [newSheet,setNewSheet]=useState(EMPTY_SHEET);
+  const [editSheetData,setEditSheetData]=useState(null);
+  const [selectedSheet,setSelectedSheet]=useState(null);   // Besitzer-Detailansicht
   const [surveySheet,setSurveySheet]=useState(false);
   const [surveyAnswers,setSurveyAnswers]=useState({});
   const [historyData,setHistoryData]=useState(null);
@@ -769,7 +778,7 @@ export default function App() {
   // Behebt iOS-WebKit-Bug: Caret wird in position:fixed-Sheets versetzt
   // (unterhalb des Eingabefelds) gerendert, wenn die Seite dahinter
   // gescrollt ist bzw. die Tastatur den Viewport verschiebt.
-  const anySheetOpen=!!(sheet||selectedExercise||viewTemplateData||planAssignDone||viewFeedbackEx||feedbackSheet||showAppFeedback||showDeleteAccount||historyPatient||surveySheet);
+  const anySheetOpen=!!(sheet||selectedExercise||viewTemplateData||planAssignDone||viewFeedbackEx||feedbackSheet||showAppFeedback||showDeleteAccount||historyPatient||surveySheet||selectedSheet||editSheetData);
   useEffect(()=>{
     if(!anySheetOpen)return;
     const y=window.scrollY;
@@ -822,7 +831,7 @@ export default function App() {
         sessionStorage.removeItem("_recovery"); setIsRecoveryMode(false);
         sessionStorage.removeItem("_adminLanded");
         setSession(null);
-        setPatients([]);setExercises([]);setDoneLogs([]);setHistoryLogs([]);setFeedbacks([]);setTemplates([]);
+        setPatients([]);setExercises([]);setDoneLogs([]);setHistoryLogs([]);setFeedbacks([]);setTemplates([]);setEduSheets([]);setPatientEdu([]);
         setOwnerPatient(null);setSelectedPatient(null);
         setIsAdmin(false);
         setView("owner"); // View zurücksetzen — sonst erbt der nächste (Besitzer-)Login einen Admin-View und sieht eine leere Seite (Fix 065)
@@ -857,7 +866,7 @@ export default function App() {
     if(!initialLoadDone.current)setLoading(true); // Vollbild-Loader nur beim ersten Laden (seit 058)
     const uid=userId;
     try{
-      const [{data:pd},{data:ed},{data:ld},{data:ue},{data:hl},{data:fb},{data:ps},{data:sv}]=await Promise.all([
+      const [{data:pd},{data:ed},{data:ld},{data:ue},{data:hl},{data:fb},{data:ps},{data:sv},{data:es},{data:pe}]=await Promise.all([
         supabase.from("patients").select("*").order("name"),
         supabase.from("exercises").select("*").order("created_at"),
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
@@ -866,6 +875,8 @@ export default function App() {
         supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false}),
         supabase.from("practice_settings").select("*").eq("slug",PRACTICE_SLUG).maybeSingle(),
         supabase.from("outcome_surveys").select("*").order("created_at",{ascending:false}),
+        supabase.from("education_sheets").select("*").order("is_global",{ascending:false}).order("title"),
+        supabase.from("patient_education").select("*"),
       ]);
       // Plan-Queries explizit nach practice_id filtern – ps.id erst hier bekannt
       const practiceId=ps?.id;
@@ -910,6 +921,8 @@ export default function App() {
       setTemplates(td||[]);
       setUserEmails(ue||[]);
       setSurveys(sv||[]);
+      setEduSheets(es||[]);
+      setPatientEdu(pe||[]);
       setPlanTemplates(ptd||[]);
       setPlanTemplateExercises(pte||[]);
 
@@ -1181,6 +1194,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     setNewAccountMode("new");setSelectedExistingUserId("");
     setResetEmailSent(false);setUserSearch("");
     setNewPassword("");setShowPasswordChange(false);
+    setNewSheet(EMPTY_SHEET);setEditSheetData(null);
   };
 
   const exForPatient=(pid)=>exercises.filter(e=>e.patient_id===pid);
@@ -1468,6 +1482,64 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     return (Date.now()-new Date(last.created_at).getTime())>=28*24*3600*1000;
   };
 
+  // ── Edukations-Merkblätter (seit 069) ──
+  const canEditSheet=(sh)=>sh.is_global?practice?.slug==="fitfundog":true;
+  const sheetAssignedIds=(patientId)=>patientEdu.filter(pe=>pe.patient_id===patientId).map(pe=>pe.sheet_id);
+
+  const addSheet=async()=>{
+    if(!newSheet.title.trim()||!newSheet.content.trim())return;
+    setSaving(true);
+    const allowGlobal=practice?.slug==="fitfundog";
+    const payload={
+      practice_id:practice.id,
+      is_global:allowGlobal?!!newSheet.is_global:false,
+      title:newSheet.title.trim(),title_en:newSheet.title_en?.trim()||null,title_es:newSheet.title_es?.trim()||null,
+      key_points:(newSheet.key_points||[]).map(x=>(x||"").trim()).filter(Boolean),
+      content:newSheet.content.trim(),content_en:newSheet.content_en?.trim()||null,content_es:newSheet.content_es?.trim()||null,
+      image_url:newSheet.image_url?.trim()||null
+    };
+    const{data,error}=await supabase.from("education_sheets").insert(payload).select().single();
+    if(error){showToast("error","Fehler: "+error.message);}
+    else{setEduSheets(prev=>[...prev,data].sort((a,b)=>(b.is_global-a.is_global)||a.title.localeCompare(b.title)));showToast("success","Merkblatt gespeichert.");setNewSheet(EMPTY_SHEET);closeSheet();}
+    setSaving(false);
+  };
+
+  const updateSheet=async()=>{
+    if(!editSheetData.title.trim()||!editSheetData.content.trim())return;
+    setSaving(true);
+    const fields={
+      title:editSheetData.title.trim(),title_en:editSheetData.title_en?.trim()||null,title_es:editSheetData.title_es?.trim()||null,
+      key_points:(editSheetData.key_points||[]).map(x=>(x||"").trim()).filter(Boolean),
+      content:editSheetData.content.trim(),content_en:editSheetData.content_en?.trim()||null,content_es:editSheetData.content_es?.trim()||null,
+      image_url:editSheetData.image_url?.trim()||null
+    };
+    const{data,error}=await supabase.from("education_sheets").update(fields).eq("id",editSheetData.id).select().single();
+    if(error){showToast("error","Fehler: "+error.message);}
+    else{setEduSheets(prev=>prev.map(x=>x.id===data.id?data:x));showToast("success","Merkblatt aktualisiert.");closeSheet();}
+    setSaving(false);
+  };
+
+  const deleteSheet=async(sid)=>{
+    const{error}=await supabase.from("education_sheets").delete().eq("id",sid);
+    if(error){showToast("error","Fehler: "+error.message);return;}
+    setEduSheets(prev=>prev.filter(x=>x.id!==sid));
+    setPatientEdu(prev=>prev.filter(pe=>pe.sheet_id!==sid));
+    showToast("success","Merkblatt gelöscht.");
+  };
+
+  const toggleSheetAssignment=async(patientId,sheetId)=>{
+    const existing=patientEdu.find(pe=>pe.patient_id===patientId&&pe.sheet_id===sheetId);
+    if(existing){
+      const{error}=await supabase.from("patient_education").delete().eq("id",existing.id);
+      if(error){showToast("error","Fehler: "+error.message);return;}
+      setPatientEdu(prev=>prev.filter(pe=>pe.id!==existing.id));
+    }else{
+      const{data,error}=await supabase.from("patient_education").insert({patient_id:patientId,sheet_id:sheetId}).select().single();
+      if(error){showToast("error","Fehler: "+error.message);return;}
+      setPatientEdu(prev=>[...prev,data]);
+    }
+  };
+
   const submitSurvey=async()=>{
     const qs=SURVEY_QUESTIONS[lang]||SURVEY_QUESTIONS.de;
     if(!ownerPatient||Object.keys(surveyAnswers).length<qs.length)return;
@@ -1723,6 +1795,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
   const PAIN_COLORS=["","#2E7D32","#8BC34A","#FF9800","#F44336","#B71C1C"];
   const ownerExs=ownerPatient?exForPatient(ownerPatient.id):[];
+  const myEduSheets=ownerPatient?eduSheets.filter(sh=>sheetAssignedIds(ownerPatient.id).includes(sh.id)):[];
   const ownerActiveExs=ownerExs.filter(e=>exPhase(e)==="active"); // nur aktive Phasen zählen (seit 064)
   const doneCount=ownerActiveExs.filter(e=>isFullyDone(e)).length;
   const totalCount=ownerActiveExs.length;
@@ -2207,7 +2280,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       {view==="therapist"&&isAdmin&&(
         <div style={{maxWidth:480,margin:"0 auto",padding:"0 0 80px"}}>
           <div style={{display:"flex",gap:0,background:"white",borderBottom:`2px solid ${LIGHT}`,padding:"0 14px"}}>
-            {[["patients","user","Patienten"],["exercises","tip","Übungen"],["plans","star","Pläne"],["assign","assign","Zuweisen"]].map(([tab,ic,lb])=>(
+            {[["patients","user","Patienten"],["exercises","tip","Übungen"],["plans","star","Pläne"],["assign","assign","Zuweisen"],["education","info","Wissen"]].map(([tab,ic,lb])=>(
               <button key={tab} className="btn" onClick={()=>setPracticeTab(tab)} style={{flex:1,padding:"13px 6px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:practiceTab===tab?BRAND:MUTED,borderBottom:practiceTab===tab?`2px solid ${BRAND}`:"2px solid transparent",marginBottom:-2,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
                 <Icon name={ic} size={13} color={practiceTab===tab?BRAND:MUTED}/>{lb}
               </button>
@@ -2537,6 +2610,82 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </>)}
             </div>
           )}
+
+          {practiceTab==="education"&&(()=>{
+            const isFFD=practice?.slug==="fitfundog";
+            const globalSheets=eduSheets.filter(x=>x.is_global);
+            const ownSheets=eduSheets.filter(x=>!x.is_global);
+            const SheetRow=({sh,assignable})=>{
+              const editable=canEditSheet(sh);
+              const assigned=eduAssignPatient?sheetAssignedIds(eduAssignPatient.id).includes(sh.id):false;
+              return(
+                <div className="card" style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>
+                  {sh.image_url
+                    ?<img src={sh.image_url} alt={sh.title} style={{width:38,height:38,borderRadius:9,objectFit:"cover",flexShrink:0,background:LIGHT}}/>
+                    :<div style={{width:38,height:38,borderRadius:9,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="info" size={17} color={ACCENT}/></div>}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600,color:"#102828"}}>{sh.title}</div>
+                    {sh.is_global&&<span className="tag" style={{background:"#F0F0F0",color:"#888",marginTop:3,display:"inline-block"}}>Zentral</span>}
+                  </div>
+                  {assignable
+                    ?<button className="btn" onClick={()=>toggleSheetAssignment(eduAssignPatient.id,sh.id)} style={{width:30,height:30,borderRadius:8,border:`1.5px solid ${assigned?BRAND:BORDER}`,background:assigned?BRAND:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                        {assigned&&<Icon name="check" size={16} color="#102828"/>}
+                      </button>
+                    :<div style={{display:"flex",gap:5}}>
+                        {editable&&<button className="iBtn" onClick={()=>setEditSheetData({...sh})} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>}
+                        {editable&&<button className="iBtn" onClick={()=>{setSheetData(sh);setSheet("confirmDeleteSheet");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>}
+                      </div>}
+                </div>
+              );
+            };
+            return(
+            <div style={{padding:"16px 14px"}}>
+              <div style={{display:"flex",gap:7,marginBottom:16,background:"white",borderRadius:14,padding:5,boxShadow:`0 2px 12px ${BRAND}1A`}}>
+                {[["library","Bibliothek"],["assign","Zuweisen"]].map(([tb,lb])=>(
+                  <button key={tb} className="btn" onClick={()=>setEduTab(tb)} style={{flex:1,padding:"10px 8px",borderRadius:10,background:eduTab===tb?BRAND:"transparent",color:eduTab===tb?"#102828":MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12}}>{lb}</button>
+                ))}
+              </div>
+
+              {eduTab==="library"&&(<>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK}}>Merkblätter</div>
+                  <button className="btn" onClick={()=>{setNewSheet(EMPTY_SHEET);setSheet("addSheet");}} style={{background:BRAND,color:"#102828",borderRadius:10,padding:"9px 14px",fontSize:12,fontFamily:"'DM Sans',sans-serif",fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
+                    <Icon name="plus" size={14} color="#102828"/> Neues Merkblatt
+                  </button>
+                </div>
+                {globalSheets.length>0&&(<>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:MUTED,margin:"6px 0 8px"}}>{isFFD?"Zentrale Merkblätter":"Zentrale Merkblätter (nur lesbar)"}</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:18}}>{globalSheets.map(sh=><SheetRow key={sh.id} sh={sh} assignable={false}/>)}</div>
+                </>)}
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:MUTED,margin:"6px 0 8px"}}>Eigene Merkblätter</div>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {ownSheets.map(sh=><SheetRow key={sh.id} sh={sh} assignable={false}/>)}
+                  {ownSheets.length===0&&<div className="card" style={{padding:20,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine eigenen Merkblätter.</div>}
+                </div>
+              </>)}
+
+              {eduTab==="assign"&&(<>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK,marginBottom:12}}>Merkblätter zuweisen</div>
+                <SearchInput value={eduAssignSearch} onChange={setEduAssignSearch} placeholder="Patient oder Besitzer..."/>
+                {(()=>{const q=eduAssignSearch.trim().toLowerCase();const list=q?patients.filter(p=>(p.name||"").toLowerCase().includes(q)||(p.owner||"").toLowerCase().includes(q)):patients;
+                  return(<div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:14}}>
+                    {list.map(p=>(
+                      <button key={p.id} className="btn" onClick={()=>setEduAssignPatient(eduAssignPatient?.id===p.id?null:p)} style={{textAlign:"left",padding:"10px 12px",borderRadius:10,border:`1.5px solid ${eduAssignPatient?.id===p.id?BRAND:BORDER}`,background:eduAssignPatient?.id===p.id?LIGHT:"white",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,color:"#102828"}}>
+                        {p.avatar||"🐾"} {patLabel(p)}
+                      </button>
+                    ))}
+                  </div>);})()}
+                {eduAssignPatient
+                  ?(<><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:10}}>Angehakte Merkblätter sieht <b style={{color:DARK}}>{eduAssignPatient.name}</b> im Info-Bereich.</div>
+                      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                        {eduSheets.map(sh=><SheetRow key={sh.id} sh={sh} assignable={true}/>)}
+                        {eduSheets.length===0&&<div className="card" style={{padding:20,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Noch keine Merkblätter vorhanden.</div>}
+                      </div></>)
+                  :<div className="card" style={{padding:24,textAlign:"center",color:MUTED,fontFamily:"'DM Sans',sans-serif",fontSize:14}}>Bitte zuerst einen Patienten auswählen.</div>}
+              </>)}
+            </div>
+            );
+          })()}
         </div>
       )}
 
@@ -2641,7 +2790,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,marginBottom:4}}>{t.tipsTitle}</div>
           <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:14}}>{t.tipsSub}</div>
           <div style={{display:"flex",gap:7,marginBottom:16,background:"white",borderRadius:14,padding:5,boxShadow:`0 2px 12px ${BRAND}1A`}}>
-            {[["tips","tip",t.tabTips],["pause","rest",t.tabPause]].map(([tab,ic,label])=>(
+            {[["tips","tip",t.tabTips],["pause","rest",t.tabPause],...(myEduSheets.length>0?[["knowledge","info",t.tabKnowledge]]:[])].map(([tab,ic,label])=>(
               <button key={tab} className="btn" onClick={()=>setInfoTab(tab)} style={{flex:1,padding:"10px 8px",borderRadius:10,background:infoTab===tab?BRAND:"transparent",color:infoTab===tab?"#102828":MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:12,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
                 <Icon name={ic} size={14} color={infoTab===tab?"#102828":MUTED}/>{label}
               </button>
@@ -2650,6 +2799,18 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           <div style={{display:"flex",flexDirection:"column",gap:11}}>
             {infoTab==="tips"&&TIPS[lang].map((tip,i)=><InfoCard key={i} {...tip}/>)}
             {infoTab==="pause"&&[{icon:"rest",title:t.pauseHero,text:t.pauseHeroText},...PAUSE[lang]].map((sec,i)=><InfoCard key={i} {...sec}/>)}
+            {infoTab==="knowledge"&&myEduSheets.map(sh=>(
+              <div key={sh.id} className="card" onClick={()=>setSelectedSheet(sh)} style={{padding:"14px 16px",display:"flex",gap:12,alignItems:"center",cursor:"pointer"}}>
+                {sh.image_url
+                  ?<img src={sh.image_url} alt={exT(sh,"title")} style={{width:46,height:46,borderRadius:10,objectFit:"cover",flexShrink:0,background:LIGHT}}/>
+                  :<div style={{width:46,height:46,borderRadius:10,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="info" size={20} color={BRAND}/></div>}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:2}}>{exT(sh,"title")}</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{exT(sh,"content")}</div>
+                </div>
+                <Icon name="chevron" size={16} color={ACCENT}/>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -3140,6 +3301,91 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       )}
 
       {/* SHEET: PLAN ZUGEWIESEN – MAIL SENDEN */}
+      {/* SHEET: MERKBLATT ANLEGEN / BEARBEITEN (Admin, seit 069) */}
+      {(sheet==="addSheet"||sheet==="editSheet"||editSheetData)&&(()=>{
+        const isEdit=!!editSheetData;
+        const d=isEdit?editSheetData:newSheet;
+        const setD=isEdit?(fn)=>setEditSheetData(p=>({...p,...fn(p)})):(fn)=>setNewSheet(p=>({...p,...fn(p)}));
+        const valid=d.title.trim()&&d.content.trim();
+        const isFFD=practice?.slug==="fitfundog";
+        return(
+        <div className="overlay">
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title={isEdit?"Merkblatt bearbeiten":"Neues Merkblatt"} onClose={closeSheet}/>
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              <div><SL text="Titel"/><input value={d.title} onChange={e=>setD(()=>({title:e.target.value}))} placeholder="z.B. Arthrose beim Hund" style={inp}/></div>
+              <div>
+                <SL text="Das Wichtigste in 3 Punkten"/>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:6,marginTop:-2}}>Erscheint oben hervorgehoben. Die kurzen Kern-Handlungen, die der Besitzer auf jeden Fall behalten soll.</div>
+                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  {[0,1,2].map(i=>(
+                    <input key={i} value={d.key_points?.[i]||""} onChange={e=>setD(p=>{const kp=[...(p.key_points||["","",""])];kp[i]=e.target.value;return{key_points:kp};})} placeholder={`Kernpunkt ${i+1}`} style={inp}/>
+                  ))}
+                </div>
+              </div>
+              <div><SL text="Ausführlicher Text"/><textarea value={d.content} onChange={e=>setD(()=>({content:e.target.value}))} rows={9} placeholder="Erkläre die Erkrankung, warum die Übungen helfen, worauf im Alltag zu achten ist..." style={{...inp,resize:"vertical",lineHeight:1.55}}/></div>
+              <div><SL text="Bild-URL (optional)"/><input value={d.image_url||""} onChange={e=>setD(()=>({image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
+              {isFFD&&(
+                <div onClick={()=>setD(p=>({is_global:!p.is_global}))} style={{display:"inline-flex",alignItems:"flex-start",gap:8,cursor:"pointer"}}>
+                  <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${d.is_global?BRAND:BORDER}`,background:d.is_global?BRAND:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
+                    {d.is_global&&<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#102828" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                  </div>
+                  <div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,color:"#102828"}}>Zentrales Merkblatt</div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>Für alle Praxen sichtbar und zuweisbar. Nur ihr könnt es bearbeiten.</div>
+                  </div>
+                </div>
+              )}
+              {isEdit&&(d.title_en||d.title_es)&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>Übersetzungen (EN/ES) sind hinterlegt und bleiben beim Speichern erhalten.</div>}
+              <button className="btn" onClick={isEdit?updateSheet:addSheet} disabled={saving||!valid} style={{width:"100%",padding:"14px",borderRadius:12,background:valid?BRAND:BORDER,color:valid?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+                {saving?t.saving:(isEdit?"Speichern":"Anlegen")}
+              </button>
+            </div>
+          </div>
+        </div>
+        );
+      })()}
+
+      {/* SHEET: MERKBLATT LÖSCHEN BESTÄTIGEN (seit 069) */}
+      {sheet==="confirmDeleteSheet"&&sheetData&&(
+        <div className="overlay">
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title="Merkblatt löschen?" onClose={closeSheet}/>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:DARK,lineHeight:1.6,marginBottom:18}}>
+              „{sheetData.title}" wird endgültig gelöscht und bei allen zugewiesenen Patienten entfernt.
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button className="btn" onClick={closeSheet} style={{flex:1,padding:"13px",borderRadius:11,background:LIGHT,color:DARK,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14}}>Abbrechen</button>
+              <button className="btn" onClick={()=>{const id=sheetData.id;closeSheet();deleteSheet(id);}} style={{flex:1,padding:"13px",borderRadius:11,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14}}>Löschen</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SHEET: MERKBLATT-DETAIL (Owner, seit 069) */}
+      {selectedSheet&&(
+        <div className="overlay">
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title={exT(selectedSheet,"title")} onClose={()=>setSelectedSheet(null)}/>
+            {selectedSheet.image_url&&<div style={{width:"100%",borderRadius:14,overflow:"hidden",marginBottom:16,background:LIGHT}}><img src={selectedSheet.image_url} alt={exT(selectedSheet,"title")} style={{width:"100%",height:"auto",maxHeight:240,objectFit:"cover",display:"block"}}/></div>}
+            {(()=>{const kp=exT(selectedSheet,"key_points")||[];return kp.length>0?(
+              <div style={{background:LIGHT,borderRadius:14,padding:"14px 16px",marginBottom:16}}>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:DARK,marginBottom:10}}>Das Wichtigste</div>
+                <div style={{display:"flex",flexDirection:"column",gap:9}}>
+                  {kp.map((point,i)=>(
+                    <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                      <div style={{width:20,height:20,borderRadius:"50%",background:BRAND,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}><Icon name="check" size={12} color="#102828"/></div>
+                      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13.5,fontWeight:600,color:"#102828",lineHeight:1.45}}>{point}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ):null;})()}
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:DARK,lineHeight:1.7,whiteSpace:"pre-wrap"}}>{exT(selectedSheet,"content")}</div>
+          </div>
+        </div>
+      )}
+
       {/* SHEET: MOBILITAETS-CHECK (Owner, seit 066) */}
       {surveySheet&&ownerPatient&&(()=>{
         const qs=SURVEY_QUESTIONS[lang]||SURVEY_QUESTIONS.de;
