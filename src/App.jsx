@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-14-072";
+const APP_VERSION = "2026-06-14-073";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -749,7 +749,7 @@ export default function App() {
   const [surveys,setSurveys]=useState([]);                 // Mobilitäts-Check (seit 066)
   const [eduSheets,setEduSheets]=useState([]);             // Edukations-Merkblätter (seit 069)
   const [patientEdu,setPatientEdu]=useState([]);           // Zuweisungen Merkblatt->Patient
-  const [eduTab,setEduTab]=useState("library");            // Admin-Untertab: library | assign
+  const [eduTab,setEduTab]=useState("assign");             // Admin-Untertab: library | assign
   const [eduAssignPatient,setEduAssignPatient]=useState(null);
   const [eduAssignSearch,setEduAssignSearch]=useState("");
   const [eduOnlyWithSheets,setEduOnlyWithSheets]=useState(false);
@@ -2282,7 +2282,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         <div style={{maxWidth:480,margin:"0 auto",padding:"0 0 80px"}}>
           <div style={{display:"flex",gap:0,background:"white",borderBottom:`2px solid ${LIGHT}`,padding:"0 14px"}}>
             {[["patients","user","Patienten"],["exercises","tip","Übungen"],["plans","star","Pläne"],["assign","assign","Zuweisen"],["education","info","Wissen"]].map(([tab,ic,lb])=>(
-              <button key={tab} className="btn" onClick={()=>setPracticeTab(tab)} style={{flex:1,padding:"13px 6px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:practiceTab===tab?BRAND:MUTED,borderBottom:practiceTab===tab?`2px solid ${BRAND}`:"2px solid transparent",marginBottom:-2,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+              <button key={tab} className="btn" onClick={()=>{if(tab==="education")setEduTab("assign");setPracticeTab(tab);}} style={{flex:1,padding:"13px 6px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:practiceTab===tab?BRAND:MUTED,borderBottom:practiceTab===tab?`2px solid ${BRAND}`:"2px solid transparent",marginBottom:-2,display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
                 <Icon name={ic} size={13} color={practiceTab===tab?BRAND:MUTED}/>{lb}
               </button>
             ))}
@@ -2622,9 +2622,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               return(
                 <div className="card" style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>
                   {sh.image_url
-                    ?<img src={sh.image_url} alt={sh.title} style={{width:38,height:38,borderRadius:9,objectFit:"cover",flexShrink:0,background:LIGHT}}/>
-                    :<div style={{width:38,height:38,borderRadius:9,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="info" size={17} color={ACCENT}/></div>}
-                  <div style={{flex:1,minWidth:0}}>
+                    ?<img src={sh.image_url} alt={sh.title} onClick={()=>setSelectedSheet(sh)} style={{width:38,height:38,borderRadius:9,objectFit:"cover",flexShrink:0,background:LIGHT,cursor:"pointer"}}/>
+                    :<div onClick={()=>setSelectedSheet(sh)} style={{width:38,height:38,borderRadius:9,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}}><Icon name="info" size={17} color={ACCENT}/></div>}
+                  <div onClick={()=>setSelectedSheet(sh)} style={{flex:1,minWidth:0,cursor:"pointer"}}>
                     <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600,color:"#102828"}}>{sh.title}</div>
                     {sh.is_global&&<span className="tag" style={{background:"#F0F0F0",color:"#888",marginTop:3,display:"inline-block"}}>Zentral</span>}
                   </div>
