@@ -1,4 +1,4 @@
-const CACHE = "fitfundog-v3";
+const CACHE = "fitfundog-v4";
 
 self.addEventListener("install", e => {
   self.skipWaiting();
@@ -18,10 +18,17 @@ self.addEventListener("fetch", e => {
 });
 
 // ── Push notification received ──
+// WICHTIG: Es muss IMMER eine Notification gezeigt werden – auch wenn der
+// Payload fehlt oder nicht entschluesselt werden kann. iOS entzieht der App
+// sonst nach ~3 "stillen" Pushes heimlich die Push-Berechtigung.
 self.addEventListener("push", e => {
-  if (!e.data) return;
   let data = {};
-  try { data = e.data.json(); } catch { data = { title: "Fit Fun Dog", body: e.data.text() }; }
+  try {
+    data = e.data ? e.data.json() : {};
+  } catch {
+    try { data = { title: "Fit Fun Dog", body: e.data.text() }; }
+    catch { data = {}; }
+  }
 
   e.waitUntil(
     self.registration.showNotification(data.title || "Fit Fun Dog", {
