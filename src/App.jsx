@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-06-25-074";
+const APP_VERSION = "2026-06-25-075";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -1281,13 +1281,21 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     setPushLoading(true);
     try{
       const reg=await navigator.serviceWorker.ready;
-      const permission=await Notification.requestPermission();
+      // Ältere Android-Browser (Samsung Internet <11) nutzen Callback statt Promise
+      const permission=await new Promise(resolve=>{
+        const result=Notification.requestPermission(resolve);
+        if(result instanceof Promise)result.then(resolve);
+      });
       if(permission==="denied"){
         showToast("error",t.alertPushBlocked);
         setPushLoading(false);
         return;
       }
-      if(permission!=="granted"){setPushLoading(false);return;}
+      if(permission!=="granted"){
+        showToast("error","Benachrichtigungen wurden nicht erlaubt. Bitte erlaube sie und versuche es erneut.");
+        setPushLoading(false);
+        return;
+      }
       // Zuerst alle alten Subscriptions dieses Users löschen (verhindert Duplikate)
       await supabase.from("push_subscriptions").delete().eq("user_id",session.user.id);
       // Bestehende SW-Subscription aufräumen
