@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-08-17-076";
+const APP_VERSION = "2026-08-17-077";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -3423,13 +3423,22 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color:MID,marginBottom:7}}>{t.surveyPrevAnswer(prevVal,scale[prevVal])}</div>
                   )}
                   <div style={{display:"flex",gap:5}}>
-                    {scale.map((lab,v)=>(
+                    {scale.map((lab,v)=>{
+                      const isSel=surveyAnswers[i]===v;
+                      const isPrev=prevVal===v;
+                      return(
                       <button key={v} className="btn" onClick={()=>setSurveyAnswers(a=>({...a,[i]:v}))}
-                        style={{flex:1,padding:"7px 2px",borderRadius:9,border:`1.5px solid ${surveyAnswers[i]===v?BRAND:(prevVal===v?MID:BORDER)}`,background:surveyAnswers[i]===v?BRAND:"white",fontFamily:"'DM Sans',sans-serif",lineHeight:1.25,textAlign:"center"}}>
-                        <div style={{fontSize:13,fontWeight:700,color:surveyAnswers[i]===v?"#102828":DARK}}>{v}</div>
-                        <div style={{fontSize:9,fontWeight:500,color:surveyAnswers[i]===v?"#102828":MUTED}}>{lab}</div>
+                        style={{flex:1,padding:"7px 2px",borderRadius:9,border:`1.5px solid ${isSel?BRAND:(isPrev?MID:BORDER)}`,background:isSel?BRAND:(isPrev?MID+"2E":"white"),fontFamily:"'DM Sans',sans-serif",lineHeight:1.25,textAlign:"center",position:"relative"}}>
+                        {isPrev&&!isSel&&(
+                          <div style={{position:"absolute",top:-7,left:"50%",transform:"translateX(-50%)",width:14,height:14,borderRadius:"50%",background:MID,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                            <Icon name="clock" size={8} color="white"/>
+                          </div>
+                        )}
+                        <div style={{fontSize:13,fontWeight:700,color:isSel?"#102828":DARK}}>{v}</div>
+                        <div style={{fontSize:9,fontWeight:500,color:isSel?"#102828":(isPrev?MID:MUTED)}}>{lab}</div>
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
                 );
