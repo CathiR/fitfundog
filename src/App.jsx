@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-08-17-077";
+const APP_VERSION = "2026-08-19-078";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -3084,7 +3084,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   {["Leicht","Mittel","Schwer"].map(d=><option key={d}>{d}</option>)}
                 </CustomSelect>
               </div>
-              <div><SL text="Beschreibung"/><textarea value={newTemplate.description} onChange={e=>setNewTemplate(p=>({...p,description:e.target.value}))} rows={3} placeholder="Kurze Erklärung..." style={{...inp,resize:"vertical"}}/></div>
+              <div><SL text="Beschreibung"/><textarea value={newTemplate.description} onChange={e=>setNewTemplate(p=>({...p,description:e.target.value}))} rows={4} placeholder="Kurze Erklärung..." style={{...inp,resize:"vertical"}}/></div>
               <div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
                   <SL text="Schritte"/>
@@ -3093,10 +3093,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   </button>
                 </div>
                 {newTemplate.instructions.map((s,i)=>(
-                  <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
-                    <div style={{width:22,height:22,borderRadius:"50%",background:BRAND,color:"white",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'DM Sans',sans-serif"}}>{i+1}</div>
-                    <input value={s} onChange={e=>setNewTemplate(p=>({...p,instructions:p.instructions.map((x,j)=>j===i?e.target.value:x)}))} placeholder={`Schritt ${i+1}...`} style={{...inp,flex:1,marginBottom:0}}/>
-                    {newTemplate.instructions.length>1&&<button className="btn" onClick={()=>setNewTemplate(p=>({...p,instructions:p.instructions.filter((_,j)=>j!==i)}))} style={{width:28,height:28,borderRadius:7,background:"#FFE8E8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="close" size={12} color="#C0392B"/></button>}
+                  <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"flex-start"}}>
+                    <div style={{width:22,height:22,borderRadius:"50%",background:BRAND,color:"white",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'DM Sans',sans-serif",marginTop:8}}>{i+1}</div>
+                    <textarea value={s} onChange={e=>setNewTemplate(p=>({...p,instructions:p.instructions.map((x,j)=>j===i?e.target.value:x)}))} placeholder={`Schritt ${i+1}...`} rows={2} style={{...inp,flex:1,marginBottom:0,resize:"vertical"}}/>
+                    {newTemplate.instructions.length>1&&<button className="btn" onClick={()=>setNewTemplate(p=>({...p,instructions:p.instructions.filter((_,j)=>j!==i)}))} style={{width:28,height:28,borderRadius:7,background:"#FFE8E8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:8}}><Icon name="close" size={12} color="#C0392B"/></button>}
                   </div>
                 ))}
               </div>
@@ -3137,7 +3137,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   {["Leicht","Mittel","Schwer"].map(d=><option key={d}>{d}</option>)}
                 </CustomSelect>
               </div>
-              <div><SL text="Beschreibung"/><textarea value={editTemplateData.description||""} onChange={e=>setEditTemplateData(p=>({...p,description:e.target.value}))} rows={3} style={{...inp,resize:"vertical"}}/></div>
+              <div><SL text="Beschreibung"/><textarea value={editTemplateData.description||""} onChange={e=>setEditTemplateData(p=>({...p,description:e.target.value}))} rows={4} style={{...inp,resize:"vertical"}}/></div>
               <div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:7}}>
                   <SL text="Schritte"/>
@@ -3147,10 +3147,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   </button>
                 </div>
                 {(editTemplateData.instructions&&editTemplateData.instructions.length>0?editTemplateData.instructions:[""]).map((s,i)=>(
-                  <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"center"}}>
-                    <div style={{width:22,height:22,borderRadius:"50%",background:BRAND,color:"white",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'DM Sans',sans-serif"}}>{i+1}</div>
-                    <input value={s} onChange={e=>setEditTemplateData(p=>({...p,instructions:(p.instructions||[]).map((x,j)=>j===i?e.target.value:x)}))} placeholder={`Schritt ${i+1}...`} style={{...inp,flex:1,marginBottom:0}}/>
-                    {(editTemplateData.instructions||[]).length>1&&<button className="btn" onClick={()=>setEditTemplateData(p=>({...p,instructions:(p.instructions||[]).filter((_,j)=>j!==i)}))} style={{width:28,height:28,borderRadius:7,background:"#FFE8E8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="close" size={12} color="#C0392B"/></button>}
+                  <div key={i} style={{display:"flex",gap:6,marginBottom:6,alignItems:"flex-start"}}>
+                    <div style={{width:22,height:22,borderRadius:"50%",background:BRAND,color:"white",fontSize:11,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontFamily:"'DM Sans',sans-serif",marginTop:8}}>{i+1}</div>
+                    <textarea value={s} onChange={e=>setEditTemplateData(p=>({...p,instructions:(p.instructions||[]).map((x,j)=>j===i?e.target.value:x)}))} placeholder={`Schritt ${i+1}...`} rows={2} style={{...inp,flex:1,marginBottom:0,resize:"vertical"}}/>
+                    {(editTemplateData.instructions||[]).length>1&&<button className="btn" onClick={()=>setEditTemplateData(p=>({...p,instructions:(p.instructions||[]).filter((_,j)=>j!==i)}))} style={{width:28,height:28,borderRadius:7,background:"#FFE8E8",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:8}}><Icon name="close" size={12} color="#C0392B"/></button>}
                   </div>
                 ))}
               </div>
@@ -3334,7 +3334,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:6,marginTop:-2}}>Erscheint oben hervorgehoben. Die kurzen Kern-Handlungen, die der Besitzer auf jeden Fall behalten soll.</div>
                 <div style={{display:"flex",flexDirection:"column",gap:6}}>
                   {[0,1,2].map(i=>(
-                    <input key={i} value={d.key_points?.[i]||""} onChange={e=>setD(p=>{const kp=[...(p.key_points||["","",""])];kp[i]=e.target.value;return{key_points:kp};})} placeholder={`Kernpunkt ${i+1}`} style={inp}/>
+                    <textarea key={i} value={d.key_points?.[i]||""} onChange={e=>setD(p=>{const kp=[...(p.key_points||["","",""])];kp[i]=e.target.value;return{key_points:kp};})} placeholder={`Kernpunkt ${i+1}`} rows={2} style={{...inp,resize:"vertical"}}/>
                   ))}
                 </div>
               </div>
