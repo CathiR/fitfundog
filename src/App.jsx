@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-08-22-079";
+const APP_VERSION = "2026-08-23-080";
 
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(() => {}));
 
@@ -2854,12 +2854,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             )}
             {infoTab==="verlauf"&&ownerPatient&&ownerExs.length>0&&(<>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,color:DARK,marginBottom:2}}>{t.verlaufHeading(ownerPatient.name)}</div>
-              <div className="card">
+              <div className="card" style={{padding:"14px 16px",marginBottom:10}}>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,lineHeight:1.55,color:MID}}>
                   {verlaufAvgPct!==null?t.verlaufSummary(verlaufAvgPct):t.verlaufNoData}
                 </div>
               </div>
-              <div className="card">
+              <div className="card" style={{padding:"14px 16px",marginBottom:10}}>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10.5,fontWeight:700,letterSpacing:".05em",textTransform:"uppercase",color:MUTED,marginBottom:10}}>{t.verlaufWeeksLabel}</div>
                 <div style={{display:"flex",alignItems:"flex-end",gap:6,height:64,marginBottom:2}}>
                   {verlaufWeeks.map(w=>{
@@ -2881,7 +2881,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   <Icon name="chevron" size={10} color={MUTED}/>{t.tapWeekHint}
                 </div>
               </div>
-              <div className="card">
+              <div className="card" style={{padding:"14px 16px"}}>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10.5,fontWeight:700,letterSpacing:".05em",textTransform:"uppercase",color:MUTED,marginBottom:8}}>
                   {verlaufActiveMonday===getMondayStr(new Date())?t.weekDetailCurrent:t.weekDetailFor(new Date(verlaufActiveMonday).toLocaleDateString(lang==="de"?"de-DE":lang==="es"?"es-ES":"en-US",{day:"2-digit",month:"2-digit"}))}
                 </div>
