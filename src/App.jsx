@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-10-27-081";
+const APP_VERSION = "2026-11-10-082";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -535,7 +535,7 @@ const LoginScreen = ({practice,onLogin}) => {
         <div style={{textAlign:"center",marginTop:14}}>
           {resetSent
             ?<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.8)"}}>✓ Reset-Email gesendet – bitte Postfach prüfen.</div>
-            :<button onClick={async()=>{if(!email){setError("Bitte zuerst Email eingeben.");return;}await supabase.auth.resetPasswordForEmail(email,{redirectTo:"https://pawphysio.vercel.app"});setResetSent(true);}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.65)",textDecoration:"underline",padding:0}}>Passwort vergessen?</button>
+            :<button onClick={async()=>{if(!email){setError("Bitte zuerst Email eingeben.");return;}setError("");const{error:rErr}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+"/"});if(rErr){setError("Reset-Email konnte nicht gesendet werden. Bitte später erneut versuchen.");return;}setResetSent(true);}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.65)",textDecoration:"underline",padding:0}}>Passwort vergessen?</button>
           }
         </div>
         <div style={{textAlign:"center",marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.45)"}}>Kein Konto? Bitte wende dich an deine Therapeutin.</div>
@@ -549,7 +549,7 @@ const LoginScreen = ({practice,onLogin}) => {
   );
 };
 
-const PasswordResetScreen = ({ onDone }) => {
+const PasswordResetScreen = ({ practice, onDone }) => {
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1453,7 +1453,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
   const sendPasswordReset=async(email)=>{
     if(!email)return;
-    await supabase.auth.resetPasswordForEmail(email);
+    const{error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+"/"});
+    if(error){showToast("error","Reset-Email konnte nicht gesendet werden: "+error.message);return;}
     setResetEmailSent(true);
   };
 
@@ -1948,7 +1949,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
   if(loadError)return <div style={{minHeight:"100vh",background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,padding:24,textAlign:"center"}}><Icon name="paw" size={48} color={BRAND}/><div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:DARK}}>{t.loadErrorTitle}</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,lineHeight:1.5,color:MUTED,maxWidth:320}}>{t.loadErrorText}</div><button className="btn" onClick={()=>window.location.reload()} style={{marginTop:6,padding:"12px 22px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,border:"none"}}>{t.loadErrorRetry}</button></div>;
   if(authLoading)return <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${DARK},${BRAND})`,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={practice.logo_url||"/favicon.png"} alt="" style={{height:60,objectFit:"contain"}}/></div>;
-  if(isRecoveryMode)return <PasswordResetScreen onDone={()=>{sessionStorage.removeItem("_recovery");setIsRecoveryMode(false);window.location.hash="";}} />;
+  if(isRecoveryMode)return <PasswordResetScreen practice={practice} onDone={()=>{sessionStorage.removeItem("_recovery");setIsRecoveryMode(false);window.location.hash="";}} />;
   if(!session)return <LoginScreen practice={practice||{logo_url:"",practice_name:"",practice_subtitle:"",therapist_email:"",privacy_url:"",imprint_url:""}}/>;
   if(loading)return <div style={{minHeight:"100vh",background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}><Icon name="paw" size={48} color={BRAND}/><div style={{fontFamily:"'DM Sans',sans-serif",color:MUTED}}>Wird geladen...</div></div>;
 
