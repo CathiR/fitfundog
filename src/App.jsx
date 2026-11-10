@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-10-083";
+const APP_VERSION = "2026-11-10-084";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -397,7 +397,7 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
 };
 
 const T = {
-  de: { appSub:"Tierphysiotherapie & Osteopathie", loadErrorTitle:"Verbindung gestört", loadErrorText:"Die App kann gerade keine Verbindung zur Praxis herstellen. Deine Daten sind sicher — bitte versuche es in ein paar Minuten erneut.", loadErrorRetry:"Erneut versuchen", loadErrorToast:"Daten konnten nicht aktualisiert werden. Bitte später erneut versuchen.", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", navAdmin:"Admin", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", phaseFrom:(d)=>`ab ${d}`, phaseEnded:"Phase beendet", surveyCardTitle:(n)=>`Kurzer Check-up für ${n}`, surveyCardText:"13 kurze Fragen zur Beweglichkeit — ca. 3 Minuten. Hilft deiner Praxis, den Verlauf objektiv zu beurteilen.", surveyStart:"Jetzt ausfüllen", surveyTitle:"Mobilitäts-Check", surveyIntro:"Denke an die letzten 2 Wochen. 0 = gar nicht, 4 = sehr stark.", surveySubmit:"Absenden", surveyThanks:"Danke! Check-up gespeichert.", surveyProgress:(a,b)=>`${a} von ${b} beantwortet`, surveyPrevAnswer:(v,lab)=>`Beim letzten Mal: ${v} – ${lab}`, surveyPrevIntro:(d)=>`Dein letzter Check-up war am ${d}. Deine vorherigen Antworten siehst du zum Vergleich unter jeder Frage.`, markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", tabKnowledge:"Wissen", knowledgeHeading:(n)=>`Wissenswertes für ${n}`, tabVerlauf:"Verlauf", verlaufHeading:(n)=>`${n}s Verlauf`, verlaufWeeksLabel:"Letzte 8 Wochen", verlaufSummary:(p)=>`In den letzten 8 Wochen wurden ${p}% der Übungen erledigt.`, verlaufNoData:"Hier erscheint der Verlauf, sobald die ersten Übungen abgehakt wurden.", tapWeekHint:"Woche antippen für Details", weekDetailCurrent:"Diese Woche im Detail", weekDetailFor:(d)=>`Woche vom ${d}`, pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt.",
+  de: { appSub:"Tierphysiotherapie & Osteopathie", loadErrorTitle:"Verbindung gestört", loadErrorText:"Die App kann gerade keine Verbindung zur Praxis herstellen. Deine Daten sind sicher — bitte versuche es in ein paar Minuten erneut.", loadErrorRetry:"Erneut versuchen", saveErrorToast:"Das konnte nicht gespeichert werden. Bitte erneut versuchen.", loadErrorToast:"Daten konnten nicht aktualisiert werden. Bitte später erneut versuchen.", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", navAdmin:"Admin", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", phaseFrom:(d)=>`ab ${d}`, phaseEnded:"Phase beendet", surveyCardTitle:(n)=>`Kurzer Check-up für ${n}`, surveyCardText:"13 kurze Fragen zur Beweglichkeit — ca. 3 Minuten. Hilft deiner Praxis, den Verlauf objektiv zu beurteilen.", surveyStart:"Jetzt ausfüllen", surveyTitle:"Mobilitäts-Check", surveyIntro:"Denke an die letzten 2 Wochen. 0 = gar nicht, 4 = sehr stark.", surveySubmit:"Absenden", surveyThanks:"Danke! Check-up gespeichert.", surveyProgress:(a,b)=>`${a} von ${b} beantwortet`, surveyPrevAnswer:(v,lab)=>`Beim letzten Mal: ${v} – ${lab}`, surveyPrevIntro:(d)=>`Dein letzter Check-up war am ${d}. Deine vorherigen Antworten siehst du zum Vergleich unter jeder Frage.`, markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", tabKnowledge:"Wissen", knowledgeHeading:(n)=>`Wissenswertes für ${n}`, tabVerlauf:"Verlauf", verlaufHeading:(n)=>`${n}s Verlauf`, verlaufWeeksLabel:"Letzte 8 Wochen", verlaufSummary:(p)=>`In den letzten 8 Wochen wurden ${p}% der Übungen erledigt.`, verlaufNoData:"Hier erscheint der Verlauf, sobald die ersten Übungen abgehakt wurden.", tapWeekHint:"Woche antippen für Details", weekDetailCurrent:"Diese Woche im Detail", weekDetailFor:(d)=>`Woche vom ${d}`, pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt.",
     plans:"Behandlungspläne", noPlans:"Noch keine Behandlungspläne erstellt.", noTemplates:"Noch keine Übungsvorlagen erstellt.", newExercise:"Neue Übung erstellen", editExercise:"Übung bearbeiten", addExercise:"Übung hinzufügen", printPlan:"Übungsplan drucken", searchPatient:"Patient suchen & auswählen", unknownExercise:"Unbekannte Übung", reminderActive:"Täglich aktiv — nur bei offenen Übungen", reminderInactive:"Erinnert dich täglich an deine Übungen", deleteAccount:"Konto löschen", deleteAccountConfirm:"Konto unwiderruflich löschen", deleting:"Wird gelöscht...", deleteWord:"LÖSCHEN", pwSecurityHint:"Aus Sicherheitsgründen bitte ein eigenes Passwort vergeben.", changePw:"Bitte Passwort ändern", feedbackPlaceholder:"Dein Feedback...", feedbackTitle:"Feedback geben", feedbackSub:"Dein Feedback hilft dabei die App weiterzuentwickeln.", feedbackSend:"Feedback senden", deleteAccountWarningTitle:"Achtung – diese Aktion ist unwiderruflich", deleteAccountWarningText:"Dein Konto und alle damit verbundenen Daten werden dauerhaft gelöscht. Deine Therapiedaten bleiben bei deiner Therapeutin erhalten.", deleteConfirmLabel:(word)=>`Zur Bestätigung "${word}" eingeben`,
     alertPwMin:"Passwort muss mindestens 6 Zeichen haben.", alertAddHomescreen:"Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.", alertNoPush:"Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.", alertPushBlocked:"Benachrichtigungen sind blockiert. Bitte erlaube sie in den Geräte-Einstellungen (Android: Apps → FitFunDog → Benachrichtigungen | iPhone: Einstellungen → Mitteilungen → FitFunDog).", alertDeleteFail:"Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter info@fit-fun-dog.de zur manuellen Löschung.",
     noAccount:"Kein Konto? Bitte wende dich an deine Therapeutin.", forgotPw:"Passwort vergessen?", resetSent:"Reset-Email gesendet – bitte Postfach prüfen.", adminTitle:"Admin", adminSub:"Einstellungen & App-Verwaltung", legalTitle:"Rechtliches", feedbackAppTitle:"Feedback zur App", feedbackAppSub:"Direkt an die Entwicklerin senden.",
@@ -411,7 +411,7 @@ const T = {
     categories:["Regeneration","Balance","Kräftigung","Koordination","Mobilisation"],
     targetRegions:["Ganzer Körper","Hinterhand","Vorderhand","Rumpf","Vorderpfoten","Rücken"],
     difficulties:["Leicht","Mittel","Schwer"] },
-  en: { appSub:"Animal Physiotherapy & Osteopathy", loadErrorTitle:"Connection problem", loadErrorText:"The app can't connect to the practice right now. Your data is safe — please try again in a few minutes.", loadErrorRetry:"Try again", loadErrorToast:"Data could not be refreshed. Please try again later.", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", navAdmin:"Admin", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", phaseFrom:(d)=>`from ${d}`, phaseEnded:"Phase ended", surveyCardTitle:(n)=>`Quick check-up for ${n}`, surveyCardText:"13 short questions about mobility — approx. 3 minutes. Helps your practice track progress objectively.", surveyStart:"Start now", surveyTitle:"Mobility Check", surveyIntro:"Think about the last 2 weeks. 0 = not at all, 4 = very severe.", surveySubmit:"Submit", surveyThanks:"Thanks! Check-up saved.", surveyProgress:(a,b)=>`${a} of ${b} answered`, surveyPrevAnswer:(v,lab)=>`Last time: ${v} – ${lab}`, surveyPrevIntro:(d)=>`Your last check-up was on ${d}. Your previous answers are shown under each question for comparison.`, markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", tabKnowledge:"Knowledge", knowledgeHeading:(n)=>`Worth knowing for ${n}`, tabVerlauf:"History", verlaufHeading:(n)=>`${n}'s History`, verlaufWeeksLabel:"Last 8 weeks", verlaufSummary:(p)=>`${p}% of exercises were completed over the last 8 weeks.`, verlaufNoData:"History will appear here once the first exercises are checked off.", tapWeekHint:"Tap a week for details", weekDetailCurrent:"This week in detail", weekDetailFor:(d)=>`Week of ${d}`, pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress.",
+  en: { appSub:"Animal Physiotherapy & Osteopathy", loadErrorTitle:"Connection problem", loadErrorText:"The app can't connect to the practice right now. Your data is safe — please try again in a few minutes.", loadErrorRetry:"Try again", saveErrorToast:"That could not be saved. Please try again.", loadErrorToast:"Data could not be refreshed. Please try again later.", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", navAdmin:"Admin", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", phaseFrom:(d)=>`from ${d}`, phaseEnded:"Phase ended", surveyCardTitle:(n)=>`Quick check-up for ${n}`, surveyCardText:"13 short questions about mobility — approx. 3 minutes. Helps your practice track progress objectively.", surveyStart:"Start now", surveyTitle:"Mobility Check", surveyIntro:"Think about the last 2 weeks. 0 = not at all, 4 = very severe.", surveySubmit:"Submit", surveyThanks:"Thanks! Check-up saved.", surveyProgress:(a,b)=>`${a} of ${b} answered`, surveyPrevAnswer:(v,lab)=>`Last time: ${v} – ${lab}`, surveyPrevIntro:(d)=>`Your last check-up was on ${d}. Your previous answers are shown under each question for comparison.`, markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", tabKnowledge:"Knowledge", knowledgeHeading:(n)=>`Worth knowing for ${n}`, tabVerlauf:"History", verlaufHeading:(n)=>`${n}'s History`, verlaufWeeksLabel:"Last 8 weeks", verlaufSummary:(p)=>`${p}% of exercises were completed over the last 8 weeks.`, verlaufNoData:"History will appear here once the first exercises are checked off.", tapWeekHint:"Tap a week for details", weekDetailCurrent:"This week in detail", weekDetailFor:(d)=>`Week of ${d}`, pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress.",
     plans:"Treatment Plans", noPlans:"No treatment plans created yet.", noTemplates:"No exercise templates created yet.", newExercise:"New exercise", editExercise:"Edit exercise", addExercise:"Add exercise", printPlan:"Print plan", searchPatient:"Search & select patient", unknownExercise:"Unknown exercise", reminderActive:"Active daily — only when exercises are open", reminderInactive:"Reminds you daily of your exercises", deleteAccount:"Delete account", deleteAccountConfirm:"Permanently delete account", deleting:"Deleting...", deleteWord:"DELETE", pwSecurityHint:"For security reasons please set your own password.", changePw:"Please change password", feedbackPlaceholder:"Your feedback...", feedbackTitle:"Give feedback", feedbackSub:"Your feedback helps improve the app.", feedbackSend:"Send feedback", deleteAccountWarningTitle:"Warning – this action is irreversible", deleteAccountWarningText:"Your account and all associated data will be permanently deleted. Your therapy data will remain with your therapist.", deleteConfirmLabel:(word)=>`Type "${word}" to confirm`,
     alertPwMin:"Password must be at least 6 characters.", alertAddHomescreen:"Please add the app to your home screen first (Safari → Share → Add to Home Screen). Then open the app via the home screen icon and activate reminders again.", alertNoPush:"Your browser does not support push notifications. Please use Safari on iOS 16.4+ or Chrome on Android.", alertPushBlocked:"Notifications are blocked. Please allow them in your device settings (Android: Apps → FitFunDog → Notifications | iPhone: Settings → Notifications → FitFunDog).", alertDeleteFail:"Your account cannot be deleted automatically. Please contact your therapist at info@fit-fun-dog.de for manual deletion.",
     noAccount:"No account? Please contact your therapist.", forgotPw:"Forgot password?", resetSent:"Reset email sent – please check your inbox.", adminTitle:"Admin", adminSub:"Settings & App management", legalTitle:"Legal", feedbackAppTitle:"App feedback", feedbackAppSub:"Send directly to the developer.",
@@ -425,7 +425,7 @@ const T = {
     categories:["Regeneration","Balance","Strengthening","Coordination","Mobilisation"],
     targetRegions:["Whole body","Hindquarters","Forequarters","Core","Front paws","Back"],
     difficulties:["Easy","Medium","Hard"] },
-  es: { appSub:"Fisioterapia & Osteopatía Animal", loadErrorTitle:"Problema de conexión", loadErrorText:"La app no puede conectarse con la clínica en este momento. Tus datos están seguros — inténtalo de nuevo en unos minutos.", loadErrorRetry:"Reintentar", loadErrorToast:"No se pudieron actualizar los datos. Inténtalo más tarde.", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", navAdmin:"Admin", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", phaseFrom:(d)=>`desde ${d}`, phaseEnded:"Fase finalizada", surveyCardTitle:(n)=>`Chequeo rápido para ${n}`, surveyCardText:"13 preguntas breves sobre movilidad — aprox. 3 minutos. Ayuda a tu clínica a evaluar el progreso objetivamente.", surveyStart:"Empezar", surveyTitle:"Chequeo de movilidad", surveyIntro:"Piensa en las últimas 2 semanas. 0 = nada, 4 = muy fuerte.", surveySubmit:"Enviar", surveyThanks:"¡Gracias! Chequeo guardado.", surveyProgress:(a,b)=>`${a} de ${b} respondidas`, surveyPrevAnswer:(v,lab)=>`La última vez: ${v} – ${lab}`, surveyPrevIntro:(d)=>`Tu último chequeo fue el ${d}. Tus respuestas anteriores se muestran bajo cada pregunta para comparar.`, markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes para el entrenamiento", tabTips:"Consejos", tabPause:"Descanso", tabKnowledge:"Saber", knowledgeHeading:(n)=>`Información para ${n}`, tabVerlauf:"Historial", verlaufHeading:(n)=>`Historial de ${n}`, verlaufWeeksLabel:"Últimas 8 semanas", verlaufSummary:(p)=>`En las últimas 8 semanas se completó el ${p}% de los ejercicios.`, verlaufNoData:"El historial aparecerá aquí en cuanto se marquen los primeros ejercicios.", tapWeekHint:"Toca una semana para ver detalles", weekDetailCurrent:"Esta semana en detalle", weekDetailFor:(d)=>`Semana del ${d}`, pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento. Sin descanso suficiente, el sobreentrenamiento reemplaza al progreso.",
+  es: { appSub:"Fisioterapia & Osteopatía Animal", loadErrorTitle:"Problema de conexión", loadErrorText:"La app no puede conectarse con la clínica en este momento. Tus datos están seguros — inténtalo de nuevo en unos minutos.", loadErrorRetry:"Reintentar", saveErrorToast:"No se pudo guardar. Inténtalo de nuevo.", loadErrorToast:"No se pudieron actualizar los datos. Inténtalo más tarde.", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", navAdmin:"Admin", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", phaseFrom:(d)=>`desde ${d}`, phaseEnded:"Fase finalizada", surveyCardTitle:(n)=>`Chequeo rápido para ${n}`, surveyCardText:"13 preguntas breves sobre movilidad — aprox. 3 minutos. Ayuda a tu clínica a evaluar el progreso objetivamente.", surveyStart:"Empezar", surveyTitle:"Chequeo de movilidad", surveyIntro:"Piensa en las últimas 2 semanas. 0 = nada, 4 = muy fuerte.", surveySubmit:"Enviar", surveyThanks:"¡Gracias! Chequeo guardado.", surveyProgress:(a,b)=>`${a} de ${b} respondidas`, surveyPrevAnswer:(v,lab)=>`La última vez: ${v} – ${lab}`, surveyPrevIntro:(d)=>`Tu último chequeo fue el ${d}. Tus respuestas anteriores se muestran bajo cada pregunta para comparar.`, markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes para el entrenamiento", tabTips:"Consejos", tabPause:"Descanso", tabKnowledge:"Saber", knowledgeHeading:(n)=>`Información para ${n}`, tabVerlauf:"Historial", verlaufHeading:(n)=>`Historial de ${n}`, verlaufWeeksLabel:"Últimas 8 semanas", verlaufSummary:(p)=>`En las últimas 8 semanas se completó el ${p}% de los ejercicios.`, verlaufNoData:"El historial aparecerá aquí en cuanto se marquen los primeros ejercicios.", tapWeekHint:"Toca una semana para ver detalles", weekDetailCurrent:"Esta semana en detalle", weekDetailFor:(d)=>`Semana del ${d}`, pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento. Sin descanso suficiente, el sobreentrenamiento reemplaza al progreso.",
     plans:"Planes de tratamiento", noPlans:"Aún no hay planes de tratamiento.", noTemplates:"Aún no hay plantillas de ejercicios.", newExercise:"Nuevo ejercicio", editExercise:"Editar ejercicio", addExercise:"Añadir ejercicio", printPlan:"Imprimir plan", searchPatient:"Buscar y seleccionar paciente", unknownExercise:"Ejercicio desconocido", reminderActive:"Activo diariamente — solo si hay ejercicios pendientes", reminderInactive:"Te recuerda tus ejercicios cada día", deleteAccount:"Eliminar cuenta", deleteAccountConfirm:"Eliminar cuenta permanentemente", deleting:"Eliminando...", deleteWord:"ELIMINAR", pwSecurityHint:"Por seguridad, establece tu propia contraseña.", changePw:"Por favor cambia la contraseña", feedbackPlaceholder:"Tu comentario...", feedbackTitle:"Dar feedback", feedbackSub:"Tu feedback ayuda a mejorar la app.", feedbackSend:"Enviar feedback", deleteAccountWarningTitle:"Atención – esta acción es irreversible", deleteAccountWarningText:"Tu cuenta y todos los datos asociados serán eliminados permanentemente. Tus datos de terapia permanecerán con tu terapeuta.", deleteConfirmLabel:(word)=>`Escribe "${word}" para confirmar`,
     alertPwMin:"La contraseña debe tener al menos 6 caracteres.", alertAddHomescreen:"Por favor añade primero la app a tu pantalla de inicio (Safari → Compartir → Añadir a pantalla de inicio). Luego abre la app desde el icono y activa los recordatorios.", alertNoPush:"Tu navegador no admite notificaciones push. Usa Safari en iOS 16.4+ o Chrome en Android.", alertPushBlocked:"Las notificaciones están bloqueadas. Actívalas en los ajustes del dispositivo (Android: Apps → FitFunDog → Notificaciones | iPhone: Ajustes → Notificaciones → FitFunDog).", alertDeleteFail:"Tu cuenta no puede eliminarse automáticamente. Contacta a tu terapeuta en info@fit-fun-dog.de para la eliminación manual.",
     noAccount:"¿Sin cuenta? Contacta a tu terapeuta.", forgotPw:"¿Olvidaste tu contraseña?", resetSent:"Email enviado – revisa tu bandeja de entrada.", adminTitle:"Admin", adminSub:"Ajustes y gestión de la app", legalTitle:"Legal", feedbackAppTitle:"Feedback de la app", feedbackAppSub:"Enviar directamente a la desarrolladora.",
@@ -1226,22 +1226,40 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const getDoneCountThisWeek=(eid)=>doneLogs.filter(l=>l.exercise_id===eid&&l.done_date>=weekStart).length;
   const isFullyDone=(ex)=>getDoneCountThisWeek(ex.id)>=(ex.repeat_count||1);
 
-  const toggleRepeat=async(eid,repeatCount)=>{
+  // Abhaken (seit 084): mode "add" setzt einen Haken, "remove" nimmt genau einen zurück, "reset" leert die Woche.
+  // Ohne mode: altes Verhalten (add, bei voller Übung reset). Pro Übung läuft nur eine Anfrage gleichzeitig –
+  // schnelles Doppeltippen kann so nicht mehr Haken speichern als vorgesehen.
+  const toggleBusy=useRef(new Set());
+  const toggleRepeat=async(eid,repeatCount,mode)=>{
     const _ex=exercises.find(e=>e.id===eid);
     if(_ex&&exPhase(_ex)!=="active")return; // upcoming/beendete Phasen nicht abhakbar (seit 064)
-    const today=todayLocalStr(),weekStart=mondayStrOf(new Date()); // frisch je Tipp (seit 083)
-    const currentCount=doneLogs.filter(l=>l.exercise_id===eid&&l.done_date>=weekStart).length;
-    const maxCount=repeatCount||1;
-    if(currentCount<maxCount){
-      // Add one log for today
-      const{data}=await supabase.from("exercise_logs").insert({exercise_id:eid,done_date:today,done:true}).select().single();
-      if(data){setDoneLogs(prev=>[...prev,data]);setHistoryLogs(prev=>[...prev,{exercise_id:eid,done_date:data.done_date}]);} // Verlauf sofort mitziehen (seit 083)
-    } else {
-      // Remove all logs for this week (reset)
-      await supabase.from("exercise_logs").delete().eq("exercise_id",eid).gte("done_date",weekStart).lte("done_date",today);
-      setDoneLogs(prev=>prev.filter(l=>l.exercise_id!==eid));
-      setHistoryLogs(prev=>prev.filter(l=>!(l.exercise_id===eid&&l.done_date>=weekStart)));
-    }
+    if(toggleBusy.current.has(eid))return;
+    toggleBusy.current.add(eid);
+    try{
+      const today=todayLocalStr(),weekStart=mondayStrOf(new Date()); // frisch je Tipp (seit 083)
+      const weekLogs=doneLogs.filter(l=>l.exercise_id===eid&&l.done_date>=weekStart);
+      const maxCount=repeatCount||1;
+      const action=mode||(weekLogs.length<maxCount?"add":"reset");
+      if(action==="add"){
+        if(weekLogs.length>=maxCount)return;
+        const{data,error}=await supabase.from("exercise_logs").insert({exercise_id:eid,done_date:today,done:true}).select().single();
+        if(error||!data){showToast("error",t.saveErrorToast);return;}
+        setDoneLogs(prev=>[...prev,data]);
+        setHistoryLogs(prev=>[...prev,{exercise_id:eid,done_date:data.done_date}]); // Verlauf sofort mitziehen (seit 083)
+      } else if(action==="remove"){
+        const last=[...weekLogs].sort((x,y)=>(x.done_date<y.done_date?1:-1))[0];
+        if(!last)return;
+        const{error}=await supabase.from("exercise_logs").delete().eq("id",last.id);
+        if(error){showToast("error",t.saveErrorToast);return;}
+        setDoneLogs(prev=>prev.filter(l=>l.id!==last.id));
+        setHistoryLogs(prev=>{const i=prev.findIndex(l=>l.exercise_id===eid&&l.done_date===last.done_date);return i<0?prev:[...prev.slice(0,i),...prev.slice(i+1)];});
+      } else {
+        const{error}=await supabase.from("exercise_logs").delete().eq("exercise_id",eid).gte("done_date",weekStart).lte("done_date",today);
+        if(error){showToast("error",t.saveErrorToast);return;}
+        setDoneLogs(prev=>prev.filter(l=>l.exercise_id!==eid));
+        setHistoryLogs(prev=>prev.filter(l=>!(l.exercise_id===eid&&l.done_date>=weekStart)));
+      }
+    }finally{toggleBusy.current.delete(eid);}
   };
 
   const changePassword=async()=>{
@@ -1284,10 +1302,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       const reg=await navigator.serviceWorker.ready;
       const sub=await reg.pushManager.getSubscription();
       if(sub){
-        setPushEnabled(true);
-        const{data}=await supabase.from("push_subscriptions").select("reminder_time").eq("endpoint",sub.endpoint).maybeSingle();
+        // Aktiv nur, wenn dieses Gerät auch serverseitig angemeldet ist (seit 084) – sonst zeigte die App "aktiv", obwohl nichts ankommt
+        const{data,error}=await supabase.from("push_subscriptions").select("reminder_time").eq("endpoint",sub.endpoint).maybeSingle();
+        if(error)return;
+        setPushEnabled(!!data);
         if(data?.reminder_time)setPushTime(data.reminder_time.substring(0,5));
-      }
+      } else setPushEnabled(false);
     }catch(e){console.error("checkPushStatus error",e);}
   };
 
@@ -1320,18 +1340,20 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         setPushLoading(false);
         return;
       }
-      // Zuerst alle alten Subscriptions dieses Users löschen (verhindert Duplikate)
-      await supabase.from("push_subscriptions").delete().eq("user_id",session.user.id);
-      // Bestehende SW-Subscription aufräumen
+      // Nur die alte Anmeldung DIESES Geräts ersetzen – andere Geräte desselben Users bleiben angemeldet (seit 084)
       const existing=await reg.pushManager.getSubscription();
-      if(existing)await existing.unsubscribe();
+      if(existing){
+        await supabase.from("push_subscriptions").delete().eq("user_id",session.user.id).eq("endpoint",existing.endpoint);
+        await existing.unsubscribe();
+      }
       // Neue Subscription erstellen
       const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)});
       const{endpoint,keys}=sub.toJSON();
-      await supabase.from("push_subscriptions").insert({
+      const{error:subErr}=await supabase.from("push_subscriptions").upsert({
         user_id:session.user.id,endpoint,p256dh:keys.p256dh,auth:keys.auth,
         reminder_time:pushTime,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone
-      });
+      },{onConflict:"user_id,endpoint"});
+      if(subErr){await sub.unsubscribe().catch(()=>{});throw subErr;}
       setPushEnabled(true);
     }catch(e){
       console.error("enablePush error",e);
@@ -1343,13 +1365,14 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const disablePush=async()=>{
     setPushLoading(true);
     try{
-      // Alle Subscriptions dieses Users aus DB löschen
-      await supabase.from("push_subscriptions").delete().eq("user_id",session.user.id);
-      // SW-Subscription aufräumen
+      // Nur dieses Gerät abmelden – andere Geräte desselben Users behalten ihre Erinnerungen (seit 084)
       if("serviceWorker" in navigator){
         const reg=await navigator.serviceWorker.ready;
         const sub=await reg.pushManager.getSubscription();
-        if(sub)await sub.unsubscribe();
+        if(sub){
+          await supabase.from("push_subscriptions").delete().eq("user_id",session.user.id).eq("endpoint",sub.endpoint);
+          await sub.unsubscribe();
+        }
       }
     }catch(e){console.error("disablePush error",e);}
     setPushEnabled(false);
@@ -1804,10 +1827,13 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     window.location.href=`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
+  // Rückmeldungen (seit 084): jede Meldung ist ein eigener Eintrag mit Datum – so entsteht ein echter Schmerzverlauf.
+  // Nur eine Meldung vom selben Tag wird korrigiert statt verdoppelt.
+  const getTodaysFeedback=(eid)=>{const f=feedbacks.find(x=>x.exercise_id===eid);return f&&localDateStr(new Date(f.created_at))===todayLocalStr()?f:null;};
   const saveFeedback=async()=>{
     if(!feedbackSheet||feedbackPain===0)return;
     setSaving(true);
-    const existing=getLatestFeedback(feedbackSheet.id);
+    const existing=getTodaysFeedback(feedbackSheet.id);
     let data,error;
     if(existing){
       ({data,error}=await supabase.from("exercise_feedback").update({
@@ -1822,6 +1848,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       if(!error&&data)setFeedbacks(prev=>[data,...prev]);
     }
     setSaving(false);
+    if(error||!data){showToast("error",t.saveErrorToast);return;} // Sheet bleibt offen, Eingabe geht nicht verloren
     setFeedbackSheet(null);setFeedbackPain(0);setFeedbackComment("");
   };
 
@@ -2211,7 +2238,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                             {Array.from({length:rc}).map((_,i)=>{
                               const checked=i<doneNow;
                               return(
-                                <button key={i} className="repeat-box" onClick={e=>{e.stopPropagation();toggleRepeat(ex.id,rc);}}
+                                <button key={i} className="repeat-box" onClick={e=>{e.stopPropagation();toggleRepeat(ex.id,rc,checked?"remove":"add");}}
                                   style={{borderColor:checked?BRAND:BORDER,background:checked?BRAND:"white",width:28,height:28,cursor:phase==="active"?"pointer":"default",opacity:phase==="active"?1:0.45}}>
                                   {checked&&<Icon name="check" size={13} color="white"/>}
                                 </button>
@@ -2222,7 +2249,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                         </div>
                         {/* Feedback button + latest feedback indicator */}
                         <div style={{display:"flex",alignItems:"center",gap:6,marginTop:7}} onClick={e=>e.stopPropagation()}>
-                          <button className="btn" onClick={e=>{e.stopPropagation();const fb=getLatestFeedback(ex.id);setFeedbackSheet(ex);setFeedbackPain(fb?.pain_level||0);setFeedbackComment(fb?.comment||"");}}
+                          <button className="btn" onClick={e=>{e.stopPropagation();const fb=getTodaysFeedback(ex.id);setFeedbackSheet(ex);setFeedbackPain(fb?.pain_level||0);setFeedbackComment(fb?.comment||"");}}
                             style={{display:"flex",alignItems:"center",gap:4,background:LIGHT,borderRadius:8,padding:"4px 10px",fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:600,color:MUTED,border:`1px solid ${BORDER}`}}>
                             <Icon name="info" size={12} color={MUTED}/> {t.reportSymptom}
                           </button>
@@ -2968,7 +2995,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 </div>
               </div>
             )}
-            {view==="owner"&&(()=>{
+            {view==="owner"&&exPhase(selectedExercise)!=="active"&&(
+              <div style={{background:LIGHT,borderRadius:12,padding:"13px 14px",textAlign:"center",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:MUTED}}>
+                {exPhase(selectedExercise)==="upcoming"?t.phaseFrom(fmtShortDate(selectedExercise.active_from)):t.phaseEnded}
+              </div>
+            )}
+            {view==="owner"&&exPhase(selectedExercise)==="active"&&(()=>{
               const rc=selectedExercise.repeat_count||1;
               const doneNow=getDoneCountThisWeek(selectedExercise.id);
               const fullyDone=doneNow>=rc;
@@ -2978,14 +3010,14 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     {Array.from({length:rc}).map((_,i)=>{
                       const checked=i<doneNow;
                       return(
-                        <button key={i} className="repeat-box" onClick={()=>toggleRepeat(selectedExercise.id,rc)}
+                        <button key={i} className="repeat-box" onClick={()=>toggleRepeat(selectedExercise.id,rc,checked?"remove":"add")}
                           style={{borderColor:checked?BRAND:BORDER,background:checked?BRAND:"white",width:36,height:36,borderRadius:10}}>
                           {checked&&<Icon name="check" size={18} color="white"/>}
                         </button>
                       );
                     })}
                   </div>
-                  <button className="btn" onClick={()=>{toggleRepeat(selectedExercise.id,rc);if(doneNow+1>=rc)setSelectedExercise(null);}} style={{width:"100%",padding:"14px",borderRadius:12,background:fullyDone?LIGHT:BRAND,color:fullyDone?MUTED:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+                  <button className="btn" onClick={()=>{toggleRepeat(selectedExercise.id,rc,fullyDone?"reset":"add");if(doneNow+1>=rc)setSelectedExercise(null);}} style={{width:"100%",padding:"14px",borderRadius:12,background:fullyDone?LIGHT:BRAND,color:fullyDone?MUTED:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                     {fullyDone?t.markUndone:`${t.markDone} (${doneNow+1<rc?doneNow+1:rc}/${rc})`}
                   </button>
                 </div>
