@@ -535,7 +535,7 @@ const LoginScreen = ({practice,onLogin}) => {
         <div style={{textAlign:"center",marginTop:14}}>
           {resetSent
             ?<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.8)"}}>✓ Reset-Email gesendet – bitte Postfach prüfen.</div>
-            :<button onClick={async()=>{if(!email){setError("Bitte zuerst Email eingeben.");return;}setError("");const{error:rErr}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});if(rErr){setError("Reset-Email konnte nicht gesendet werden. Bitte später erneut versuchen.");return;}setResetSent(true);}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.65)",textDecoration:"underline",padding:0}}>Passwort vergessen?</button>
+            :<button onClick={async()=>{if(!email){setError("Bitte zuerst Email eingeben.");return;}setError("");const{error:rErr}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+"/"});if(rErr){setError("Reset-Email konnte nicht gesendet werden. Bitte später erneut versuchen.");return;}setResetSent(true);}} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.65)",textDecoration:"underline",padding:0}}>Passwort vergessen?</button>
           }
         </div>
         <div style={{textAlign:"center",marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:12,color:"rgba(255,255,255,0.45)"}}>Kein Konto? Bitte wende dich an deine Therapeutin.</div>
@@ -1453,7 +1453,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
   const sendPasswordReset=async(email)=>{
     if(!email)return;
-    const{error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin});
+    const{error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+"/"});
     if(error){showToast("error","Reset-Email konnte nicht gesendet werden: "+error.message);return;}
     setResetEmailSent(true);
   };
