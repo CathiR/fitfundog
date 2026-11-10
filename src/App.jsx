@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-10-084";
+const APP_VERSION = "2026-11-10-085";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -945,7 +945,7 @@ export default function App() {
       setPlanTemplateExercises(pte||[]);
 
       // Mail-Vorlage laden
-      const{data:settingsDataFinal}=await supabase.from("settings").select("value").eq("key","plan_mail_template").maybeSingle();
+      const{data:settingsDataFinal}=await supabase.from("settings").select("value").eq("key","plan_mail_template").eq("practice_id",practiceId).maybeSingle();
       if(settingsDataFinal?.value){
         try{const parsed=JSON.parse(settingsDataFinal.value);setMailTemplate(parsed);}catch(e){}
       }
@@ -1000,6 +1000,16 @@ export default function App() {
         videoQRs[ex.id] = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&color=${DARK.slice(1)}&bgcolor=ffffff&data=${encodeURIComponent(ex.video_url)}`;
       }
     }
+
+    // Footer je Praxis (seit 085): FFD nutzt die festen QR-Codes, andere Praxen bekommen ihre eigenen Adressen
+    const isFFD = PRACTICE_SLUG==="fitfundog";
+    const qrFor = (url) => `https://api.qrserver.com/v1/create-qr-code/?size=176x176&data=${encodeURIComponent(url)}`;
+    const appUrl = practice.app_url || window.location.origin;
+    const appQrSrc = isFFD ? APP_QR : qrFor(appUrl);
+    const bookingQrSrc = isFFD ? BOOKING_QR : (practice.booking_url ? qrFor(practice.booking_url) : "");
+    const footerCredit = isFFD
+      ? `Made with Love by Claudia<br/><a href="https://fitfundog.vercel.app/" target="_blank" style="color:${MID};text-decoration:none">Fit Fun Dog</a>`
+      : `<a href="${appUrl}" target="_blank" style="color:${MID};text-decoration:none">${practice.practice_name||""}</a>`;
 
     const html = `<!DOCTYPE html>
 <html lang="de">
@@ -1134,18 +1144,18 @@ ${patExercises.map((ex) => `
   <div class="footer-col" style="text-align:center;padding:0 40px">
     <div class="footer-col-label">A P P</div>
     <div class="qr-box">
-      <img class="qr-img" src="${APP_QR}" alt="App QR"/>
+      <img class="qr-img" src="${appQrSrc}" alt="App QR"/>
     </div>
   </div>
-  <div class="footer-col" style="text-align:center;padding:0 40px;border-left:1px solid #f0f0f0;border-right:1px solid #f0f0f0">
-    <div style="font-size:10px;color:#aaa;line-height:1.6">Made with Love by Claudia<br/><a href="https://fitfundog.vercel.app/" target="_blank" style="color:${MID};text-decoration:none">Fit Fun Dog</a></div>
+  <div class="footer-col" style="text-align:center;padding:0 40px;border-left:1px solid #f0f0f0;${bookingQrSrc?"border-right:1px solid #f0f0f0":""}">
+    <div style="font-size:10px;color:#aaa;line-height:1.6">${footerCredit}</div>
   </div>
-  <div class="footer-col" style="text-align:center;padding:0 40px">
+  ${bookingQrSrc?`<div class="footer-col" style="text-align:center;padding:0 40px">
     <div class="footer-col-label">${lang==="en"?"B O O K &nbsp; A P P O I N T M E N T":lang==="es"?"R E S E R V A R &nbsp; C I T A":"T E R M I N &nbsp; B U C H E N"}</div>
     <div class="qr-box">
-      <img class="qr-img" src="${BOOKING_QR}" alt="Termin QR"/>
+      <img class="qr-img" src="${bookingQrSrc}" alt="Termin QR"/>
     </div>
-  </div>
+  </div>`:""}
 </div>
 
 <div class="print-footer"><span>${PRACTICE_SLUG==="fitfundog"?"Fit Fun Dog · Tierphysiotherapie &amp; Osteopathie · www.fit-fun-dog.de":practice.practice_name+" · "+(practice.practice_subtitle||"")+" · "+(practice.website_url||"").replace(/^https?:\/\//,"")}</span><span>${PRACTICE_SLUG==="fitfundog"?"info@fit-fun-dog.de · 0159 / 04976681":(practice.contact_email||"")+(practice.contact_phone?" · "+practice.contact_phone:"")}</span></div>
@@ -1171,7 +1181,7 @@ ${patExercises.map((ex) => `
     const html = `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"/><title>Behandlungsplan: ${plan.title}</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;600;700&display=swap" rel="stylesheet"/>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:"DM Sans",sans-serif;color:#102828;background:white;padding:24px 40px;font-size:13px}.header{text-align:center;padding-bottom:12px;margin-bottom:16px;border-bottom:1px solid #e0e0e0}.brand-name{font-size:22px;font-weight:700;letter-spacing:6px;color:#102828;margin-bottom:4px}.brand-sub{font-size:10px;letter-spacing:3px;color:#555;text-transform:uppercase}.plan-header{margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #e8e8e8}.plan-title{font-family:"Playfair Display",serif;font-size:22px;font-weight:700;color:${DARK};margin-bottom:4px}.plan-note{font-size:13px;color:#555;margin-top:4px;font-style:italic}.plan-meta{font-size:10px;color:#aaa;margin-top:6px;letter-spacing:1px}.section-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#aaa;margin-bottom:12px}.exercise{display:flex;gap:14px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f0f0f0;page-break-inside:avoid}.exercise:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}.ex-img{width:72px;height:72px;border-radius:8px;object-fit:contain;background:#f7fbfb;flex-shrink:0;border:1px solid #e8f5f5;padding:3px}.ex-img-placeholder{width:72px;height:72px;border-radius:8px;background:#f7fbfb;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid #e8f5f5}.ex-body{flex:1;min-width:0}.ex-title{font-family:"Playfair Display",serif;font-size:14px;font-weight:700;color:#102828;margin-bottom:5px}.ex-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}.tag{font-size:9px;font-weight:600;padding:2px 8px;border-radius:20px;background:#f0f9f9;color:${MID}}.tag-freq{background:${DARK};color:white}.tag-diff-leicht{background:#e8f8f0;color:#2E7D32}.tag-diff-mittel{background:#fff3e0;color:#e65100}.tag-diff-schwer{background:#fde8e8;color:#c0392b}.ex-desc{font-size:11px;color:#444;line-height:1.6;margin-bottom:8px}.steps-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${MID};margin-bottom:7px}.step{display:flex;gap:8px;margin-bottom:4px;align-items:flex-start}.step-num{width:18px;height:18px;border-radius:50%;background:${BRAND};color:white;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}.step-text{font-size:11px;color:#333;line-height:1.5}.video-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 10px;background:#f7fbfb;border-radius:7px;border:1px solid #e0f0f0}.footer-divider{border:none;border-top:1px solid #e0e0e0;margin:14px 0 10px}.footer-note{font-size:10px;color:#aaa;text-align:center;line-height:1.7}@media print{body{padding:20px 28px}@page{margin:0.8cm}}</style></head><body>
-<div class="header"><div class="brand-name">F|T&nbsp;&nbsp;FUN&nbsp;&nbsp;DOG</div><div class="brand-sub">P&nbsp;H&nbsp;Y&nbsp;S&nbsp;I&nbsp;O&nbsp;T&nbsp;H&nbsp;E&nbsp;R&nbsp;A&nbsp;P&nbsp;I&nbsp;E&nbsp;&nbsp;&amp;&nbsp;&nbsp;O&nbsp;S&nbsp;T&nbsp;E&nbsp;O&nbsp;P&nbsp;A&nbsp;T&nbsp;H&nbsp;I&nbsp;E</div></div>
+<div class="header">${PRACTICE_SLUG==="fitfundog"?`<div class="brand-name">F|T&nbsp;&nbsp;FUN&nbsp;&nbsp;DOG</div><div class="brand-sub">P&nbsp;H&nbsp;Y&nbsp;S&nbsp;I&nbsp;O&nbsp;T&nbsp;H&nbsp;E&nbsp;R&nbsp;A&nbsp;P&nbsp;I&nbsp;E&nbsp;&nbsp;&amp;&nbsp;&nbsp;O&nbsp;S&nbsp;T&nbsp;E&nbsp;O&nbsp;P&nbsp;A&nbsp;T&nbsp;H&nbsp;I&nbsp;E</div>`:`<div class="brand-name">${practice.practice_name||""}</div><div class="brand-sub">${practice.practice_subtitle||""}</div>`}</div>
 <div class="plan-header">
   <div class="plan-title">${plan.title}</div>
   ${plan.note?`<div class="plan-note">${plan.note}</div>`:""}
@@ -1449,6 +1459,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         const{data:ps2}=await supabase.from("practice_settings").select("id").eq("slug",PRACTICE_SLUG).maybeSingle();
         if(ps2?.id)await supabase.from("user_invitations").insert({user_id:fields.user_id,practice_id:ps2.id});
       }
+    } else if(editAccountMode==="none"){
+      fields.user_id=null; // "Kein Login" trennt das Konto wirklich (seit 085)
     } else if(_newUserId!==undefined){
       fields.user_id=_newUserId||null;
     }
@@ -1613,10 +1625,18 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const deletePatient=async(pid)=>{
     setDeleting(pid);
     const pt=patients.find(p=>p.id===pid);
-    for(const ex of exForPatient(pid))await supabase.from("exercise_logs").delete().eq("exercise_id",ex.id);
-    await supabase.from("exercises").delete().eq("patient_id",pid);
-    await supabase.from("patients").delete().eq("id",pid);
-    if(pt?.user_id){
+    const exIds=exForPatient(pid).map(e=>e.id);
+    let err=null;
+    if(exIds.length)({error:err}=await supabase.from("exercise_logs").delete().in("exercise_id",exIds));
+    if(!err)({error:err}=await supabase.from("exercises").delete().eq("patient_id",pid));
+    if(!err){
+      const{data:gone,error:pErr}=await supabase.from("patients").delete().eq("id",pid).select("id");
+      err=pErr||((gone||[]).length===0?{message:"Patient konnte nicht gelöscht werden."}:null);
+    }
+    if(err){showToast("error","Fehler: "+err.message);setDeleting(null);return;} // nichts als gelöscht melden, was noch da ist (seit 085)
+    // Login nur entfernen, wenn kein weiterer Patient dasselbe Konto nutzt (seit 085) – sonst verliert der zweite Hund seinen Zugang
+    const sharesLogin=!!pt?.user_id&&patients.some(p=>p.id!==pid&&p.user_id===pt.user_id);
+    if(pt?.user_id&&!sharesLogin){
       await supabase.from("user_invitations").delete().eq("user_id",pt.user_id);
       const{error:delErr}=await supabase.functions.invoke("delete-user",{body:{user_id:pt.user_id}});
       if(delErr)console.warn("Auth-User konnte nicht gelöscht werden:",delErr.message);
@@ -1626,7 +1646,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     if(selectedPatient?.id===pid)setSelectedPatient(null);
     if(ownerPatient?.id===pid)setOwnerPatient(null);
     setDeleting(null);closeSheet();
-    showToast("success","Patient gelöscht");
+    showToast("success",sharesLogin?"Patient gelöscht – das Login bleibt für den weiteren Patienten bestehen":"Patient gelöscht");
   };
 
   const addExercise=async()=>{
@@ -1646,14 +1666,18 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       active_from:assignFrom||null,active_until:assignUntil||null,
       practice_id:practice.id
     }).select().single();
-    if(!error&&data){setExercises(prev=>[...prev,data]);setAssignFrom("");setAssignUntil("");}
-    setSaving(false);closeSheet();
+    setSaving(false);
+    if(error||!data){showToast("error","Fehler: "+(error?.message||"Übung konnte nicht zugewiesen werden."));return;} // Sheet bleibt offen (seit 085)
+    setExercises(prev=>[...prev,data]);setAssignFrom("");setAssignUntil("");
+    showToast("success","Übung zugewiesen");
+    closeSheet();
   };
 
   const deleteExercise=async(eid)=>{
     setDeleting(eid);
-    await supabase.from("exercise_logs").delete().eq("exercise_id",eid);
-    await supabase.from("exercises").delete().eq("id",eid);
+    let{error}=await supabase.from("exercise_logs").delete().eq("exercise_id",eid);
+    if(!error)({error}=await supabase.from("exercises").delete().eq("id",eid));
+    if(error){showToast("error","Fehler: "+error.message);setDeleting(null);return;}
     setExercises(prev=>prev.filter(e=>e.id!==eid));
     setDoneLogs(prev=>prev.filter(l=>l.exercise_id!==eid));
     setDeleting(null);closeSheet();setSelectedExercise(null);
@@ -1664,7 +1688,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     setSaving(true);
     const payload={...newTemplate,instructions:newTemplate.instructions.filter(Boolean),practice_id:practice.id};
     const{data,error}=await supabase.from("exercise_templates").insert(payload).select().single();
-    if(!error&&data){
+    if(error||!data){showToast("error","Fehler: "+(error?.message||"Übung konnte nicht gespeichert werden."));setSaving(false);return;} // Eingaben bleiben erhalten (seit 085)
+    {
       setTemplates(prev=>[...prev,data]);
       if(data.is_starter){
         const{data:allPractices}=await supabase.from("practice_settings").select("id,slug").neq("slug",practice.slug);
@@ -1675,10 +1700,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             image_url:data.image_url,video_url:data.video_url,is_starter:true,
             practice_id:pr.id
           }));
-          await supabase.from("exercise_templates").insert(copies);
+          const{error:copyErr}=await supabase.from("exercise_templates").insert(copies);
+          if(copyErr)showToast("error","Starter-Kopie für andere Praxen fehlgeschlagen: "+copyErr.message);
         }
       }
     }
+    showToast("success","Übung gespeichert");
     setSaving(false);setNewTemplate(EMPTY_TEMPLATE);closeSheet();
   };
 
@@ -1692,8 +1719,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       image_url:editTemplateData.image_url||null,video_url:editTemplateData.video_url||null,
       is_starter:!!editTemplateData.is_starter
     };
+    // Abgleich mit Altbeständen läuft über den Titel VOR der Änderung (seit 085) – sonst greift er nach einer Umbenennung nie
+    const origTitle=editTemplateData._origTitle||editTemplateData.title;
     const{data,error}=await supabase.from("exercise_templates").update(fields).eq("id",editTemplateData.id).select().single();
-    if(!error&&data){
+    if(error||!data){showToast("error","Fehler: "+(error?.message||"Übung konnte nicht gespeichert werden."));setSaving(false);return;}
+    {
       setTemplates(prev=>prev.map(t=>t.id===data.id?data:t));
       const updatePayload={
         title:fields.title,categories:fields.categories,target_regions:fields.target_regions,
@@ -1705,20 +1735,19 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       // 1+2. Patienten-Übungen dieser Praxis aktualisieren
       if(propagateTemplateUpdate){
         await supabase.from("exercises").update(updatePayload).eq("template_id",editTemplateData.id);
-        const{data:titleMatches}=await supabase.from("exercises").select("id").eq("practice_id",practice.id).eq("title",editTemplateData.title).is("template_id",null);
+        const{data:titleMatches}=await supabase.from("exercises").select("id").eq("practice_id",practice.id).eq("title",origTitle).is("template_id",null);
         if(titleMatches&&titleMatches.length>0){
           await supabase.from("exercises").update({...updatePayload,template_id:editTemplateData.id}).in("id",titleMatches.map(e=>e.id));
         }
       }
       // 3. Starter-Propagation zu anderen Praxen — unabhängig von propagateTemplateUpdate
-      console.log("[DEBUG] is_starter:", editTemplateData.is_starter, "propagateStarterUpdate:", propagateStarterUpdate);
       if(editTemplateData.is_starter&&propagateStarterUpdate){
-        const{data:otherTmpls,error:otherErr}=await supabase.from("exercise_templates").select("id,title").eq("is_starter",true).eq("title",editTemplateData.title).neq("id",editTemplateData.id);
-        console.log("[DEBUG] otherTmpls:", otherTmpls, "error:", otherErr);
+        const{data:otherTmpls,error:otherErr}=await supabase.from("exercise_templates").select("id,title").eq("is_starter",true).eq("title",origTitle).neq("id",editTemplateData.id);
+        if(otherErr)showToast("error","Starter-Abgleich fehlgeschlagen: "+otherErr.message);
         if(otherTmpls&&otherTmpls.length>0){
           for(const ot of otherTmpls){
             const{error:updErr}=await supabase.from("exercise_templates").update(fields).eq("id",ot.id);
-            console.log("[DEBUG] update template", ot.id, "error:", updErr);
+            if(updErr){showToast("error","Starter-Abgleich fehlgeschlagen: "+updErr.message);continue;}
             await supabase.from("exercises").update(updatePayload).eq("template_id",ot.id);
             const{data:otherMatches}=await supabase.from("exercises").select("id").eq("title",ot.title).is("template_id",null);
             if(otherMatches&&otherMatches.length>0){
@@ -1731,13 +1760,16 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       const{data:ed}=await supabase.from("exercises").select("*").order("created_at");
       if(ed)setExercises(ed);
     }
+    showToast("success","Übung gespeichert");
     setSaving(false);setPropagateTemplateUpdate(true);setPropagateStarterUpdate(false);closeSheet();
   };
 
   const deleteTemplate=async(tid)=>{
     setDeleting(tid);
-    await supabase.from("exercise_templates").delete().eq("id",tid);
+    const{error}=await supabase.from("exercise_templates").delete().eq("id",tid);
+    if(error){showToast("error","Fehler: "+error.message);setDeleting(null);return;}
     setTemplates(prev=>prev.filter(t=>t.id!==tid));
+    setPlanTemplateExercises(prev=>prev.filter(pe=>pe.exercise_template_id!==tid)); // DB entfernt sie per Cascade aus Plänen
     setDeleting(null);closeSheet();
   };
 
@@ -1750,7 +1782,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     // insert exercises
     if(planExerciseDraft.length>0){
       const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:planData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,start_week:ex.start_week||null,end_week:ex.end_week||null,sort_order:i,practice_id:practice.id}));
-      await supabase.from("plan_template_exercises").insert(rows);
+      const{error:rowsErr}=await supabase.from("plan_template_exercises").insert(rows);
+      if(rowsErr)showToast("error","Plan angelegt, aber die Übungen konnten nicht gespeichert werden: "+rowsErr.message);
     }
     await loadAll(practice.admin_user_id||session?.user?.id);
     setSaving(false);setNewPlan(EMPTY_PLAN);setPlanExerciseDraft([]);setSelectedPlanTemplate(null);closeSheet();
@@ -1759,21 +1792,31 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const updatePlanTemplate=async()=>{
     if(!editPlanData?.title)return;
     setSaving(true);
-    await supabase.from("plan_templates").update({title:editPlanData.title,note:editPlanData.note||null}).eq("id",editPlanData.id);
-    // Replace exercises: delete old, insert new
-    await supabase.from("plan_template_exercises").delete().eq("plan_template_id",editPlanData.id);
+    const fail=(m)=>{showToast("error","Fehler: "+m);setSaving(false);};
+    const{error:pErr}=await supabase.from("plan_templates").update({title:editPlanData.title,note:editPlanData.note||null}).eq("id",editPlanData.id);
+    if(pErr)return fail(pErr.message);
+    // Übungen ersetzen (seit 085): erst die neuen anlegen, dann die alten löschen – scheitert das Anlegen, bleibt der Plan unverändert
+    const{data:oldRows,error:oErr}=await supabase.from("plan_template_exercises").select("id").eq("plan_template_id",editPlanData.id);
+    if(oErr)return fail(oErr.message);
     if(planExerciseDraft.length>0){
       const rows=planExerciseDraft.map((ex,i)=>({plan_template_id:editPlanData.id,exercise_template_id:ex.exercise_template_id,default_duration:ex.default_duration||"",default_repeat_count:ex.default_repeat_count||1,start_week:ex.start_week||null,end_week:ex.end_week||null,sort_order:i,practice_id:practice.id}));
-      await supabase.from("plan_template_exercises").insert(rows);
+      const{error:iErr}=await supabase.from("plan_template_exercises").insert(rows);
+      if(iErr)return fail(iErr.message);
+    }
+    if((oldRows||[]).length>0){
+      const{error:dErr}=await supabase.from("plan_template_exercises").delete().in("id",oldRows.map(r=>r.id));
+      if(dErr)showToast("error","Alte Plan-Übungen konnten nicht entfernt werden: "+dErr.message);
     }
     await loadAll(practice.admin_user_id||session?.user?.id);
+    showToast("success","Plan gespeichert");
     setSaving(false);setEditPlanData(null);setPlanExerciseDraft([]);setSelectedPlanTemplate(null);closeSheet();
   };
 
   const deletePlanTemplate=async(pid)=>{
     setDeleting(pid);
-    await supabase.from("plan_template_exercises").delete().eq("plan_template_id",pid);
-    await supabase.from("plan_templates").delete().eq("id",pid);
+    let{error}=await supabase.from("plan_template_exercises").delete().eq("plan_template_id",pid);
+    if(!error)({error}=await supabase.from("plan_templates").delete().eq("id",pid));
+    if(error){showToast("error","Fehler: "+error.message);setDeleting(null);return;}
     setPlanTemplates(prev=>prev.filter(p=>p.id!==pid));
     setPlanTemplateExercises(prev=>prev.filter(p=>p.plan_template_id!==pid));
     setDeleting(null);closeSheet();
@@ -1800,17 +1843,23 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       practice_id:practice.id
     }));
     const{data:newExercises,error}=await supabase.from("exercises").insert(rows).select();
-    if(!error&&newExercises){
-      setExercises(prev=>[...prev,...newExercises]);
-      setPlanAssignDone({patient:planAssignPatient,plan:planAssignState.plan});
-    }
+    if(error||!newExercises){showToast("error","Fehler: "+(error?.message||"Plan konnte nicht zugewiesen werden."));setSaving(false);return;}
+    setExercises(prev=>[...prev,...newExercises]);
+    setPlanAssignDone({patient:planAssignPatient,plan:planAssignState.plan});
     // Patient bleibt ausgewählt (Fix 065) — nur Plan-Auswahl + Startdatum zurücksetzen
     setSaving(false);setPlanAssignState(null);setPlanAssignStartDate(todayLocalStr());
   };
 
+  // Mail-Vorlage je Praxis (seit 085): gezielt die Zeile der eigenen Praxis ändern oder anlegen.
+  // Kein upsert auf "key" – das traf immer die eine gemeinsame Zeile, und andere Praxen konnten nie speichern.
   const saveMailTemplate=async()=>{
     setMailTemplateSaving(true);
-    await supabase.from("settings").upsert({key:"plan_mail_template",value:JSON.stringify(mailTemplate)});
+    const value=JSON.stringify(mailTemplate);
+    const{data:upd,error:uErr}=await supabase.from("settings").update({value}).eq("key","plan_mail_template").eq("practice_id",practice.id).select("key");
+    let error=uErr;
+    if(!error&&(upd||[]).length===0)({error}=await supabase.from("settings").insert({key:"plan_mail_template",value,practice_id:practice.id}));
+    if(error)showToast("error","Vorlage konnte nicht gespeichert werden: "+error.message);
+    else showToast("success","Vorlage gespeichert");
     setMailTemplateSaving(false);
   };
 
@@ -2427,7 +2476,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       </div>
                     </div>
                     <div style={{display:"flex",gap:5}} onClick={e=>e.stopPropagation()}>
-                      {(!tmpl.is_starter||practice.slug==="fitfundog")&&<button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setPropagateTemplateUpdate(true);setPropagateStarterUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>}
+                      {(!tmpl.is_starter||practice.slug==="fitfundog")&&<button className="iBtn" onClick={()=>{setEditTemplateData({...tmpl,_origTitle:tmpl.title,instructions:tmpl.instructions?.length?tmpl.instructions:[""]});setPropagateTemplateUpdate(true);setPropagateStarterUpdate(false);setSheet("editTemplate");}} style={{background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>}
                       {!tmpl.is_starter&&<button className="iBtn" title="Kopieren" onClick={()=>{setNewTemplate({title:"Kopie "+tmpl.title,categories:tmpl.categories||[],target_regions:tmpl.target_regions||[],difficulty:tmpl.difficulty||"Leicht",description:tmpl.description||"",instructions:tmpl.instructions?.length?[...tmpl.instructions]:[""],image_url:tmpl.image_url||"",video_url:tmpl.video_url||"",is_starter:false});setSheet("addTemplate");}} style={{background:BRAND+"10"}}><Icon name="copy" size={14} color={MID}/></button>}
                       <button className="iBtn" onClick={()=>{setSheetData(tmpl);setSheet("confirmDeleteTmpl");}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
                     </div>
@@ -2823,10 +2872,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               const c=deriveColors(practice.color_brand||BRAND);
               const saveData={...practice,color_dark:c.dark,color_mid:c.mid};
               const{admin_user_id,...fields}=saveData;
-              await supabase.from("practice_settings").update(fields).eq("admin_user_id",admin_user_id);
+              const{error:psSaveErr}=await supabase.from("practice_settings").update(fields).eq("admin_user_id",admin_user_id);
+              setPracticeSaving(false);
+              if(psSaveErr){showToast("error","Einstellungen konnten nicht gespeichert werden: "+psSaveErr.message);return;}
               applyColors(practice.color_brand||BRAND);
               difficultyColor=getDifficultyColor();
-              setPracticeSaving(false);
+              showToast("success","Einstellungen gespeichert");
             }} disabled={practiceSaving} style={{width:"100%",padding:"12px",borderRadius:12,background:practice.color_brand||BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
               <Icon name="check" size={16} color="#102828"/>{practiceSaving?"Wird gespeichert...": "Einstellungen speichern"}
             </button>
@@ -3363,7 +3414,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       {/* CONFIRM SHEETS */}
       {sheet==="confirmDeleteEx"&&sheetData&&(<div className="overlay"><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übung entfernen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft entfernt.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteExercise(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.remove}</button></div></div></div>)}
       {sheet==="confirmDeletePt"&&sheetData&&(<div className="overlay"><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Patient löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.name}</strong> und alle Übungen werden dauerhaft gelöscht.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deletePatient(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
-      {sheet==="confirmDeleteTmpl"&&sheetData&&(<div className="overlay"><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übungsvorlage löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird aus der Bibliothek gelöscht. Bereits zugewiesene Übungen bleiben erhalten.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
+      {sheet==="confirmDeleteTmpl"&&sheetData&&(<div className="overlay"><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Übungsvorlage löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird aus der Bibliothek gelöscht. Bereits zugewiesene Übungen bleiben erhalten.{(()=>{const n=new Set(planTemplateExercises.filter(pe=>pe.exercise_template_id===sheetData.id).map(pe=>pe.plan_template_id)).size;return n>0?` Sie wird außerdem aus ${n} Behandlungsplan${n!==1?"plänen":""} entfernt.`:"";})()}</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deleteTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
       {sheet==="confirmDeletePlan"&&sheetData&&(<div className="overlay"><div className="sheet" onClick={e=>e.stopPropagation()}><div style={{display:"flex",justifyContent:"center",marginBottom:12}}><Icon name="trash" size={40} color="#C0392B"/></div><div style={{fontFamily:"'Playfair Display',serif",fontSize:19,fontWeight:700,marginBottom:8,textAlign:"center",color:"#102828"}}>Plan löschen?</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,marginBottom:22,textAlign:"center"}}><strong>{sheetData.title}</strong> wird dauerhaft gelöscht. Bereits zugewiesene Patienten-Übungen bleiben erhalten.</div><div style={{display:"flex",gap:9}}><button className="btn" onClick={closeSheet} style={{flex:1,padding:"14px",borderRadius:12,background:LIGHT,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{t.cancel}</button><button className="btn" onClick={()=>deletePlanTemplate(sheetData.id)} style={{flex:1,padding:"14px",borderRadius:12,background:"#C0392B",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700}}>{deleting?"...":t.delete}</button></div></div></div>)}
 
       {/* SHEET: ADD PLAN */}
