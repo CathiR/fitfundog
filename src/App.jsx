@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-10-082";
+const APP_VERSION = "2026-11-10-083";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -231,6 +231,12 @@ const isDirectVideo = (url) => !!url && (url.includes(VIDEO_BUCKET_PATH) || /\.(
 
 // ── Phasen-Logik (seit 064): aktive Zeitfenster pro Übung ──
 const todayLocalStr = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; };
+// Lokale Datumshelfer (seit 083): nie toISOString() fuer Kalendertage – das liefert UTC und verschiebt
+// Tag/Woche nachts sowie ueber die Zeitumstellung hinweg.
+const localDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const parseLocalDate = (iso) => new Date(iso+"T12:00:00"); // Mittag: robust gegen Zeitumstellung
+const addDaysStr = (iso, n) => { const d = parseLocalDate(iso); d.setDate(d.getDate()+n); return localDateStr(d); };
+const mondayStrOf = (date) => { const d = new Date(date); d.setHours(12,0,0,0); const day = d.getDay(); d.setDate(d.getDate()+(day===0?-6:1-day)); return localDateStr(d); };
 const exPhase = (ex) => {
   const t = todayLocalStr();
   if (ex.active_from && t < ex.active_from) return "upcoming";
@@ -693,9 +699,8 @@ export default function App() {
   const [pushLoading,setPushLoading]=useState(false);
   const [calendarOpen,setCalendarOpen]=useState(false);
 
-  const today=new Date().toISOString().split("T")[0];
-  // Week boundaries (Monday–Sunday)
-  const getWeekStart=()=>{const d=new Date();const day=d.getDay();const diff=day===0?-6:1-day;d.setDate(d.getDate()+diff);return d.toISOString().split("T")[0];};
+  // Week boundaries (Monday–Sunday), lokale Zeit (seit 083)
+  const getWeekStart=()=>mondayStrOf(new Date());
   const weekStart=getWeekStart();
   const [userEmails,setUserEmails]=useState([]);
   const [loading,setLoading]=useState(true);
@@ -875,13 +880,14 @@ export default function App() {
   async function loadAll(userId) {
     if(!initialLoadDone.current)setLoading(true); // Vollbild-Loader nur beim ersten Laden (seit 058)
     const uid=userId;
+    const today=todayLocalStr(),weekStart=mondayStrOf(new Date()); // frisch je Aufruf – loadAll wird auch aus alten Closures gerufen (seit 083)
     try{
       const [{data:pd,error:pdErr},{data:ed,error:edErr},{data:ld},{data:ue},{data:hl},{data:fb},{data:ps,error:psErr},{data:sv},{data:es},{data:pe}]=await withTimeout(Promise.all([
         supabase.from("patients").select("*").order("name"),
         supabase.from("exercises").select("*").order("created_at"),
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
         supabase.rpc("get_user_emails"),
-        supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",(()=>{const d=new Date();d.setDate(d.getDate()-111);return d.toISOString().split("T")[0];})()),
+        supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",addDaysStr(weekStart,-105)),
         supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false}),
         supabase.from("practice_settings").select("*").eq("slug",PRACTICE_SLUG).maybeSingle(),
         supabase.from("outcome_surveys").select("*").order("created_at",{ascending:false}),
@@ -1217,22 +1223,24 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const exForPatient=(pid)=>exercises.filter(e=>e.patient_id===pid);
 
   // ── Weekly repeat logic ──
-  const getDoneCountThisWeek=(eid)=>doneLogs.filter(l=>l.exercise_id===eid).length;
+  const getDoneCountThisWeek=(eid)=>doneLogs.filter(l=>l.exercise_id===eid&&l.done_date>=weekStart).length;
   const isFullyDone=(ex)=>getDoneCountThisWeek(ex.id)>=(ex.repeat_count||1);
 
   const toggleRepeat=async(eid,repeatCount)=>{
     const _ex=exercises.find(e=>e.id===eid);
     if(_ex&&exPhase(_ex)!=="active")return; // upcoming/beendete Phasen nicht abhakbar (seit 064)
-    const currentCount=getDoneCountThisWeek(eid);
+    const today=todayLocalStr(),weekStart=mondayStrOf(new Date()); // frisch je Tipp (seit 083)
+    const currentCount=doneLogs.filter(l=>l.exercise_id===eid&&l.done_date>=weekStart).length;
     const maxCount=repeatCount||1;
     if(currentCount<maxCount){
       // Add one log for today
       const{data}=await supabase.from("exercise_logs").insert({exercise_id:eid,done_date:today,done:true}).select().single();
-      if(data)setDoneLogs(prev=>[...prev,data]);
+      if(data){setDoneLogs(prev=>[...prev,data]);setHistoryLogs(prev=>[...prev,{exercise_id:eid,done_date:data.done_date}]);} // Verlauf sofort mitziehen (seit 083)
     } else {
       // Remove all logs for this week (reset)
       await supabase.from("exercise_logs").delete().eq("exercise_id",eid).gte("done_date",weekStart).lte("done_date",today);
       setDoneLogs(prev=>prev.filter(l=>l.exercise_id!==eid));
+      setHistoryLogs(prev=>prev.filter(l=>!(l.exercise_id===eid&&l.done_date>=weekStart)));
     }
   };
 
@@ -1831,43 +1839,40 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   // ── Streak & calendar logic ──
   const ownerExIds=ownerExs.map(e=>e.id);
 
-  // Hilfsfunktion: Montag einer Woche als String für ein gegebenes Datum
-  const getMondayStr=(date)=>{
-    const d=new Date(date);
-    const day=d.getDay();
-    const diff=day===0?-6:1-day;
-    d.setDate(d.getDate()+diff);
-    return d.toISOString().split("T")[0];
-  };
+  // Montag einer Woche als lokaler Datums-String
+  const getMondayStr=(date)=>mondayStrOf(date);
+  const currentMondayStr=getMondayStr(new Date());
 
   // Für jede Übung: wie oft wurde sie in einer gegebenen Woche (Montag) erledigt?
   const getDoneCountForWeek=(eid,mondayStr)=>{
-    const monday=new Date(mondayStr);
-    const sunday=new Date(monday);sunday.setDate(monday.getDate()+6);
-    const sundayStr=sunday.toISOString().split("T")[0];
+    const sundayStr=addDaysStr(mondayStr,6);
     return historyLogs.filter(l=>l.exercise_id===eid&&l.done_date>=mondayStr&&l.done_date<=sundayStr).length;
   };
 
-  // War eine Woche "erfolgreich"? = alle Übungen haben ihre repeat_count erreicht
-  const wasWeekSuccessful=(mondayStr)=>{
-    if(ownerExs.length===0)return false;
-    return ownerExs.every(ex=>getDoneCountForWeek(ex.id,mondayStr)>=(ex.repeat_count||1));
+  // Welche Übungen galten in einer Woche? (seit 083) – nur solche, die es da schon gab und deren Phase
+  // die Woche berührt. Sonst macht jede neu zugewiesene Übung alle früheren Wochen rückwirkend "nicht geschafft".
+  const exsForWeek=(mondayStr)=>{
+    const sundayStr=addDaysStr(mondayStr,6);
+    return ownerExs.filter(ex=>(!ex.created_at||localDateStr(new Date(ex.created_at))<=sundayStr)
+      &&(!ex.active_from||ex.active_from<=sundayStr)
+      &&(!ex.active_until||ex.active_until>=mondayStr));
   };
 
-  // Wochen-Streak: wie viele aufeinanderfolgende abgeschlossene Wochen (von aktueller Woche rückwärts)
+  // War eine Woche "erfolgreich"? = alle damals gültigen Übungen haben ihre repeat_count erreicht
+  const wasWeekSuccessful=(mondayStr)=>{
+    const exs=exsForWeek(mondayStr);
+    if(exs.length===0)return false;
+    return exs.every(ex=>getDoneCountForWeek(ex.id,mondayStr)>=(ex.repeat_count||1));
+  };
+  const currentWeekSuccess=doneCount===totalCount&&totalCount>0;
+
+  // Wochen-Streak: aufeinanderfolgende abgeschlossene Wochen. Die laufende Woche zählt mit, sobald sie
+  // geschafft ist – solange sie noch offen ist, bleibt die Serie der Vorwochen stehen (seit 083).
   const calcWeekStreak=()=>{
-    let streak=0;
-    const currentMonday=getMondayStr(new Date());
-    for(let i=0;i<16;i++){
-      const d=new Date(currentMonday);
-      d.setDate(d.getDate()-(i*7));
-      const mondayStr=d.toISOString().split("T")[0];
-      const isCurrentWeek=(mondayStr===currentMonday);
-      // Aktuelle Woche: prüfe ob schon alle erledigt (doneCount = totalCount)
-      const success=isCurrentWeek?(doneCount===totalCount&&totalCount>0):wasWeekSuccessful(mondayStr);
-      if(success){streak++;}
-      else if(i===0&&doneCount<totalCount){break;} // aktuelle Woche noch nicht voll
-      else{break;}
+    let streak=currentWeekSuccess?1:0;
+    for(let i=1;i<16;i++){
+      if(wasWeekSuccessful(addDaysStr(currentMondayStr,-7*i)))streak++;
+      else break;
     }
     return streak;
   };
@@ -1875,26 +1880,23 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
   // Kalender: 16 Wochen-Kacheln (eine pro Woche)
   const calendarWeeks=Array.from({length:16},(_,i)=>{
-    const d=new Date(getMondayStr(new Date()));
-    d.setDate(d.getDate()-(15-i)*7);
-    const mondayStr=d.toISOString().split("T")[0];
-    const isCurrentWeek=(getMondayStr(new Date())===mondayStr);
-    const success=isCurrentWeek?(doneCount===totalCount&&totalCount>0):wasWeekSuccessful(mondayStr);
+    const mondayStr=addDaysStr(currentMondayStr,-(15-i)*7);
+    const isCurrentWeek=(currentMondayStr===mondayStr);
+    const success=isCurrentWeek?currentWeekSuccess:wasWeekSuccessful(mondayStr);
     return{mondayStr,isCurrentWeek,success};
   });
 
   // ── Verlauf (vereinfachte Kundenansicht, seit 079) ──
   const verlaufWeeks=Array.from({length:8},(_,i)=>{
-    const d=new Date(getMondayStr(new Date()));
-    d.setDate(d.getDate()-(7-i)*7);
-    const mondayStr=d.toISOString().split("T")[0];
-    const isCurrentWeek=(getMondayStr(new Date())===mondayStr);
-    const soll=ownerExs.reduce((s,ex)=>s+(ex.repeat_count||1),0);
-    const ist=ownerExs.reduce((s,ex)=>s+Math.min(getDoneCountForWeek(ex.id,mondayStr),ex.repeat_count||1),0);
+    const mondayStr=addDaysStr(currentMondayStr,-(7-i)*7);
+    const isCurrentWeek=(currentMondayStr===mondayStr);
+    const exs=exsForWeek(mondayStr);
+    const soll=exs.reduce((s,ex)=>s+(ex.repeat_count||1),0);
+    const ist=exs.reduce((s,ex)=>s+Math.min(getDoneCountForWeek(ex.id,mondayStr),ex.repeat_count||1),0);
     return{mondayStr,isCurrentWeek,pct:soll>0?Math.round(ist/soll*100):null};
   });
-  const verlaufActiveMonday=verlaufSelectedWeek||getMondayStr(new Date());
-  const verlaufWeekDetail=ownerExs.map(ex=>{
+  const verlaufActiveMonday=verlaufSelectedWeek||currentMondayStr;
+  const verlaufWeekDetail=exsForWeek(verlaufActiveMonday).map(ex=>{
     const done=Math.min(getDoneCountForWeek(ex.id,verlaufActiveMonday),ex.repeat_count||1);
     const target=ex.repeat_count||1;
     return{ex,done,target,status:done>=target?"done":done>0?"partial":"none"};
@@ -2900,9 +2902,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </div>
               <div className="card" style={{padding:"14px 16px"}}>
                 <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:10.5,fontWeight:700,letterSpacing:".05em",textTransform:"uppercase",color:MUTED,marginBottom:8}}>
-                  {verlaufActiveMonday===getMondayStr(new Date())?t.weekDetailCurrent:t.weekDetailFor(new Date(verlaufActiveMonday).toLocaleDateString(lang==="de"?"de-DE":lang==="es"?"es-ES":"en-US",{day:"2-digit",month:"2-digit"}))}
+                  {verlaufActiveMonday===getMondayStr(new Date())?t.weekDetailCurrent:t.weekDetailFor(parseLocalDate(verlaufActiveMonday).toLocaleDateString(lang==="de"?"de-DE":lang==="es"?"es-ES":"en-US",{day:"2-digit",month:"2-digit"}))}
                 </div>
                 <div style={{display:"flex",flexDirection:"column"}}>
+                  {verlaufWeekDetail.length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,padding:"4px 0"}}>{t.noExercises}</div>}
                   {verlaufWeekDetail.map(({ex,done,target,status},idx)=>(
                     <div key={ex.id} style={{display:"flex",alignItems:"center",gap:8,padding:"7px 0",borderTop:idx===0?"none":`1px solid ${LIGHT}`}}>
                       <div style={{width:22,height:22,borderRadius:99,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",background:status==="done"?"#E8F5E9":status==="partial"?"#FBF3E1":LIGHT}}>
