@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-10-086";
+const APP_VERSION = "2026-11-10-087";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -336,6 +336,52 @@ const SearchInput = ({ value, onChange, placeholder }) => (
   </div>
 );
 
+// ── PatientPicker (seit 087): Suche mit direkt antippbarer Trefferliste statt Suche + Dropdown ──
+const PatientPicker = ({ patients, value, onSelect, filter }) => {
+  const [q, setQ] = useState("");
+  const meta = (p) => [p.breed, p.owner].filter(Boolean).join(" · ");
+  if (value) return (
+    <div style={{display:"flex",alignItems:"center",gap:10,background:"white",border:`1.5px solid ${BRAND}`,borderRadius:12,padding:"10px 12px"}}>
+      <div style={{width:34,height:34,borderRadius:9,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{value.avatar||"🐕"}</div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#102828"}}>{value.name}</div>
+        {meta(value)&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{meta(value)}</div>}
+      </div>
+      <button className="btn" onClick={()=>{onSelect(null);setQ("");}} style={{background:LIGHT,borderRadius:9,padding:"9px 12px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,color:DARK,flexShrink:0}}>Ändern</button>
+    </div>
+  );
+  const s = q.trim().toLowerCase();
+  let list = filter ? patients.filter(filter) : patients;
+  if (s) list = list.filter(p => (p.name||"").toLowerCase().includes(s) || (p.owner||"").toLowerCase().includes(s) || (p.breed||"").toLowerCase().includes(s));
+  const shown = list.slice(0, s ? 12 : 6);
+  return (
+    <div>
+      <SearchInput value={q} onChange={setQ} placeholder="Name, Besitzer oder Rasse..."/>
+      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+        {shown.map(p => (
+          <button key={p.id} className="btn" onClick={()=>onSelect(p)} style={{display:"flex",alignItems:"center",gap:10,background:"white",borderRadius:12,padding:"10px 12px",textAlign:"left",boxShadow:`0 1px 8px ${BRAND}1A`,minHeight:48}}>
+            <div style={{width:30,height:30,borderRadius:8,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{p.avatar||"🐕"}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,fontWeight:600,color:"#102828"}}>{p.name}</div>
+              {meta(p)&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{meta(p)}</div>}
+            </div>
+            <Icon name="chevron" size={14} color={ACCENT}/>
+          </button>
+        ))}
+      </div>
+      {list.length>shown.length&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,textAlign:"center",padding:"8px 0 0"}}>{list.length-shown.length} weitere – bitte Suche {s?"verfeinern":"nutzen"}</div>}
+      {list.length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,textAlign:"center",padding:"10px 0"}}>Keine Patienten gefunden.</div>}
+    </div>
+  );
+};
+
+// ── Missing (seit 087): sagt unter einem grauen Speichern-Knopf, was noch fehlt ──
+const Missing = ({ items }) => {
+  const m = (items||[]).filter(Boolean);
+  if (!m.length) return null;
+  return <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,textAlign:"center"}}>Es fehlt noch: {m.join(", ")}</div>;
+};
+
 // ── Custom Select with visible arrow ──
 const CustomSelect = ({ value, onChange, children, style = {} }) => (
   <div style={{ position: "relative" }}>
@@ -397,7 +443,7 @@ const Icon = ({ name, size = 20, color = BRAND }) => {
 };
 
 const T = {
-  de: { appSub:"Tierphysiotherapie & Osteopathie", loadErrorTitle:"Verbindung gestört", loadErrorText:"Die App kann gerade keine Verbindung zur Praxis herstellen. Deine Daten sind sicher — bitte versuche es in ein paar Minuten erneut.", loadErrorRetry:"Erneut versuchen", saveErrorToast:"Das konnte nicht gespeichert werden. Bitte erneut versuchen.", loadErrorToast:"Daten konnten nicht aktualisiert werden. Bitte später erneut versuchen.", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", navAdmin:"Admin", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", phaseFrom:(d)=>`ab ${d}`, phaseEnded:"Phase beendet", surveyCardTitle:(n)=>`Kurzer Check-up für ${n}`, surveyCardText:"13 kurze Fragen zur Beweglichkeit — ca. 3 Minuten. Hilft deiner Praxis, den Verlauf objektiv zu beurteilen.", surveyStart:"Jetzt ausfüllen", surveyTitle:"Mobilitäts-Check", surveyIntro:"Denke an die letzten 2 Wochen. 0 = gar nicht, 4 = sehr stark.", surveySubmit:"Absenden", surveyThanks:"Danke! Check-up gespeichert.", surveyProgress:(a,b)=>`${a} von ${b} beantwortet`, surveyPrevAnswer:(v,lab)=>`Beim letzten Mal: ${v} – ${lab}`, surveyPrevIntro:(d)=>`Dein letzter Check-up war am ${d}. Deine vorherigen Antworten siehst du zum Vergleich unter jeder Frage.`, markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", tabKnowledge:"Wissen", knowledgeHeading:(n)=>`Wissenswertes für ${n}`, tabVerlauf:"Verlauf", verlaufHeading:(n)=>`${n}s Verlauf`, verlaufWeeksLabel:"Letzte 8 Wochen", verlaufSummary:(p)=>`In den letzten 8 Wochen wurden ${p}% der Übungen erledigt.`, verlaufNoData:"Hier erscheint der Verlauf, sobald die ersten Übungen abgehakt wurden.", tapWeekHint:"Woche antippen für Details", weekDetailCurrent:"Diese Woche im Detail", weekDetailFor:(d)=>`Woche vom ${d}`, pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt.",
+  de: { saysThanks:(n)=>`${n} sagt Danke!`, calAgo:"vor 15 Wochen", calToday:"heute", calLegendDone:"Woche geschafft", calLegendCurrent:"diese Woche", logoutTitle:"Abmelden?", logoutText:"Du brauchst danach wieder deine Email und dein Passwort.", logoutConfirm:"Abmelden", keyPointsTitle:"Das Wichtigste", fbIntro:"Dein Feedback hilft dabei die App weiterzuentwickeln. Was funktioniert gut, was könnte besser sein?", fbPlaceholder:"Dein Feedback...", fbSend:"Feedback senden", delWarnTitle:"Achtung – diese Aktion ist unwiderruflich", delWarnText:"Dein Konto und alle damit verbundenen Daten werden dauerhaft gelöscht. Deine Therapiedaten bleiben bei deiner Therapeutin erhalten.", delWord:"LÖSCHEN", delConfirmLabel:(w)=>`Zur Bestätigung "${w}" eingeben`, delBusy:"Wird gelöscht...", delButton:"Konto unwiderruflich löschen", delError:(m)=>`Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter ${m} zur manuellen Löschung.`, pushIosFirst:"Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.", pushUnsupported:"Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.", pushNotAllowed:"Benachrichtigungen wurden nicht erlaubt. Bitte erlaube sie und versuche es erneut.", pushEnableError:"Fehler beim Aktivieren: ", pwChanged:"Passwort geändert", appSub:"Tierphysiotherapie & Osteopathie", loadErrorTitle:"Verbindung gestört", loadErrorText:"Die App kann gerade keine Verbindung zur Praxis herstellen. Deine Daten sind sicher — bitte versuche es in ein paar Minuten erneut.", loadErrorRetry:"Erneut versuchen", saveErrorToast:"Das konnte nicht gespeichert werden. Bitte erneut versuchen.", loadErrorToast:"Daten konnten nicht aktualisiert werden. Bitte später erneut versuchen.", navOwner:"Home", navTherapist:"Praxis", navInfo:"Info", navProfile:"Profil", navAdmin:"Admin", progress:"Heutiger Fortschritt", exercisesDone:"Übungen abgeschlossen", allDone:(n)=>`Alle Übungen erledigt! ${n} sagt Danke!`, noPatient:"Noch kein Patient angelegt", noExercises:"Noch keine Übungen zugewiesen.", all:"Alle", selectPatient:"Patient auswählen...", noPatientSelected:"Bitte einen Patienten auswählen.", homeExercises:(n)=>`Heimübungen (${n})`, noExercisesYet:"Noch keine Übungen.", step:"Schritt für Schritt", description:"Beschreibung", watchVideo:"Video ansehen", phaseFrom:(d)=>`ab ${d}`, phaseEnded:"Phase beendet", surveyCardTitle:(n)=>`Kurzer Check-up für ${n}`, surveyCardText:"13 kurze Fragen zur Beweglichkeit — ca. 3 Minuten. Hilft deiner Praxis, den Verlauf objektiv zu beurteilen.", surveyStart:"Jetzt ausfüllen", surveyTitle:"Mobilitäts-Check", surveyIntro:"Denke an die letzten 2 Wochen. 0 = gar nicht, 4 = sehr stark.", surveySubmit:"Absenden", surveyThanks:"Danke! Check-up gespeichert.", surveyProgress:(a,b)=>`${a} von ${b} beantwortet`, surveyPrevAnswer:(v,lab)=>`Beim letzten Mal: ${v} – ${lab}`, surveyPrevIntro:(d)=>`Dein letzter Check-up war am ${d}. Deine vorherigen Antworten siehst du zum Vergleich unter jeder Frage.`, markDone:"Erledigt!", markUndone:"Zurücksetzen", saving:"Wird gespeichert...", assignBtn:"Übung zuweisen", freq:"Dauer (Text)", freqPh:"z.B. täglich morgens", step1:"1. Patient", step2:"2. Übung auswählen", step3:"3. Dauer", step4:"4. Häufigkeit pro Woche", noCategoryEx:"Keine Übungen in dieser Kategorie.", cancel:"Abbrechen", delete:"Löschen", remove:"Entfernen", filterCategory:"Kategorie", filterRegion:"Zielregion", langLabel:"Sprache", tipsTitle:"Tipps & Wissen", tipsSub:"Wichtige Hinweise für das Training", tabTips:"Trainings-Tipps", tabPause:"Pause & Regeneration", tabKnowledge:"Wissen", knowledgeHeading:(n)=>`Wissenswertes für ${n}`, tabVerlauf:"Verlauf", verlaufHeading:(n)=>`${n}s Verlauf`, verlaufWeeksLabel:"Letzte 8 Wochen", verlaufSummary:(p)=>`In den letzten 8 Wochen wurden ${p}% der Übungen erledigt.`, verlaufNoData:"Hier erscheint der Verlauf, sobald die ersten Übungen abgehakt wurden.", tapWeekHint:"Woche antippen für Details", weekDetailCurrent:"Diese Woche im Detail", weekDetailFor:(d)=>`Woche vom ${d}`, pauseHero:"Pause ist Training!", pauseHeroText:"Pause ist der Zeitraum, in dem die eigentliche Leistungssteigerung stattfindet. Ohne ausreichende Pausen droht Überlastung statt Fortschritt.",
     plans:"Behandlungspläne", noPlans:"Noch keine Behandlungspläne erstellt.", noTemplates:"Noch keine Übungsvorlagen erstellt.", newExercise:"Neue Übung erstellen", editExercise:"Übung bearbeiten", addExercise:"Übung hinzufügen", printPlan:"Übungsplan drucken", searchPatient:"Patient suchen & auswählen", unknownExercise:"Unbekannte Übung", reminderActive:"Täglich aktiv — nur bei offenen Übungen", reminderInactive:"Erinnert dich täglich an deine Übungen", deleteAccount:"Konto löschen", deleteAccountConfirm:"Konto unwiderruflich löschen", deleting:"Wird gelöscht...", deleteWord:"LÖSCHEN", pwSecurityHint:"Aus Sicherheitsgründen bitte ein eigenes Passwort vergeben.", changePw:"Bitte Passwort ändern", feedbackPlaceholder:"Dein Feedback...", feedbackTitle:"Feedback geben", feedbackSub:"Dein Feedback hilft dabei die App weiterzuentwickeln.", feedbackSend:"Feedback senden", deleteAccountWarningTitle:"Achtung – diese Aktion ist unwiderruflich", deleteAccountWarningText:"Dein Konto und alle damit verbundenen Daten werden dauerhaft gelöscht. Deine Therapiedaten bleiben bei deiner Therapeutin erhalten.", deleteConfirmLabel:(word)=>`Zur Bestätigung "${word}" eingeben`,
     alertPwMin:"Passwort muss mindestens 6 Zeichen haben.", alertAddHomescreen:"Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.", alertNoPush:"Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.", alertPushBlocked:"Benachrichtigungen sind blockiert. Bitte erlaube sie in den Geräte-Einstellungen (Android: Apps → FitFunDog → Benachrichtigungen | iPhone: Einstellungen → Mitteilungen → FitFunDog).", alertDeleteFail:"Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter info@fit-fun-dog.de zur manuellen Löschung.",
     noAccount:"Kein Konto? Bitte wende dich an deine Therapeutin.", forgotPw:"Passwort vergessen?", resetSent:"Reset-Email gesendet – bitte Postfach prüfen.", adminTitle:"Admin", adminSub:"Einstellungen & App-Verwaltung", legalTitle:"Rechtliches", feedbackAppTitle:"Feedback zur App", feedbackAppSub:"Direkt an die Entwicklerin senden.",
@@ -411,7 +457,7 @@ const T = {
     categories:["Regeneration","Balance","Kräftigung","Koordination","Mobilisation"],
     targetRegions:["Ganzer Körper","Hinterhand","Vorderhand","Rumpf","Vorderpfoten","Rücken"],
     difficulties:["Leicht","Mittel","Schwer"] },
-  en: { appSub:"Animal Physiotherapy & Osteopathy", loadErrorTitle:"Connection problem", loadErrorText:"The app can't connect to the practice right now. Your data is safe — please try again in a few minutes.", loadErrorRetry:"Try again", saveErrorToast:"That could not be saved. Please try again.", loadErrorToast:"Data could not be refreshed. Please try again later.", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", navAdmin:"Admin", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", phaseFrom:(d)=>`from ${d}`, phaseEnded:"Phase ended", surveyCardTitle:(n)=>`Quick check-up for ${n}`, surveyCardText:"13 short questions about mobility — approx. 3 minutes. Helps your practice track progress objectively.", surveyStart:"Start now", surveyTitle:"Mobility Check", surveyIntro:"Think about the last 2 weeks. 0 = not at all, 4 = very severe.", surveySubmit:"Submit", surveyThanks:"Thanks! Check-up saved.", surveyProgress:(a,b)=>`${a} of ${b} answered`, surveyPrevAnswer:(v,lab)=>`Last time: ${v} – ${lab}`, surveyPrevIntro:(d)=>`Your last check-up was on ${d}. Your previous answers are shown under each question for comparison.`, markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", tabKnowledge:"Knowledge", knowledgeHeading:(n)=>`Worth knowing for ${n}`, tabVerlauf:"History", verlaufHeading:(n)=>`${n}'s History`, verlaufWeeksLabel:"Last 8 weeks", verlaufSummary:(p)=>`${p}% of exercises were completed over the last 8 weeks.`, verlaufNoData:"History will appear here once the first exercises are checked off.", tapWeekHint:"Tap a week for details", weekDetailCurrent:"This week in detail", weekDetailFor:(d)=>`Week of ${d}`, pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress.",
+  en: { saysThanks:(n)=>`${n} says thank you!`, calAgo:"15 weeks ago", calToday:"today", calLegendDone:"week completed", calLegendCurrent:"this week", logoutTitle:"Log out?", logoutText:"You will need your email and password to log in again.", logoutConfirm:"Log out", keyPointsTitle:"Key points", fbIntro:"Your feedback helps to improve the app. What works well, what could be better?", fbPlaceholder:"Your feedback...", fbSend:"Send feedback", delWarnTitle:"Warning – this cannot be undone", delWarnText:"Your account and all data linked to it will be permanently deleted. Your therapy records remain with your therapist.", delWord:"DELETE", delConfirmLabel:(w)=>`Type "${w}" to confirm`, delBusy:"Deleting...", delButton:"Delete account permanently", delError:(m)=>`Your account cannot be deleted automatically. Please contact your therapist at ${m} to have it deleted manually.`, pushIosFirst:"Please add the app to your home screen first (Safari → Share → Add to Home Screen). Then open the app from the home screen icon and enable reminders again.", pushUnsupported:"Your browser does not support push notifications. Please use Safari on iOS 16.4+ or Chrome on Android.", pushNotAllowed:"Notifications were not allowed. Please allow them and try again.", pushEnableError:"Could not enable reminders: ", pwChanged:"Password changed", appSub:"Animal Physiotherapy & Osteopathy", loadErrorTitle:"Connection problem", loadErrorText:"The app can't connect to the practice right now. Your data is safe — please try again in a few minutes.", loadErrorRetry:"Try again", saveErrorToast:"That could not be saved. Please try again.", loadErrorToast:"Data could not be refreshed. Please try again later.", navOwner:"Home", navTherapist:"Practice", navInfo:"Info", navProfile:"Profile", navAdmin:"Admin", progress:"Today's Progress", exercisesDone:"exercises completed", allDone:(n)=>`All done! ${n} says Thank you!`, noPatient:"No patient added yet", noExercises:"No exercises assigned yet.", all:"All", selectPatient:"Select patient...", noPatientSelected:"Please select a patient.", homeExercises:(n)=>`Home exercises (${n})`, noExercisesYet:"No exercises yet.", step:"Step by Step", description:"Description", watchVideo:"Watch video", phaseFrom:(d)=>`from ${d}`, phaseEnded:"Phase ended", surveyCardTitle:(n)=>`Quick check-up for ${n}`, surveyCardText:"13 short questions about mobility — approx. 3 minutes. Helps your practice track progress objectively.", surveyStart:"Start now", surveyTitle:"Mobility Check", surveyIntro:"Think about the last 2 weeks. 0 = not at all, 4 = very severe.", surveySubmit:"Submit", surveyThanks:"Thanks! Check-up saved.", surveyProgress:(a,b)=>`${a} of ${b} answered`, surveyPrevAnswer:(v,lab)=>`Last time: ${v} – ${lab}`, surveyPrevIntro:(d)=>`Your last check-up was on ${d}. Your previous answers are shown under each question for comparison.`, markDone:"Done!", markUndone:"Reset", saving:"Saving...", assignBtn:"Assign Exercise", freq:"Duration (text)", freqPh:"e.g. daily in the morning", step1:"1. Patient", step2:"2. Select exercise", step3:"3. Duration", step4:"4. Frequency per week", noCategoryEx:"No exercises in this category.", cancel:"Cancel", delete:"Delete", remove:"Remove", filterCategory:"Category", filterRegion:"Target Region", langLabel:"Language", tipsTitle:"Tips & Knowledge", tipsSub:"Important notes for training", tabTips:"Training Tips", tabPause:"Rest & Recovery", tabKnowledge:"Knowledge", knowledgeHeading:(n)=>`Worth knowing for ${n}`, tabVerlauf:"History", verlaufHeading:(n)=>`${n}'s History`, verlaufWeeksLabel:"Last 8 weeks", verlaufSummary:(p)=>`${p}% of exercises were completed over the last 8 weeks.`, verlaufNoData:"History will appear here once the first exercises are checked off.", tapWeekHint:"Tap a week for details", weekDetailCurrent:"This week in detail", weekDetailFor:(d)=>`Week of ${d}`, pauseHero:"Rest is Training!", pauseHeroText:"Rest is the period where actual performance improvement happens. Without sufficient rest, overtraining replaces progress.",
     plans:"Treatment Plans", noPlans:"No treatment plans created yet.", noTemplates:"No exercise templates created yet.", newExercise:"New exercise", editExercise:"Edit exercise", addExercise:"Add exercise", printPlan:"Print plan", searchPatient:"Search & select patient", unknownExercise:"Unknown exercise", reminderActive:"Active daily — only when exercises are open", reminderInactive:"Reminds you daily of your exercises", deleteAccount:"Delete account", deleteAccountConfirm:"Permanently delete account", deleting:"Deleting...", deleteWord:"DELETE", pwSecurityHint:"For security reasons please set your own password.", changePw:"Please change password", feedbackPlaceholder:"Your feedback...", feedbackTitle:"Give feedback", feedbackSub:"Your feedback helps improve the app.", feedbackSend:"Send feedback", deleteAccountWarningTitle:"Warning – this action is irreversible", deleteAccountWarningText:"Your account and all associated data will be permanently deleted. Your therapy data will remain with your therapist.", deleteConfirmLabel:(word)=>`Type "${word}" to confirm`,
     alertPwMin:"Password must be at least 6 characters.", alertAddHomescreen:"Please add the app to your home screen first (Safari → Share → Add to Home Screen). Then open the app via the home screen icon and activate reminders again.", alertNoPush:"Your browser does not support push notifications. Please use Safari on iOS 16.4+ or Chrome on Android.", alertPushBlocked:"Notifications are blocked. Please allow them in your device settings (Android: Apps → FitFunDog → Notifications | iPhone: Settings → Notifications → FitFunDog).", alertDeleteFail:"Your account cannot be deleted automatically. Please contact your therapist at info@fit-fun-dog.de for manual deletion.",
     noAccount:"No account? Please contact your therapist.", forgotPw:"Forgot password?", resetSent:"Reset email sent – please check your inbox.", adminTitle:"Admin", adminSub:"Settings & App management", legalTitle:"Legal", feedbackAppTitle:"App feedback", feedbackAppSub:"Send directly to the developer.",
@@ -425,7 +471,7 @@ const T = {
     categories:["Regeneration","Balance","Strengthening","Coordination","Mobilisation"],
     targetRegions:["Whole body","Hindquarters","Forequarters","Core","Front paws","Back"],
     difficulties:["Easy","Medium","Hard"] },
-  es: { appSub:"Fisioterapia & Osteopatía Animal", loadErrorTitle:"Problema de conexión", loadErrorText:"La app no puede conectarse con la clínica en este momento. Tus datos están seguros — inténtalo de nuevo en unos minutos.", loadErrorRetry:"Reintentar", saveErrorToast:"No se pudo guardar. Inténtalo de nuevo.", loadErrorToast:"No se pudieron actualizar los datos. Inténtalo más tarde.", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", navAdmin:"Admin", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", phaseFrom:(d)=>`desde ${d}`, phaseEnded:"Fase finalizada", surveyCardTitle:(n)=>`Chequeo rápido para ${n}`, surveyCardText:"13 preguntas breves sobre movilidad — aprox. 3 minutos. Ayuda a tu clínica a evaluar el progreso objetivamente.", surveyStart:"Empezar", surveyTitle:"Chequeo de movilidad", surveyIntro:"Piensa en las últimas 2 semanas. 0 = nada, 4 = muy fuerte.", surveySubmit:"Enviar", surveyThanks:"¡Gracias! Chequeo guardado.", surveyProgress:(a,b)=>`${a} de ${b} respondidas`, surveyPrevAnswer:(v,lab)=>`La última vez: ${v} – ${lab}`, surveyPrevIntro:(d)=>`Tu último chequeo fue el ${d}. Tus respuestas anteriores se muestran bajo cada pregunta para comparar.`, markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes para el entrenamiento", tabTips:"Consejos", tabPause:"Descanso", tabKnowledge:"Saber", knowledgeHeading:(n)=>`Información para ${n}`, tabVerlauf:"Historial", verlaufHeading:(n)=>`Historial de ${n}`, verlaufWeeksLabel:"Últimas 8 semanas", verlaufSummary:(p)=>`En las últimas 8 semanas se completó el ${p}% de los ejercicios.`, verlaufNoData:"El historial aparecerá aquí en cuanto se marquen los primeros ejercicios.", tapWeekHint:"Toca una semana para ver detalles", weekDetailCurrent:"Esta semana en detalle", weekDetailFor:(d)=>`Semana del ${d}`, pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento. Sin descanso suficiente, el sobreentrenamiento reemplaza al progreso.",
+  es: { saysThanks:(n)=>`¡${n} te da las gracias!`, calAgo:"hace 15 semanas", calToday:"hoy", calLegendDone:"semana completada", calLegendCurrent:"esta semana", logoutTitle:"¿Cerrar sesión?", logoutText:"Después necesitarás de nuevo tu email y tu contraseña.", logoutConfirm:"Cerrar sesión", keyPointsTitle:"Lo más importante", fbIntro:"Tu opinión ayuda a mejorar la app. ¿Qué funciona bien y qué podría ser mejor?", fbPlaceholder:"Tu opinión...", fbSend:"Enviar opinión", delWarnTitle:"Atención: esta acción no se puede deshacer", delWarnText:"Tu cuenta y todos los datos vinculados se eliminarán de forma permanente. Los datos de la terapia se conservan en tu clínica.", delWord:"BORRAR", delConfirmLabel:(w)=>`Escribe "${w}" para confirmar`, delBusy:"Eliminando...", delButton:"Eliminar cuenta definitivamente", delError:(m)=>`Tu cuenta no se puede eliminar automáticamente. Ponte en contacto con tu terapeuta en ${m} para eliminarla manualmente.`, pushIosFirst:"Primero añade la app a la pantalla de inicio (Safari → Compartir → Añadir a pantalla de inicio). Después abre la app desde ese icono y vuelve a activar los recordatorios.", pushUnsupported:"Tu navegador no admite notificaciones push. Usa Safari en iOS 16.4+ o Chrome en Android.", pushNotAllowed:"No se permitieron las notificaciones. Permítelas e inténtalo de nuevo.", pushEnableError:"No se pudieron activar: ", pwChanged:"Contraseña cambiada", appSub:"Fisioterapia & Osteopatía Animal", loadErrorTitle:"Problema de conexión", loadErrorText:"La app no puede conectarse con la clínica en este momento. Tus datos están seguros — inténtalo de nuevo en unos minutos.", loadErrorRetry:"Reintentar", saveErrorToast:"No se pudo guardar. Inténtalo de nuevo.", loadErrorToast:"No se pudieron actualizar los datos. Inténtalo más tarde.", navOwner:"Home", navTherapist:"Clínica", navInfo:"Info", navProfile:"Perfil", navAdmin:"Admin", progress:"Progreso de hoy", exercisesDone:"ejercicios completados", allDone:(n)=>`¡Todo listo! ${n} dice ¡Gracias!`, noPatient:"Aún no hay paciente", noExercises:"Aún no hay ejercicios.", all:"Todos", selectPatient:"Seleccionar paciente...", noPatientSelected:"Por favor selecciona un paciente.", homeExercises:(n)=>`Ejercicios en casa (${n})`, noExercisesYet:"Aún no hay ejercicios.", step:"Paso a Paso", description:"Descripción", watchVideo:"Ver video", phaseFrom:(d)=>`desde ${d}`, phaseEnded:"Fase finalizada", surveyCardTitle:(n)=>`Chequeo rápido para ${n}`, surveyCardText:"13 preguntas breves sobre movilidad — aprox. 3 minutos. Ayuda a tu clínica a evaluar el progreso objetivamente.", surveyStart:"Empezar", surveyTitle:"Chequeo de movilidad", surveyIntro:"Piensa en las últimas 2 semanas. 0 = nada, 4 = muy fuerte.", surveySubmit:"Enviar", surveyThanks:"¡Gracias! Chequeo guardado.", surveyProgress:(a,b)=>`${a} de ${b} respondidas`, surveyPrevAnswer:(v,lab)=>`La última vez: ${v} – ${lab}`, surveyPrevIntro:(d)=>`Tu último chequeo fue el ${d}. Tus respuestas anteriores se muestran bajo cada pregunta para comparar.`, markDone:"¡Hecho!", markUndone:"Resetear", saving:"Guardando...", assignBtn:"Asignar ejercicio", freq:"Duración (texto)", freqPh:"ej. diario por la mañana", step1:"1. Paciente", step2:"2. Seleccionar ejercicio", step3:"3. Duración", step4:"4. Frecuencia por semana", noCategoryEx:"No hay ejercicios en esta categoría.", cancel:"Cancelar", delete:"Eliminar", remove:"Quitar", filterCategory:"Categoría", filterRegion:"Región", langLabel:"Idioma", tipsTitle:"Consejos", tipsSub:"Notas importantes para el entrenamiento", tabTips:"Consejos", tabPause:"Descanso", tabKnowledge:"Saber", knowledgeHeading:(n)=>`Información para ${n}`, tabVerlauf:"Historial", verlaufHeading:(n)=>`Historial de ${n}`, verlaufWeeksLabel:"Últimas 8 semanas", verlaufSummary:(p)=>`En las últimas 8 semanas se completó el ${p}% de los ejercicios.`, verlaufNoData:"El historial aparecerá aquí en cuanto se marquen los primeros ejercicios.", tapWeekHint:"Toca una semana para ver detalles", weekDetailCurrent:"Esta semana en detalle", weekDetailFor:(d)=>`Semana del ${d}`, pauseHero:"¡El descanso es entrenamiento!", pauseHeroText:"El descanso es el periodo donde ocurre la mejora real del rendimiento. Sin descanso suficiente, el sobreentrenamiento reemplaza al progreso.",
     plans:"Planes de tratamiento", noPlans:"Aún no hay planes de tratamiento.", noTemplates:"Aún no hay plantillas de ejercicios.", newExercise:"Nuevo ejercicio", editExercise:"Editar ejercicio", addExercise:"Añadir ejercicio", printPlan:"Imprimir plan", searchPatient:"Buscar y seleccionar paciente", unknownExercise:"Ejercicio desconocido", reminderActive:"Activo diariamente — solo si hay ejercicios pendientes", reminderInactive:"Te recuerda tus ejercicios cada día", deleteAccount:"Eliminar cuenta", deleteAccountConfirm:"Eliminar cuenta permanentemente", deleting:"Eliminando...", deleteWord:"ELIMINAR", pwSecurityHint:"Por seguridad, establece tu propia contraseña.", changePw:"Por favor cambia la contraseña", feedbackPlaceholder:"Tu comentario...", feedbackTitle:"Dar feedback", feedbackSub:"Tu feedback ayuda a mejorar la app.", feedbackSend:"Enviar feedback", deleteAccountWarningTitle:"Atención – esta acción es irreversible", deleteAccountWarningText:"Tu cuenta y todos los datos asociados serán eliminados permanentemente. Tus datos de terapia permanecerán con tu terapeuta.", deleteConfirmLabel:(word)=>`Escribe "${word}" para confirmar`,
     alertPwMin:"La contraseña debe tener al menos 6 caracteres.", alertAddHomescreen:"Por favor añade primero la app a tu pantalla de inicio (Safari → Compartir → Añadir a pantalla de inicio). Luego abre la app desde el icono y activa los recordatorios.", alertNoPush:"Tu navegador no admite notificaciones push. Usa Safari en iOS 16.4+ o Chrome en Android.", alertPushBlocked:"Las notificaciones están bloqueadas. Actívalas en los ajustes del dispositivo (Android: Apps → FitFunDog → Notificaciones | iPhone: Ajustes → Notificaciones → FitFunDog).", alertDeleteFail:"Tu cuenta no puede eliminarse automáticamente. Contacta a tu terapeuta en info@fit-fun-dog.de para la eliminación manual.",
     noAccount:"¿Sin cuenta? Contacta a tu terapeuta.", forgotPw:"¿Olvidaste tu contraseña?", resetSent:"Email enviado – revisa tu bandeja de entrada.", adminTitle:"Admin", adminSub:"Ajustes y gestión de la app", legalTitle:"Legal", feedbackAppTitle:"Feedback de la app", feedbackAppSub:"Enviar directamente a la desarrolladora.",
@@ -533,10 +579,12 @@ const LoginScreen = ({practice,onLogin}) => {
         <div style={{background:"white",borderRadius:22,padding:"28px 24px",boxShadow:"0 20px 60px rgba(0,0,0,0.2)"}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,fontWeight:700,color:DARK,marginBottom:4}}>Willkommen zurück</div>
           <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:22}}>Bitte melde dich an um fortzufahren.</div>
-          <div style={{marginBottom:14}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>Email</div><input type="email" value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="deine@email.de" style={inp}/></div>
-          <div style={{marginBottom:20}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>Passwort</div><div style={{position:"relative"}}><input type={showPw?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleLogin()} placeholder="••••••••" style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:MUTED}}>{showPw?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div></div>
+          <form onSubmit={e=>{e.preventDefault();handleLogin();}}>
+          <div style={{marginBottom:14}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>Email</div><input type="email" name="email" autoComplete="username" autoCapitalize="none" value={email} onChange={e=>setEmail(e.target.value)} placeholder="deine@email.de" style={inp}/></div>
+          <div style={{marginBottom:20}}><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>Passwort</div><div style={{position:"relative"}}><input type={showPw?"text":"password"} name="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" style={{...inp,paddingRight:42}}/><button type="button" onClick={()=>setShowPw(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:MUTED}}>{showPw?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div></div>
           {error&&<div style={{background:"#FFE8E8",borderRadius:10,padding:"10px 14px",marginBottom:16,fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#C0392B"}}>{error}</div>}
-          <button onClick={handleLogin} disabled={loading} style={{width:"100%",padding:"14px",borderRadius:12,background:loading?BORDER:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,border:"none",cursor:"pointer"}}>{loading?"Wird angemeldet...":"Anmelden"}</button>
+          <button type="submit" disabled={loading} style={{width:"100%",padding:"14px",borderRadius:12,background:loading?BORDER:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,border:"none",cursor:"pointer"}}>{loading?"Wird angemeldet...":"Anmelden"}</button>
+          </form>
         </div>
         <div style={{textAlign:"center",marginTop:14}}>
           {resetSent
@@ -556,7 +604,13 @@ const LoginScreen = ({practice,onLogin}) => {
 };
 
 // forced (seit 086): Pflicht-Wechsel des Startpassworts direkt nach dem ersten Login – ohne Abmelden, App erst danach nutzbar
-const PasswordResetScreen = ({ practice, onDone, forced, email, onLogout }) => {
+const PW_T = {
+  de:{min:"Passwort muss mindestens 6 Zeichen haben.",mismatch:"Passwörter stimmen nicht überein.",notEmail:"Bitte wähle ein Passwort, das nicht deiner Email-Adresse entspricht.",same:"Das neue Passwort muss sich vom bisherigen unterscheiden.",err:"Fehler: ",doneTitle:"Passwort gesetzt!",doneText:"Du wirst zum Login weitergeleitet...",title:"Neues Passwort",introForced:"Zu deiner Sicherheit: Bitte wähle jetzt ein eigenes Passwort. Danach geht es direkt weiter.",intro:"Bitte wähle ein neues Passwort für deinen Account.",label1:"Neues Passwort",ph1:"Mindestens 6 Zeichen",label2:"Passwort wiederholen",saving:"Wird gespeichert...",save:"Passwort speichern",logout:"Abmelden"},
+  en:{min:"Password must have at least 6 characters.",mismatch:"Passwords do not match.",notEmail:"Please choose a password that is not your email address.",same:"The new password must be different from the current one.",err:"Error: ",doneTitle:"Password set!",doneText:"You will be redirected to the login...",title:"New password",introForced:"For your security: please choose your own password now. After that you can continue right away.",intro:"Please choose a new password for your account.",label1:"New password",ph1:"At least 6 characters",label2:"Repeat password",saving:"Saving...",save:"Save password",logout:"Log out"},
+  es:{min:"La contraseña debe tener al menos 6 caracteres.",mismatch:"Las contraseñas no coinciden.",notEmail:"Elige una contraseña que no sea tu dirección de email.",same:"La nueva contraseña debe ser distinta de la actual.",err:"Error: ",doneTitle:"¡Contraseña guardada!",doneText:"Te redirigimos al inicio de sesión...",title:"Nueva contraseña",introForced:"Por tu seguridad: elige ahora tu propia contraseña. Después podrás continuar enseguida.",intro:"Elige una nueva contraseña para tu cuenta.",label1:"Nueva contraseña",ph1:"Al menos 6 caracteres",label2:"Repetir contraseña",saving:"Guardando...",save:"Guardar contraseña",logout:"Cerrar sesión"}
+};
+const PasswordResetScreen = ({ practice, onDone, forced, email, onLogout, lang }) => {
+  const pt = PW_T[lang] || PW_T.de;
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
   const [loading, setLoading] = useState(false);
@@ -567,12 +621,12 @@ const PasswordResetScreen = ({ practice, onDone, forced, email, onLogout }) => {
   const inp = { width:"100%", padding:"13px 14px", borderRadius:10, border:`1.5px solid ${BORDER}`, fontSize:16, fontFamily:"'DM Sans',sans-serif", outline:"none", color:"#102828", background:"white", WebkitTextFillColor:"#102828", boxSizing:"border-box" };
 
   const handleReset = async () => {
-    if (!password || password.length < 6) { setError("Passwort muss mindestens 6 Zeichen haben."); return; }
-    if (password !== password2) { setError("Passwörter stimmen nicht überein."); return; }
-    if (forced && email && password.trim().toLowerCase() === email.trim().toLowerCase()) { setError("Bitte wähle ein Passwort, das nicht deiner Email-Adresse entspricht."); return; }
+    if (!password || password.length < 6) { setError(pt.min); return; }
+    if (password !== password2) { setError(pt.mismatch); return; }
+    if (forced && email && password.trim().toLowerCase() === email.trim().toLowerCase()) { setError(pt.notEmail); return; }
     setLoading(true); setError("");
     const { error: err } = await supabase.auth.updateUser({ password, data: { must_change_password: false } });
-    if (err) { setError(/different from the old/i.test(err.message) ? "Das neue Passwort muss sich vom bisherigen unterscheiden." : "Fehler: " + err.message); setLoading(false); return; }
+    if (err) { setError(/different from the old/i.test(err.message) ? pt.same : pt.err + err.message); setLoading(false); return; }
     if (forced) { setLoading(false); onDone(); return; }
     await supabase.auth.signOut();
     setSuccess(true);
@@ -593,26 +647,26 @@ const PasswordResetScreen = ({ practice, onDone, forced, email, onLogout }) => {
               <div style={{ width:56, height:56, borderRadius:"50%", background:BRAND+"20", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 16px" }}>
                 <Icon name="check" size={28} color={BRAND}/>
               </div>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:DARK, marginBottom:8 }}>Passwort gesetzt!</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:MUTED }}>Du wirst zum Login weitergeleitet...</div>
+              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:20, fontWeight:700, color:DARK, marginBottom:8 }}>{pt.doneTitle}</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:MUTED }}>{pt.doneText}</div>
             </div>
           ) : (
             <>
-              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:DARK, marginBottom:4 }}>Neues Passwort</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:MUTED, marginBottom:22 }}>{forced?"Zu deiner Sicherheit: Bitte wähle jetzt ein eigenes Passwort. Danach geht es direkt weiter.":"Bitte wähle ein neues Passwort für deinen Account."}</div>
+              <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:DARK, marginBottom:4 }}>{pt.title}</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:MUTED, marginBottom:22 }}>{forced?pt.introForced:pt.intro}</div>
               <div style={{ marginBottom:14 }}>
-                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:MUTED, letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Neues Passwort</div>
-                <div style={{position:"relative"}}><input type={showPw1?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mindestens 6 Zeichen" style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw1(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:MUTED}}>{showPw1?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:MUTED, letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>{pt.label1}</div>
+                <div style={{position:"relative"}}><input type={showPw1?"text":"password"} name="new-password" autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder={pt.ph1} style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw1(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:MUTED}}>{showPw1?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
               </div>
               <div style={{ marginBottom:20 }}>
-                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:MUTED, letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Passwort wiederholen</div>
-                <div style={{position:"relative"}}><input type={showPw2?"text":"password"} value={password2} onChange={e=>setPassword2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleReset()} placeholder="••••••••" style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw2(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:MUTED}}>{showPw2?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
+                <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:MUTED, letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>{pt.label2}</div>
+                <div style={{position:"relative"}}><input type={showPw2?"text":"password"} name="new-password-repeat" autoComplete="new-password" value={password2} onChange={e=>setPassword2(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleReset()} placeholder="••••••••" style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw2(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:MUTED}}>{showPw2?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
               </div>
               {error && <div style={{ background:"#FFE8E8", borderRadius:10, padding:"10px 14px", marginBottom:16, fontFamily:"'DM Sans',sans-serif", fontSize:13, color:"#C0392B" }}>{error}</div>}
               <button onClick={handleReset} disabled={loading} style={{ width:"100%", padding:"14px", borderRadius:12, background:loading?BORDER:BRAND, color:"#102828", fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:15, border:"none", cursor:"pointer" }}>
-                {loading ? "Wird gespeichert..." : "Passwort speichern"}
+                {loading ? pt.saving : pt.save}
               </button>
-              {forced && onLogout && <button onClick={onLogout} style={{ display:"block", margin:"14px auto 0", background:"none", border:"none", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:12, color:MUTED, textDecoration:"underline", padding:0 }}>Abmelden</button>}
+              {forced && onLogout && <button onClick={onLogout} style={{ display:"block", margin:"14px auto 0", background:"none", border:"none", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:12, color:MUTED, textDecoration:"underline", padding:0 }}>{pt.logout}</button>}
             </>
           )}
         </div>
@@ -622,7 +676,16 @@ const PasswordResetScreen = ({ practice, onDone, forced, email, onLogout }) => {
 };
 
 export default function App() {
-  const [lang,setLang]=useState("de");
+  // Sprache (seit 087): gemerkte Wahl, sonst Gerätesprache (en/es), sonst Deutsch
+  const [lang,setLangState]=useState(()=>{
+    try{const saved=localStorage.getItem("app_lang");if(saved&&T[saved])return saved;}catch{/* Speicher gesperrt */}
+    const nav=(navigator.language||"de").slice(0,2).toLowerCase();
+    return nav==="en"||nav==="es"?nav:"de";
+  });
+  const setLang=(l)=>{setLangState(l);try{localStorage.setItem("app_lang",l);}catch{/* Speicher gesperrt */}};
+  useEffect(()=>{document.documentElement.lang=lang;},[lang]);
+  const locale=lang==="es"?"es-ES":lang==="en"?"en-GB":"de-DE";
+  const [confirmLogout,setConfirmLogout]=useState(false);
   const t=T[lang];
   const [session,setSession]=useState(null);
   const [authLoading,setAuthLoading]=useState(true);
@@ -794,7 +857,7 @@ export default function App() {
   // Behebt iOS-WebKit-Bug: Caret wird in position:fixed-Sheets versetzt
   // (unterhalb des Eingabefelds) gerendert, wenn die Seite dahinter
   // gescrollt ist bzw. die Tastatur den Viewport verschiebt.
-  const anySheetOpen=!!(sheet||selectedExercise||viewTemplateData||planAssignDone||viewFeedbackEx||feedbackSheet||showAppFeedback||showDeleteAccount||historyPatient||surveySheet||selectedSheet||editSheetData);
+  const anySheetOpen=!!(sheet||selectedExercise||viewTemplateData||planAssignDone||viewFeedbackEx||feedbackSheet||showAppFeedback||showDeleteAccount||historyPatient||surveySheet||selectedSheet||editSheetData||confirmLogout);
   useEffect(()=>{
     if(!anySheetOpen)return;
     const y=window.scrollY;
@@ -1172,9 +1235,11 @@ ${patExercises.map((ex) => `
       printWindow.document.open();
       printWindow.document.write(html);
       printWindow.document.close();
-      printWindow.onload = () => { printWindow.focus(); printWindow.print(); };
+      let printed = false; // nur einmal drucken (seit 087) – onload und Fallback loesten den Dialog sonst doppelt aus
+      const doPrint = () => { if (printed) return; printed = true; try { printWindow.focus(); printWindow.print(); } catch { /* Fenster geschlossen */ } };
+      printWindow.onload = doPrint;
       // Fallback if onload doesn't fire
-      setTimeout(() => { try { printWindow.focus(); printWindow.print(); } catch(e){} }, 1200);
+      setTimeout(doPrint, 1200);
     }
   };
 
@@ -1215,7 +1280,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 <div class="footer-note">${PRACTICE_SLUG==="fitfundog"?"Fit Fun Dog · Tierphysiotherapie &amp; Osteopathie · www.fit-fun-dog.de · info@fit-fun-dog.de · 0159 / 04976681":practice.practice_name+" · "+(practice.practice_subtitle||"")+" · "+(practice.website_url||"").replace(/^https?:\/\//,"")+" · "+(practice.contact_email||"")+(practice.contact_phone?" · "+practice.contact_phone:"")}</div>
 </body></html>`;
     const printWindow = window.open("about:blank","_blank");
-    if(printWindow){printWindow.document.open();printWindow.document.write(html);printWindow.document.close();printWindow.onload=()=>{printWindow.focus();printWindow.print();};setTimeout(()=>{try{printWindow.focus();printWindow.print();}catch(e){}},1200);}
+    if(printWindow){printWindow.document.open();printWindow.document.write(html);printWindow.document.close();let printed=false;const doPrint=()=>{if(printed)return;printed=true;try{printWindow.focus();printWindow.print();}catch{/* Fenster geschlossen */}};printWindow.onload=doPrint;setTimeout(doPrint,1200);}
   };
 
   const handleLogout=async()=>{
@@ -1277,15 +1342,6 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     }finally{toggleBusy.current.delete(eid);}
   };
 
-  const changePassword=async()=>{
-    if(!newPassword||newPassword.length<6){showToast("error","Passwort muss mindestens 6 Zeichen haben.");return;}
-    setSaving(true);
-    const{error}=await supabase.auth.updateUser({password:newPassword,data:{must_change_password:false}});
-    if(error)showToast("error","Fehler: "+error.message);
-    else{setMustChangePassword(false);setShowPasswordChange(false);setNewPassword("");showToast("success","Passwort geändert");}
-    setSaving(false);
-  };
-
   // ── Push notifications ──
   function urlBase64ToUint8Array(base64String){
     const padding="=".repeat((4-base64String.length%4)%4);
@@ -1330,11 +1386,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     // iOS: must be running as PWA (added to home screen)
     const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
     if(isIOS&&!isPWA()){
-      showToast("error","Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.");
+      showToast("error",t.pushIosFirst);
       return;
     }
     if(!("serviceWorker" in navigator)||!("PushManager" in window)){
-      showToast("error","Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.");
+      showToast("error",t.pushUnsupported);
       return;
     }
     setPushLoading(true);
@@ -1351,7 +1407,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         return;
       }
       if(permission!=="granted"){
-        showToast("error","Benachrichtigungen wurden nicht erlaubt. Bitte erlaube sie und versuche es erneut.");
+        showToast("error",t.pushNotAllowed);
         setPushLoading(false);
         return;
       }
@@ -1372,7 +1428,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       setPushEnabled(true);
     }catch(e){
       console.error("enablePush error",e);
-      showToast("error","Fehler beim Aktivieren: "+e.message);
+      showToast("error",t.pushEnableError+e.message);
     }
     setPushLoading(false);
   };
@@ -1494,7 +1550,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       await supabase.auth.signOut();
     }catch(e){
       console.error("deleteAccount error:",e);
-      showToast("error",`Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter ${practice.contact_email} zur manuellen Löschung.`);
+      showToast("error",t.delError(practice.contact_email||""));
     }
     setSaving(false);
   };
@@ -2032,11 +2088,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
 
   if(loadError)return <div style={{minHeight:"100vh",background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:14,padding:24,textAlign:"center"}}><Icon name="paw" size={48} color={BRAND}/><div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700,color:DARK}}>{t.loadErrorTitle}</div><div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,lineHeight:1.5,color:MUTED,maxWidth:320}}>{t.loadErrorText}</div><button className="btn" onClick={()=>window.location.reload()} style={{marginTop:6,padding:"12px 22px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,border:"none"}}>{t.loadErrorRetry}</button></div>;
   if(authLoading)return <div style={{minHeight:"100vh",background:`linear-gradient(160deg,${DARK},${BRAND})`,display:"flex",alignItems:"center",justifyContent:"center"}}><img src={practice.logo_url||"/favicon.png"} alt="" style={{height:60,objectFit:"contain"}}/></div>;
-  if(isRecoveryMode)return <PasswordResetScreen practice={practice} onDone={()=>{sessionStorage.removeItem("_recovery");setIsRecoveryMode(false);window.location.hash="";}} />;
+  if(isRecoveryMode)return <PasswordResetScreen lang={lang} practice={practice} onDone={()=>{sessionStorage.removeItem("_recovery");setIsRecoveryMode(false);window.location.hash="";}} />;
   if(!session)return <LoginScreen practice={practice||{logo_url:"",practice_name:"",practice_subtitle:"",therapist_email:"",privacy_url:"",imprint_url:""}}/>;
   if(loading)return <div style={{minHeight:"100vh",background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}><Icon name="paw" size={48} color={BRAND}/><div style={{fontFamily:"'DM Sans',sans-serif",color:MUTED}}>Wird geladen...</div></div>;
   // Startpasswort muss vor der Nutzung geändert werden (seit 086) – vorher war es nur ein Hinweis-Banner
-  if(mustChangePassword&&!isAdmin)return <PasswordResetScreen forced practice={practice} email={session.user?.email||""} onLogout={handleLogout} onDone={()=>{setMustChangePassword(false);showToast("success","Passwort geändert");}} />;
+  if(mustChangePassword&&!isAdmin)return <PasswordResetScreen forced lang={lang} practice={practice} email={session.user?.email||""} onLogout={handleLogout} onDone={()=>{setMustChangePassword(false);showToast("success",t.pwChanged);}} />;
 
   return (
     <div style={{fontFamily:"Georgia,serif",minHeight:"100vh",background:LIGHT,color:"#102828"}} onClick={()=>setLangOpen(false)}>
@@ -2105,7 +2161,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   ))}
                 </div>}
               </div>
-              <button className="btn" onClick={handleLogout} style={{background:NAV_BG,borderRadius:9,padding:"7px 9px",display:"flex"}}>
+              <button className="btn" aria-label={t.logoutConfirm} onClick={()=>setConfirmLogout(true)} style={{background:NAV_BG,borderRadius:9,padding:"7px 9px",display:"flex"}}>
                 <Icon name="logout" size={15} color={ACCENT}/>
               </button>
             </div>
@@ -2132,17 +2188,6 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               <SearchInput value={ownerSearch} onChange={setOwnerSearch} placeholder="Besitzer oder Patient suchen..."/>
             </>
           )}
-          {mustChangePassword&&(
-            <div style={{background:"#FFF8E1",border:"1.5px solid #FFB300",borderRadius:12,padding:"14px 16px",marginBottom:14}}>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:"#E65100",marginBottom:6,display:"flex",alignItems:"center",gap:8}}><Icon name="lock" size={16} color="#E65100"/>{t.changePw}</div>
-              <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#5D4037",marginBottom:10}}>{t.pwSecurityHint}</div>
-              <div style={{display:"flex",gap:8}}>
-                <div style={{position:"relative",flex:1}}><input type={showNewPw?"text":"password"} value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder={t.newPasswordPh} style={{...inp,width:"100%",paddingRight:42}}/><button onClick={()=>setShowNewPw(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:MUTED}}>{showNewPw?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
-                <button className="btn" onClick={changePassword} disabled={saving||!newPassword} style={{background:newPassword?BRAND:BORDER,color:"#102828",borderRadius:9,padding:"8px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:12,fontWeight:700,flexShrink:0}}>{saving?"...":t.save}</button>
-              </div>
-            </div>
-          )}
-
           {/* Owner name greeting */}
           {ownerPatient&&(()=>{
             const h=new Date().getHours();
@@ -2182,7 +2227,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 <div style={{fontSize:36,lineHeight:1,flexShrink:0}}>{ownerPatient.avatar||"🐕"}</div>
                 <div>
                   <div style={{fontFamily:"'Playfair Display',serif",fontSize:17,fontWeight:700,color:"#6EE7B7",marginBottom:2}}>{t.allDoneShort}</div>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#B8E8E8"}}>{ownerPatient.name} sagt Danke!</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#B8E8E8"}}>{t.saysThanks(ownerPatient.name)}</div>
                 </div>
                 <div style={{marginLeft:"auto",flexShrink:0}}>
                   <Icon name="check" size={22} color="#6EE7B7"/>
@@ -2252,8 +2297,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     ))}
                   </div>
                   <div style={{display:"flex",justifyContent:"space-between",fontFamily:"'DM Sans',sans-serif",fontSize:10,color:MUTED}}>
-                    <span>vor 15 Wochen</span>
-                    <span>heute</span>
+                    <span>{t.calAgo}</span>
+                    <span>{t.calToday}</span>
+                  </div>
+                  <div style={{display:"flex",gap:14,flexWrap:"wrap",marginTop:8,fontFamily:"'DM Sans',sans-serif",fontSize:10.5,color:MUTED}}>
+                    <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:12,height:12,borderRadius:4,background:BRAND,display:"inline-block"}}/>{t.calLegendDone}</span>
+                    <span style={{display:"inline-flex",alignItems:"center",gap:5}}><span style={{width:10,height:10,borderRadius:4,background:ACCENT+"40",outline:`2px solid ${ACCENT}`,display:"inline-block",margin:"0 2px"}}/>{t.calLegendCurrent}</span>
                   </div>
                 </div>
               )}
@@ -2287,15 +2336,15 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                           <span className="tag" style={{background:LIGHT,color:MUTED}}>⏱ {ex.duration}</span>
                         </div>
                         {/* Repeat checkboxes */}
-                        <div style={{display:"flex",alignItems:"center",gap:6}} onClick={e=>e.stopPropagation()}>
+                        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}} onClick={e=>e.stopPropagation()}>
                           <Icon name="repeat" size={13} color={MUTED}/>
-                          <div style={{display:"flex",gap:5}}>
+                          <div style={{display:"flex",gap:8,flexWrap:"wrap",flex:1,minWidth:0}}>
                             {Array.from({length:rc}).map((_,i)=>{
                               const checked=i<doneNow;
                               return(
                                 <button key={i} className="repeat-box" onClick={e=>{e.stopPropagation();toggleRepeat(ex.id,rc,checked?"remove":"add");}}
-                                  style={{borderColor:checked?BRAND:BORDER,background:checked?BRAND:"white",width:28,height:28,cursor:phase==="active"?"pointer":"default",opacity:phase==="active"?1:0.45}}>
-                                  {checked&&<Icon name="check" size={13} color="white"/>}
+                                  style={{borderColor:checked?BRAND:BORDER,background:checked?BRAND:"white",width:44,height:44,borderRadius:12,cursor:phase==="active"?"pointer":"default",opacity:phase==="active"?1:0.45}}>
+                                  {checked&&<Icon name="check" size={20} color="white"/>}
                                 </button>
                               );
                             })}
@@ -2567,11 +2616,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               {assignSubTab==="exercises"&&(<>
                 <div style={{marginBottom:14}}>
                   <SL text="Patient suchen & auswählen"/>
-                  <SearchInput value={assignPatientSearch} onChange={setAssignPatientSearch} placeholder="Name oder Besitzer..."/>
-                  <CustomSelect value={selectedPatient?.id||""} onChange={e=>setSelectedPatient(patients.find(p=>p.id===e.target.value)||null)}>
-                    <option value="">{t.selectPatient}</option>
-                    {filteredAssignPatients.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
-                  </CustomSelect>
+                  <PatientPicker patients={patients} value={selectedPatient} onSelect={setSelectedPatient}/>
                 </div>
                 {selectedPatient&&(<>
                   <div style={{display:"flex",gap:8,marginBottom:14}}>
@@ -2623,11 +2668,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 {/* 1. Patient suchen & auswählen */}
                 <div style={{marginBottom:14}}>
                   <SL text="Patient suchen & auswählen"/>
-                  <SearchInput value={planAssignSearch} onChange={setPlanAssignSearch} placeholder="Name oder Besitzer..."/>
-                  <CustomSelect value={planAssignPatient?.id||""} onChange={e=>{setPlanAssignPatient(patients.find(p=>p.id===e.target.value)||null);setPlanAssignState(null);}}>
-                    <option value="">Patient auswählen...</option>
-                    {patients.filter(p=>{const q=planAssignSearch.trim().toLowerCase();return !planAssignSearch||(p.name||"").toLowerCase().includes(q)||(p.owner||"").toLowerCase().includes(q);}).map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>)}
-                  </CustomSelect>
+                  <PatientPicker patients={patients} value={planAssignPatient} onSelect={p=>{setPlanAssignPatient(p);setPlanAssignState(null);}}/>
                 </div>
 
                 {planAssignPatient&&(<>
@@ -2798,11 +2839,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,fontWeight:700,color:DARK,marginBottom:12}}>Merkblätter zuweisen</div>
                 <div style={{marginBottom:14}}>
                   <SL text="Patient suchen & auswählen"/>
-                  <SearchInput value={eduAssignSearch} onChange={v=>{setEduAssignSearch(v);setEduAssignPatient(null);}} placeholder="Name oder Besitzer..."/>
-                  <CustomSelect value={eduAssignPatient?.id||""} onChange={e=>setEduAssignPatient(patients.find(p=>p.id===e.target.value)||null)}>
-                    <option value="">Patient auswählen...</option>
-                    {(()=>{const q=eduAssignSearch.trim().toLowerCase();let list=q?patients.filter(p=>(p.name||"").toLowerCase().includes(q)||(p.owner||"").toLowerCase().includes(q)):patients;if(eduOnlyWithSheets)list=list.filter(p=>sheetAssignedIds(p.id).length>0);return list.map(p=><option key={p.id} value={p.id}>{patLabel(p)}</option>);})()}
-                  </CustomSelect>
+                  <PatientPicker patients={patients} value={eduAssignPatient} onSelect={setEduAssignPatient} filter={eduOnlyWithSheets?(p=>sheetAssignedIds(p.id).length>0):null}/>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10,cursor:"pointer"}} onClick={()=>{setEduOnlyWithSheets(v=>!v);setEduAssignPatient(null);}}>
                     <div style={{width:18,height:18,borderRadius:5,border:`1.5px solid ${eduOnlyWithSheets?BRAND:BORDER}`,background:eduOnlyWithSheets?BRAND:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
                       {eduOnlyWithSheets&&<Icon name="check" size={11} color="white"/>}
@@ -3068,8 +3105,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                       const checked=i<doneNow;
                       return(
                         <button key={i} className="repeat-box" onClick={()=>toggleRepeat(selectedExercise.id,rc,checked?"remove":"add")}
-                          style={{borderColor:checked?BRAND:BORDER,background:checked?BRAND:"white",width:36,height:36,borderRadius:10}}>
-                          {checked&&<Icon name="check" size={18} color="white"/>}
+                          style={{borderColor:checked?BRAND:BORDER,background:checked?BRAND:"white",width:44,height:44,borderRadius:12}}>
+                          {checked&&<Icon name="check" size={20} color="white"/>}
                         </button>
                       );
                     })}
@@ -3144,6 +3181,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   </div>
                 </div>
               </div>
+              <Missing items={[!selectedPatient&&"Patient",!selectedTemplate&&"Übung",!duration&&"Dauer"]}/>
               <button className="btn" onClick={addExercise} disabled={saving} style={{width:"100%",padding:"14px",borderRadius:12,background:selectedTemplate&&selectedPatient&&duration?BRAND:BORDER,color:selectedTemplate&&selectedPatient&&duration?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:t.assignBtn}
               </button>
@@ -3184,6 +3222,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 </>)}
                 {newAccountMode==="none"&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED}}>Dieser Patient bekommt keinen App-Zugang.</div>}
               </div>
+              <Missing items={[!newPatient.name&&"Name des Hundes"]}/>
               <button className="btn" onClick={addPatient} disabled={saving||!newPatient.name} style={{width:"100%",padding:"14px",borderRadius:12,background:newPatient.name?BRAND:BORDER,color:newPatient.name?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:"Patient anlegen"}
               </button>
@@ -3245,6 +3284,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 </>)}
                 {editAccountMode==="none"&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED}}>Kein App-Zugang für diesen Patienten.</div>}
               </div>
+              <Missing items={[!editPatientData.name&&"Name"]}/>
               <button className="btn" onClick={updatePatient} disabled={saving||!editPatientData.name} style={{width:"100%",padding:"14px",borderRadius:12,background:editPatientData.name?BRAND:BORDER,color:editPatientData.name?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:"Änderungen speichern"}
               </button>
@@ -3298,6 +3338,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   </div>
                 </label>
               )}
+              <Missing items={[!newTemplate.title&&"Titel"]}/>
               <button className="btn" onClick={addTemplate} disabled={saving||!newTemplate.title} style={{width:"100%",padding:"14px",borderRadius:12,background:newTemplate.title?BRAND:BORDER,color:newTemplate.title?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:"Übung speichern"}
               </button>
@@ -3369,6 +3410,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   </div>
                 </label>
               )}
+              <Missing items={[!editTemplateData.title&&"Titel"]}/>
               <button className="btn" onClick={updateTemplate} disabled={saving||!editTemplateData.title} style={{width:"100%",padding:"14px",borderRadius:12,background:editTemplateData.title?BRAND:BORDER,color:editTemplateData.title?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:"Änderungen speichern"}
               </button>
@@ -3489,6 +3531,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 </div>
               </div>
 
+              <Missing items={[!(sheet==="addPlan"?newPlan.title:editPlanData?.title)&&"Name des Plans"]}/>
               <button className="btn" disabled={saving||(sheet==="addPlan"?!newPlan.title:!editPlanData?.title)} onClick={sheet==="addPlan"?addPlanTemplate:updatePlanTemplate}
                 style={{width:"100%",padding:"14px",borderRadius:12,background:(sheet==="addPlan"?newPlan.title:editPlanData?.title)?BRAND:BORDER,color:(sheet==="addPlan"?newPlan.title:editPlanData?.title)?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:sheet==="addPlan"?"Plan speichern":"Änderungen speichern"}
@@ -3535,6 +3578,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 </div>
               )}
               {isEdit&&(d.title_en||d.title_es)&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>Übersetzungen (EN/ES) sind hinterlegt und bleiben beim Speichern erhalten.</div>}
+              <Missing items={[!d.title.trim()&&"Titel",!d.content.trim()&&"Ausführlicher Text"]}/>
               <button className="btn" onClick={isEdit?updateSheet:addSheet} disabled={saving||!valid} style={{width:"100%",padding:"14px",borderRadius:12,background:valid?BRAND:BORDER,color:valid?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:(isEdit?"Speichern":"Anlegen")}
               </button>
@@ -3568,7 +3612,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             {selectedSheet.image_url&&<div style={{width:"100%",borderRadius:14,overflow:"hidden",marginBottom:16,background:LIGHT}}><img src={selectedSheet.image_url} alt={exT(selectedSheet,"title")} style={{width:"100%",height:"auto",maxHeight:240,objectFit:"cover",display:"block"}}/></div>}
             {(()=>{const kp=exT(selectedSheet,"key_points")||[];return kp.length>0?(
               <div style={{background:LIGHT,borderRadius:14,padding:"14px 16px",marginBottom:16}}>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:DARK,marginBottom:10}}>Das Wichtigste</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:DARK,marginBottom:10}}>{t.keyPointsTitle}</div>
                 <div style={{display:"flex",flexDirection:"column",gap:9}}>
                   {kp.map((point,i)=>(
                     <div key={i} style={{display:"flex",gap:10,alignItems:"flex-start"}}>
@@ -3595,7 +3639,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={t.surveyTitle} onClose={()=>setSurveySheet(false)}/>
-            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12.5,color:MUTED,marginBottom:14}}>{lastSurvey?t.surveyPrevIntro(new Date(lastSurvey.created_at).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})):t.surveyIntro}</div>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12.5,color:MUTED,marginBottom:14}}>{lastSurvey?t.surveyPrevIntro(new Date(lastSurvey.created_at).toLocaleDateString(locale,{day:"2-digit",month:"2-digit",year:"numeric"})):t.surveyIntro}</div>
             <div style={{display:"flex",flexDirection:"column",gap:16}}>
               {qs.map((q,i)=>{
                 const prevVal=lastSurvey?.answers?.[i];
@@ -3752,15 +3796,29 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={t.feedbackTitle} onClose={()=>setShowAppFeedback(false)}/>
             <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,marginBottom:14}}>
-              Dein Feedback hilft dabei die App weiterzuentwickeln. Was funktioniert gut, was könnte besser sein?
+              {t.fbIntro}
             </div>
             <textarea value={appFeedbackText} onChange={e=>setAppFeedbackText(e.target.value)} rows={5}
-              placeholder="Dein Feedback..." style={{...inp,resize:"vertical",marginBottom:14}}/>
+              placeholder={t.fbPlaceholder} style={{...inp,resize:"vertical",marginBottom:14}}/>
             <a href={isAdmin?`mailto:${practice.feedback_email_dev}?subject=${practice.practice_name} App-Feedback&body=${encodeURIComponent(appFeedbackText)}`:`mailto:${practice.contact_email}?subject=${practice.practice_name} Feedback&body=${encodeURIComponent(appFeedbackText)}`}
               onClick={()=>setTimeout(()=>setShowAppFeedback(false),500)}
               style={{display:"block",width:"100%",padding:"14px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,textAlign:"center",textDecoration:"none",boxSizing:"border-box"}}>
-              Feedback senden
+              {t.fbSend}
             </a>
+          </div>
+        </div>
+      )}
+
+      {/* SHEET: ABMELDEN BESTÄTIGEN (seit 087) */}
+      {confirmLogout&&(
+        <div className="overlay">
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title={t.logoutTitle} onClose={()=>setConfirmLogout(false)}/>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:DARK,lineHeight:1.6,marginBottom:18}}>{t.logoutText}</div>
+            <div style={{display:"flex",gap:10}}>
+              <button className="btn" onClick={()=>setConfirmLogout(false)} style={{flex:1,padding:"13px",borderRadius:11,background:LIGHT,color:DARK,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14}}>{t.cancel}</button>
+              <button className="btn" onClick={()=>{setConfirmLogout(false);handleLogout();}} style={{flex:1,padding:"13px",borderRadius:11,background:DARK,color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14}}>{t.logoutConfirm}</button>
+            </div>
           </div>
         </div>
       )}
@@ -3771,19 +3829,19 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={t.deleteAccount} onClose={()=>setShowDeleteAccount(false)}/>
             <div style={{background:"#FFF0F0",borderRadius:12,padding:"14px 16px",marginBottom:16}}>
-              <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#C0392B",marginBottom:6}}>Achtung – diese Aktion ist unwiderruflich</div>
+              <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#C0392B",marginBottom:6}}>{t.delWarnTitle}</div>
               <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:"#5D4037",lineHeight:1.6}}>
-                Dein Konto und alle damit verbundenen Daten werden dauerhaft gelöscht. Deine Therapiedaten bleiben bei deiner Therapeutin erhalten.
+                {t.delWarnText}
               </div>
             </div>
             <div style={{marginBottom:16}}>
-              <SL text={`Zur Bestätigung "LÖSCHEN" eingeben`}/>
+              <SL text={t.delConfirmLabel(t.delWord)}/>
               <input value={deleteConfirmText} onChange={e=>setDeleteConfirmText(e.target.value)}
-                placeholder="LÖSCHEN" style={inp}/>
+                placeholder={t.delWord} autoCapitalize="characters" style={inp}/>
             </div>
-            <button className="btn" onClick={deleteAccount} disabled={deleteConfirmText!=="LÖSCHEN"||saving}
-              style={{width:"100%",padding:"14px",borderRadius:12,background:deleteConfirmText==="LÖSCHEN"?"#C0392B":"#FFD0D0",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
-              {saving?"Wird gelöscht...":"Konto unwiderruflich löschen"}
+            <button className="btn" onClick={deleteAccount} disabled={deleteConfirmText.trim().toUpperCase()!==t.delWord||saving}
+              style={{width:"100%",padding:"14px",borderRadius:12,background:deleteConfirmText.trim().toUpperCase()===t.delWord?"#C0392B":"#FFD0D0",color:"white",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+              {saving?t.delBusy:t.delButton}
             </button>
           </div>
         </div>
