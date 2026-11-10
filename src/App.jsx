@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-10-085";
+const APP_VERSION = "2026-11-10-086";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -555,7 +555,8 @@ const LoginScreen = ({practice,onLogin}) => {
   );
 };
 
-const PasswordResetScreen = ({ practice, onDone }) => {
+// forced (seit 086): Pflicht-Wechsel des Startpassworts direkt nach dem ersten Login – ohne Abmelden, App erst danach nutzbar
+const PasswordResetScreen = ({ practice, onDone, forced, email, onLogout }) => {
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
   const [loading, setLoading] = useState(false);
@@ -568,9 +569,11 @@ const PasswordResetScreen = ({ practice, onDone }) => {
   const handleReset = async () => {
     if (!password || password.length < 6) { setError("Passwort muss mindestens 6 Zeichen haben."); return; }
     if (password !== password2) { setError("Passwörter stimmen nicht überein."); return; }
+    if (forced && email && password.trim().toLowerCase() === email.trim().toLowerCase()) { setError("Bitte wähle ein Passwort, das nicht deiner Email-Adresse entspricht."); return; }
     setLoading(true); setError("");
     const { error: err } = await supabase.auth.updateUser({ password, data: { must_change_password: false } });
-    if (err) { setError("Fehler: " + err.message); setLoading(false); return; }
+    if (err) { setError(/different from the old/i.test(err.message) ? "Das neue Passwort muss sich vom bisherigen unterscheiden." : "Fehler: " + err.message); setLoading(false); return; }
+    if (forced) { setLoading(false); onDone(); return; }
     await supabase.auth.signOut();
     setSuccess(true);
     setLoading(false);
@@ -596,7 +599,7 @@ const PasswordResetScreen = ({ practice, onDone }) => {
           ) : (
             <>
               <div style={{ fontFamily:"'Playfair Display',serif", fontSize:22, fontWeight:700, color:DARK, marginBottom:4 }}>Neues Passwort</div>
-              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:MUTED, marginBottom:22 }}>Bitte wähle ein neues Passwort für deinen Account.</div>
+              <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:13, color:MUTED, marginBottom:22 }}>{forced?"Zu deiner Sicherheit: Bitte wähle jetzt ein eigenes Passwort. Danach geht es direkt weiter.":"Bitte wähle ein neues Passwort für deinen Account."}</div>
               <div style={{ marginBottom:14 }}>
                 <div style={{ fontFamily:"'DM Sans',sans-serif", fontSize:11, fontWeight:700, color:MUTED, letterSpacing:".7px", textTransform:"uppercase", marginBottom:7 }}>Neues Passwort</div>
                 <div style={{position:"relative"}}><input type={showPw1?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mindestens 6 Zeichen" style={{...inp,paddingRight:42}}/><button onClick={()=>setShowPw1(p=>!p)} style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",background:"none",border:"none",cursor:"pointer",padding:4,color:MUTED}}>{showPw1?<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}</button></div>
@@ -609,6 +612,7 @@ const PasswordResetScreen = ({ practice, onDone }) => {
               <button onClick={handleReset} disabled={loading} style={{ width:"100%", padding:"14px", borderRadius:12, background:loading?BORDER:BRAND, color:"#102828", fontFamily:"'DM Sans',sans-serif", fontWeight:700, fontSize:15, border:"none", cursor:"pointer" }}>
                 {loading ? "Wird gespeichert..." : "Passwort speichern"}
               </button>
+              {forced && onLogout && <button onClick={onLogout} style={{ display:"block", margin:"14px auto 0", background:"none", border:"none", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", fontSize:12, color:MUTED, textDecoration:"underline", padding:0 }}>Abmelden</button>}
             </>
           )}
         </div>
@@ -849,6 +853,7 @@ export default function App() {
         setPatients([]);setExercises([]);setDoneLogs([]);setHistoryLogs([]);setFeedbacks([]);setTemplates([]);setEduSheets([]);setPatientEdu([]);
         setOwnerPatient(null);setSelectedPatient(null);
         setIsAdmin(false);
+        setMustChangePassword(false); // sonst erbt der nächste Login auf diesem Gerät die Pflicht (seit 086)
         setView("owner"); // View zurücksetzen — sonst erbt der nächste (Besitzer-)Login einen Admin-View und sieht eine leere Seite (Fix 065)
         setLoading(true);
       } else if(event==="SIGNED_IN"&&s){
@@ -963,7 +968,7 @@ export default function App() {
 
       if(uid&&ps&&uid!==ps.admin_user_id){
         const{data:{user}}=await supabase.auth.getUser();
-        if(user?.user_metadata?.must_change_password)setMustChangePassword(true);
+        setMustChangePassword(!!user?.user_metadata?.must_change_password);
       }
     }catch(e){
       console.error("loadAll error",e);
@@ -1016,7 +1021,7 @@ export default function App() {
 <head>
 <meta charset="UTF-8"/>
 <title>${lang==="en"?"Exercise Plan":lang==="es"?"Plan de ejercicios":"Übungsplan"} ${patient.name}</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<link href="${window.location.origin}/fonts/fonts.css" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:"DM Sans",sans-serif;color:#102828;background:white;padding:24px 40px;font-size:13px}
@@ -1179,7 +1184,7 @@ ${patExercises.map((ex) => `
     const planExs = planTemplateExercises.filter(pe => pe.plan_template_id === plan.id);
     const date = new Date().toLocaleDateString("de-DE", {day:"2-digit",month:"long",year:"numeric"});
     const html = `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"/><title>Behandlungsplan: ${plan.title}</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<link href="${window.location.origin}/fonts/fonts.css" rel="stylesheet"/>
 <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:"DM Sans",sans-serif;color:#102828;background:white;padding:24px 40px;font-size:13px}.header{text-align:center;padding-bottom:12px;margin-bottom:16px;border-bottom:1px solid #e0e0e0}.brand-name{font-size:22px;font-weight:700;letter-spacing:6px;color:#102828;margin-bottom:4px}.brand-sub{font-size:10px;letter-spacing:3px;color:#555;text-transform:uppercase}.plan-header{margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #e8e8e8}.plan-title{font-family:"Playfair Display",serif;font-size:22px;font-weight:700;color:${DARK};margin-bottom:4px}.plan-note{font-size:13px;color:#555;margin-top:4px;font-style:italic}.plan-meta{font-size:10px;color:#aaa;margin-top:6px;letter-spacing:1px}.section-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:#aaa;margin-bottom:12px}.exercise{display:flex;gap:14px;margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #f0f0f0;page-break-inside:avoid}.exercise:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}.ex-img{width:72px;height:72px;border-radius:8px;object-fit:contain;background:#f7fbfb;flex-shrink:0;border:1px solid #e8f5f5;padding:3px}.ex-img-placeholder{width:72px;height:72px;border-radius:8px;background:#f7fbfb;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;border:1px solid #e8f5f5}.ex-body{flex:1;min-width:0}.ex-title{font-family:"Playfair Display",serif;font-size:14px;font-weight:700;color:#102828;margin-bottom:5px}.ex-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}.tag{font-size:9px;font-weight:600;padding:2px 8px;border-radius:20px;background:#f0f9f9;color:${MID}}.tag-freq{background:${DARK};color:white}.tag-diff-leicht{background:#e8f8f0;color:#2E7D32}.tag-diff-mittel{background:#fff3e0;color:#e65100}.tag-diff-schwer{background:#fde8e8;color:#c0392b}.ex-desc{font-size:11px;color:#444;line-height:1.6;margin-bottom:8px}.steps-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:${MID};margin-bottom:7px}.step{display:flex;gap:8px;margin-bottom:4px;align-items:flex-start}.step-num{width:18px;height:18px;border-radius:50%;background:${BRAND};color:white;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}.step-text{font-size:11px;color:#333;line-height:1.5}.video-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 10px;background:#f7fbfb;border-radius:7px;border:1px solid #e0f0f0}.footer-divider{border:none;border-top:1px solid #e0e0e0;margin:14px 0 10px}.footer-note{font-size:10px;color:#aaa;text-align:center;line-height:1.7}@media print{body{padding:20px 28px}@page{margin:0.8cm}}</style></head><body>
 <div class="header">${PRACTICE_SLUG==="fitfundog"?`<div class="brand-name">F|T&nbsp;&nbsp;FUN&nbsp;&nbsp;DOG</div><div class="brand-sub">P&nbsp;H&nbsp;Y&nbsp;S&nbsp;I&nbsp;O&nbsp;T&nbsp;H&nbsp;E&nbsp;R&nbsp;A&nbsp;P&nbsp;I&nbsp;E&nbsp;&nbsp;&amp;&nbsp;&nbsp;O&nbsp;S&nbsp;T&nbsp;E&nbsp;O&nbsp;P&nbsp;A&nbsp;T&nbsp;H&nbsp;I&nbsp;E</div>`:`<div class="brand-name">${practice.practice_name||""}</div><div class="brand-sub">${practice.practice_subtitle||""}</div>`}</div>
 <div class="plan-header">
@@ -2030,11 +2035,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   if(isRecoveryMode)return <PasswordResetScreen practice={practice} onDone={()=>{sessionStorage.removeItem("_recovery");setIsRecoveryMode(false);window.location.hash="";}} />;
   if(!session)return <LoginScreen practice={practice||{logo_url:"",practice_name:"",practice_subtitle:"",therapist_email:"",privacy_url:"",imprint_url:""}}/>;
   if(loading)return <div style={{minHeight:"100vh",background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}><Icon name="paw" size={48} color={BRAND}/><div style={{fontFamily:"'DM Sans',sans-serif",color:MUTED}}>Wird geladen...</div></div>;
+  // Startpasswort muss vor der Nutzung geändert werden (seit 086) – vorher war es nur ein Hinweis-Banner
+  if(mustChangePassword&&!isAdmin)return <PasswordResetScreen forced practice={practice} email={session.user?.email||""} onLogout={handleLogout} onDone={()=>{setMustChangePassword(false);showToast("success","Passwort geändert");}} />;
 
   return (
     <div style={{fontFamily:"Georgia,serif",minHeight:"100vh",background:LIGHT,color:"#102828"}} onClick={()=>setLangOpen(false)}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;600&display=swap');
         *{box-sizing:border-box;margin:0;padding:0;}
         body{-webkit-text-size-adjust:100%;}
         .btn{cursor:pointer;border:none;transition:all .18s;background:none;}

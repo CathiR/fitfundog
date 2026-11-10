@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as webpush from "jsr:@negrel/webpush";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -6,163 +7,130 @@ const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY")!;
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY")!;
 const VAPID_SUBJECT = "mailto:fitfundog@freenet.de";
 
-// ── VAPID JWT helper ──
-// Extract x/y coordinates from uncompressed public key (65 bytes: 0x04 + 32 + 32)
-function getPublicKeyCoords(pubKeyBase64url: string): { x: string; y: string } {
-  const raw = new Uint8Array(base64UrlDecode(pubKeyBase64url));
-  // raw[0] === 0x04 (uncompressed point marker)
-  const x = raw.slice(1, 33);
-  const y = raw.slice(33, 65);
-  const toB64url = (b: Uint8Array) => btoa(String.fromCharCode(...b)).replace(/=/g,"").replace(/\+/g,"-").replace(/\//g,"_");
-  return { x: toB64url(x), y: toB64url(y) };
-}
-
-async function makeVapidJwt(endpoint: string): Promise<string> {
-  const url = new URL(endpoint);
-  const audience = `${url.protocol}//${url.host}`;
-  const now = Math.floor(Date.now() / 1000);
-  const header = btoa(JSON.stringify({ typ: "JWT", alg: "ES256" }))
-    .replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  const payload = btoa(JSON.stringify({ aud: audience, exp: now + 43200, sub: VAPID_SUBJECT }))
-    .replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  const data = new TextEncoder().encode(`${header}.${payload}`);
-  const { x, y } = getPublicKeyCoords(VAPID_PUBLIC_KEY);
-  const cryptoKey = await crypto.subtle.importKey(
-    "jwk",
-    { kty: "EC", crv: "P-256", d: VAPID_PRIVATE_KEY, x, y, key_ops: ["sign"], ext: true },
-    { name: "ECDSA", namedCurve: "P-256" },
-    false, ["sign"]
-  );
-  const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, cryptoKey, data);
-  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)))
-    .replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  return `${header}.${payload}.${sigB64}`;
-}
-
-function base64UrlDecode(str: string): ArrayBuffer {
+function base64UrlDecode(str: string): Uint8Array {
   str = str.replace(/-/g, "+").replace(/_/g, "/");
   while (str.length % 4) str += "=";
   const bin = atob(str);
-  return Uint8Array.from(bin, c => c.charCodeAt(0)).buffer;
+  return Uint8Array.from(bin, (c) => c.charCodeAt(0));
 }
 
-// ── Send one push notification ──
-async function sendPush(sub: { endpoint: string; p256dh: string; auth: string }, payload: string) {
-  const jwt = await makeVapidJwt(sub.endpoint);
-  const authHeader = `vapid t=${jwt},k=${VAPID_PUBLIC_KEY}`;
-
-  // Encrypt payload using Web Push encryption (RFC 8291)
-  const saltBytes = crypto.getRandomValues(new Uint8Array(16));
-  const serverKeyPair = await crypto.subtle.generateKey(
-    { name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]
-  );
-  const serverPublicKeyRaw = await crypto.subtle.exportKey("raw", serverKeyPair.publicKey);
-  const clientPublicKey = await crypto.subtle.importKey(
-    "raw", base64UrlDecode(sub.p256dh),
-    { name: "ECDH", namedCurve: "P-256" }, false, []
-  );
-  const sharedSecret = await crypto.subtle.deriveBits(
-    { name: "ECDH", public: clientPublicKey }, serverKeyPair.privateKey, 256
-  );
-  const authSecret = base64UrlDecode(sub.auth);
-  const hkdfSalt = new Uint8Array(32);
-  const prk = await crypto.subtle.importKey("raw", sharedSecret, { name: "HKDF" }, false, ["deriveBits"]);
-  const ikm = await crypto.subtle.deriveBits(
-    { name: "HKDF", hash: "SHA-256", salt: authSecret, info: new TextEncoder().encode("Content-Encoding: auth\0") },
-    prk, 256
-  );
-  const ikmKey = await crypto.subtle.importKey("raw", ikm, { name: "HKDF" }, false, ["deriveBits"]);
-  const serverPubBytes = new Uint8Array(serverPublicKeyRaw);
-  const clientPubBytes = new Uint8Array(base64UrlDecode(sub.p256dh));
-  const keyInfo = new Uint8Array([...new TextEncoder().encode("Content-Encoding: aesgcm\0"), 0, 65, ...clientPubBytes, 0, 65, ...serverPubBytes]);
-  const nonceInfo = new Uint8Array([...new TextEncoder().encode("Content-Encoding: nonce\0"), 0, 65, ...clientPubBytes, 0, 65, ...serverPubBytes]);
-  const contentKey = await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt: saltBytes, info: keyInfo }, ikmKey, 128);
-  const nonceBits = await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt: saltBytes, info: nonceInfo }, ikmKey, 96);
-  const aesKey = await crypto.subtle.importKey("raw", contentKey, { name: "AES-GCM" }, false, ["encrypt"]);
-  const plaintext = new TextEncoder().encode(payload);
-  const padded = new Uint8Array(plaintext.length + 2);
-  padded.set(plaintext, 2);
-  const encrypted = await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonceBits }, aesKey, padded);
-  const body = new Uint8Array(encrypted);
-
-  const saltB64 = btoa(String.fromCharCode(...saltBytes)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  const serverPubB64 = btoa(String.fromCharCode(...serverPubBytes)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-
-  const res = await fetch(sub.endpoint, {
-    method: "POST",
-    headers: {
-      "Authorization": authHeader,
-      "Content-Type": "application/octet-stream",
-      "Content-Encoding": "aesgcm",
-      "Encryption": `salt=${saltB64}`,
-      "Crypto-Key": `dh=${serverPubB64}`,
-      "TTL": "86400",
-    },
-    body,
-  });
-  return res.status;
+function toB64url(b: Uint8Array): string {
+  return btoa(String.fromCharCode(...b)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
 }
 
-// ── Main handler ──
-Deno.serve(async (req) => {
+// VAPID-CryptoKeyPair aus den vorhandenen Secrets ableiten
+// (Public: 65-Byte uncompressed Point base64url, Private: d-Wert base64url)
+async function buildVapidKeys(): Promise<CryptoKeyPair> {
+  const raw = base64UrlDecode(VAPID_PUBLIC_KEY); // 0x04 + x(32) + y(32)
+  const x = toB64url(raw.slice(1, 33));
+  const y = toB64url(raw.slice(33, 65));
+  const publicKey = await crypto.subtle.importKey(
+    "raw", raw, { name: "ECDSA", namedCurve: "P-256" }, true, ["verify"],
+  );
+  const privateKey = await crypto.subtle.importKey(
+    "jwk",
+    { kty: "EC", crv: "P-256", d: VAPID_PRIVATE_KEY, x, y, ext: true },
+    { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"],
+  );
+  return { publicKey, privateKey };
+}
+
+Deno.serve(async (_req) => {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
   const nowUtc = new Date();
   const errors: string[] = [];
   let sent = 0;
 
-  // Get all subscriptions where reminder_time matches current hour (in user's timezone)
   const { data: subs } = await supabase.from("push_subscriptions").select("*");
-  console.log(`send-reminders: ${subs?.length ?? 0} subscriptions found, utc=${nowUtc.toISOString()}`);
+  console.log(`send-reminders: ${subs?.length ?? 0} subscriptions, utc=${nowUtc.toISOString()}`);
   if (!subs?.length) return new Response(JSON.stringify({ sent: 0 }), { status: 200 });
+
+  // ApplicationServer pro Aufruf neu erstellen -> frisches ECDH-Keypaar (RFC 8291)
+  const vapidKeys = await buildVapidKeys();
+  const appServer = await webpush.ApplicationServer.new({
+    contactInformation: VAPID_SUBJECT,
+    vapidKeys,
+  });
 
   for (const sub of subs) {
     try {
-      // Check current time in user's timezone
+      // Aktuelle Zeit in der Zeitzone des Users
       const userNow = new Date(nowUtc.toLocaleString("en-US", { timeZone: sub.timezone || "Europe/Berlin" }));
-      const userHour = userNow.getHours();
-      const userMin = userNow.getMinutes();
       const [remHour, remMin] = (sub.reminder_time || "09:00").split(":").map(Number);
-      // Fire within a 2-minute window around reminder_time to account for cron timing drift
-      if (userHour !== remHour || Math.abs(userMin - remMin) > 2) continue;
+      // Fenster: +/-2 Minuten, korrekt ueber Stunden- und Tagesgrenzen
+      const nowMins = userNow.getHours() * 60 + userNow.getMinutes();
+      const remMins = remHour * 60 + remMin;
+      let diff = Math.abs(nowMins - remMins);
+      diff = Math.min(diff, 1440 - diff);
+      if (diff > 2) continue;
 
-      // Get patient for this user
+      // Sendesperre: max. 1 Erinnerung pro 10 Minuten (Cron laeuft minuetlich)
+      if (sub.last_sent_at && (nowUtc.getTime() - new Date(sub.last_sent_at).getTime()) < 10 * 60 * 1000) continue;
+
       const { data: patients } = await supabase.from("patients").select("id,name").eq("user_id", sub.user_id);
       if (!patients?.length) continue;
 
-      // Check if they have open exercises this week
-      const today = new Date().toISOString().split("T")[0];
-      const weekStart = (() => { const d = new Date(); const day = d.getDay(); const diff = day === 0 ? -6 : 1 - day; d.setDate(d.getDate() + diff); return d.toISOString().split("T")[0]; })();
+      // Wochenstart/heute in der Zeitzone des Users berechnen
+      const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const today = fmt(userNow);
+      const ws = new Date(userNow);
+      const day = ws.getDay();
+      ws.setDate(ws.getDate() + (day === 0 ? -6 : 1 - day));
+      const weekStart = fmt(ws);
 
+      let sentForSub = 0;
       for (const patient of patients) {
-        const { data: exercises } = await supabase.from("exercises").select("id,repeat_count").eq("patient_id", patient.id);
+        const { data: exercises } = await supabase.from("exercises").select("id,repeat_count,active_from,active_until").eq("patient_id", patient.id);
         if (!exercises?.length) continue;
 
+        // Nur Uebungen in aktiver Phase zaehlen (seit v8 / App 064)
+        const activeExercises = exercises.filter((ex) =>
+          (!ex.active_from || ex.active_from <= today) &&
+          (!ex.active_until || ex.active_until >= today)
+        );
+        if (!activeExercises.length) continue;
+
         const { data: logs } = await supabase.from("exercise_logs")
-          .select("exercise_id").eq("done", true).gte("done_date", weekStart).lte("done_date", today);
+          .select("exercise_id").eq("done", true).gte("done_date", weekStart).lte("done_date", today)
+          .in("exercise_id", activeExercises.map((e) => e.id));
 
         const doneCounts: Record<string, number> = {};
         for (const l of logs || []) doneCounts[l.exercise_id] = (doneCounts[l.exercise_id] || 0) + 1;
 
-        const openCount = exercises.filter(ex => (doneCounts[ex.id] || 0) < (ex.repeat_count || 1)).length;
+        const openCount = activeExercises.filter((ex) => (doneCounts[ex.id] || 0) < (ex.repeat_count || 1)).length;
         if (openCount === 0) continue;
 
         const payload = JSON.stringify({
-          title: "Fit Fun Dog 🐾",
+          title: "Fit Fun Dog \u{1F43E}",
           body: `${patient.name} wartet auf ${openCount} Übung${openCount > 1 ? "en" : ""}!`,
-          url: "/"
+          url: "/",
         });
 
-        console.log(`Sending push to user ${sub.user_id}, status will follow`);
-        const status = await sendPush(sub, payload);
-        console.log(`Push status: ${status}`);
-        if (status < 300) sent++;
-        else if (status === 410) {
-          // Subscription expired – remove it
-          await supabase.from("push_subscriptions").delete().eq("id", sub.id);
+        try {
+          const subscriber = appServer.subscribe({
+            endpoint: sub.endpoint,
+            keys: { p256dh: sub.p256dh, auth: sub.auth },
+          });
+          await subscriber.pushTextMessage(payload, { ttl: 86400, urgency: webpush.Urgency.High });
+          sent++;
+          sentForSub++;
+          console.log(`Push sent to user ${sub.user_id} (${patient.name})`);
+        } catch (pushErr) {
+          const status = pushErr?.response?.status;
+          console.error(`Push failed for user ${sub.user_id}: status=${status}`);
+          if (status === 404 || status === 410) {
+            // Subscription existiert nicht mehr -> aufraeumen
+            await supabase.from("push_subscriptions").delete().eq("id", sub.id);
+          } else {
+            errors.push(`user ${sub.user_id}: status=${status ?? String(pushErr)}`);
+          }
         }
       }
+      if (sentForSub > 0) {
+        await supabase.from("push_subscriptions").update({ last_sent_at: nowUtc.toISOString() }).eq("id", sub.id);
+      }
     } catch (e) {
-      console.error(`Push error for user ${sub.user_id}:`, String(e));
+      console.error(`Error for user ${sub.user_id}:`, String(e));
       errors.push(String(e));
     }
   }
@@ -170,6 +138,6 @@ Deno.serve(async (req) => {
   console.log(`send-reminders done: sent=${sent}, errors=${errors.length}`);
   return new Response(JSON.stringify({ sent, errors }), {
     status: 200,
-    headers: { "Content-Type": "application/json" }
+    headers: { "Content-Type": "application/json" },
   });
 });
