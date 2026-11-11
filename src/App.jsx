@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-10-087";
+const APP_VERSION = "2026-11-11-088";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -371,6 +371,57 @@ const PatientPicker = ({ patients, value, onSelect, filter }) => {
       </div>
       {list.length>shown.length&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,textAlign:"center",padding:"8px 0 0"}}>{list.length-shown.length} weitere – bitte Suche {s?"verfeinern":"nutzen"}</div>}
       {list.length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,textAlign:"center",padding:"10px 0"}}>Keine Patienten gefunden.</div>}
+    </div>
+  );
+};
+
+// ── Bild-Upload (seit 088): wie beim Video, Ablage im Bucket exercise-images ──
+const ImageUploadField = ({ id, value, uploading, onUpload }) => (
+  <div style={{marginTop:8,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+    {value&&<img src={value} alt="" style={{width:56,height:56,borderRadius:10,objectFit:"contain",background:LIGHT,padding:2,flexShrink:0}}/>}
+    <input id={id} type="file" accept="image/jpeg,image/png,image/webp" style={{display:"none"}}
+      onChange={e=>{const f=e.target.files?.[0];e.target.value="";if(f)onUpload(f);}}/>
+    <label htmlFor={uploading?undefined:id} className="btn" style={{display:"inline-flex",alignItems:"center",gap:6,background:BRAND+"18",borderRadius:10,padding:"11px 14px",fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:MID,cursor:uploading?"default":"pointer",opacity:uploading?0.6:1}}>
+      <Icon name="plus" size={13} color={MID}/>{uploading?"Wird hochgeladen...":(value?"Bild ersetzen":"Bild hochladen")}
+    </label>
+    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,flexBasis:"100%"}}>JPG, PNG oder WebP – große Fotos werden automatisch verkleinert</div>
+  </div>
+);
+
+// ── Auffälligkeiten (seit 088): Schmerzmeldungen und Inaktivität auf einen Blick ──
+const ALERT_DAYS = 14, ALERT_PAIN = 4;
+const AlertsCard = ({ pain, idle, onOpen }) => {
+  const total = pain.length + idle.length;
+  const [open, setOpen] = useState(true);
+  const row = (key, p, text, strong) => (
+    <button key={key} className="btn" onClick={()=>onOpen(p)} style={{display:"flex",alignItems:"center",gap:10,width:"100%",textAlign:"left",padding:"9px 0",borderTop:`1px solid ${LIGHT}`,minHeight:44}}>
+      <div style={{width:8,height:8,borderRadius:"50%",background:strong?"#C0392B":"#E0A030",flexShrink:0}}/>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,color:"#102828"}}>{p.name}{p.owner?<span style={{fontWeight:400,color:MUTED}}> · {p.owner}</span>:null}</div>
+        <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED}}>{text}</div>
+      </div>
+      <Icon name="chevron" size={13} color={ACCENT}/>
+    </button>
+  );
+  const head = {fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".6px",textTransform:"uppercase",margin:"10px 0 2px"};
+  return (
+    <div className="card" style={{padding:"12px 14px",marginBottom:12,border:total>0?`1.5px solid ${pain.length?"#E8B4B0":"#EBD3A0"}`:"none"}}>
+      <button className="btn" onClick={()=>setOpen(o=>!o)} style={{display:"flex",alignItems:"center",gap:8,width:"100%",textAlign:"left"}}>
+        <Icon name="info" size={16} color={total>0?(pain.length?"#C0392B":"#B98A1E"):MUTED}/>
+        <div style={{flex:1,fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK}}>Auffälligkeiten</div>
+        {total>0
+          ?<span className="tag" style={{background:pain.length?"#FFE8E8":"#FBF3E1",color:pain.length?"#C0392B":"#8A6410",fontWeight:700}}>{total}</span>
+          :<span style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED}}>keine</span>}
+        {total>0&&<Icon name={open?"chevdown":"chevron"} size={13} color={MUTED}/>}
+      </button>
+      {total>0&&open&&(
+        <div>
+          {pain.length>0&&<div style={head}>Schmerz ab {ALERT_PAIN} gemeldet (letzte {ALERT_DAYS} Tage)</div>}
+          {pain.map(a=>row("p"+a.patient.id,a.patient,`Schmerz ${a.level}/5 am ${a.dateStr} · ${a.exTitle}${a.comment?` — „${a.comment}"`:""}`,true))}
+          {idle.length>0&&<div style={head}>Seit {ALERT_DAYS} Tagen nichts abgehakt</div>}
+          {idle.map(a=>row("i"+a.patient.id,a.patient,a.lastStr?`zuletzt am ${a.lastStr} · ${a.exCount} aktive Übung${a.exCount!==1?"en":""}`:`in den letzten 15 Wochen nichts abgehakt · ${a.exCount} aktive Übung${a.exCount!==1?"en":""}`,false))}
+        </div>
+      )}
     </div>
   );
 };
@@ -955,7 +1006,7 @@ export default function App() {
         supabase.from("exercises").select("*").order("created_at"),
         supabase.from("exercise_logs").select("*").gte("done_date",weekStart).lte("done_date",today),
         supabase.rpc("get_user_emails"),
-        supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",addDaysStr(weekStart,-105)),
+        supabase.from("exercise_logs").select("exercise_id,done_date").eq("done",true).gte("done_date",addDaysStr(weekStart,-105)).order("done_date",{ascending:false}),
         supabase.from("exercise_feedback").select("*").order("created_at",{ascending:false}),
         supabase.from("practice_settings").select("*").eq("slug",PRACTICE_SLUG).maybeSingle(),
         supabase.from("outcome_surveys").select("*").order("created_at",{ascending:false}),
@@ -1563,6 +1614,39 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   };
 
   // ── Video-Upload zu Supabase Storage (seit 063) ──
+  // ── Bild-Upload zu Supabase Storage (seit 088) ──
+  // Alte Bilder werden bewusst NICHT gelöscht: zugewiesene Übungen und Starter-Kopien verweisen auf dieselbe Adresse.
+  const [imageUploading,setImageUploading]=useState(false);
+  const shrinkImage=(file,maxSide=1600)=>new Promise(resolve=>{
+    const url=URL.createObjectURL(file);const img=new Image();
+    img.onload=()=>{
+      URL.revokeObjectURL(url);
+      const scale=Math.min(1,maxSide/Math.max(img.width,img.height));
+      if(scale===1&&file.size<=1024*1024){resolve(file);return;} // klein genug – unverändert hochladen
+      const c=document.createElement("canvas");c.width=Math.round(img.width*scale);c.height=Math.round(img.height*scale);
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+      const type=file.type==="image/png"?"image/png":"image/jpeg"; // PNG behält Transparenz
+      c.toBlob(b=>resolve(b&&b.size<file.size?new File([b],file.name,{type}):file),type,0.85);
+    };
+    img.onerror=()=>{URL.revokeObjectURL(url);resolve(file);};
+    img.src=url;
+  });
+  const uploadImage=async(file,setUrl)=>{
+    if(!["image/jpeg","image/png","image/webp"].includes(file.type)){showToast("error","Nur JPG, PNG oder WebP erlaubt.");return;}
+    setImageUploading(true);
+    try{
+      const img=await shrinkImage(file);
+      if(img.size>5*1024*1024){showToast("error",`Bild ist ${(img.size/1024/1024).toFixed(1)} MB — maximal 5 MB.`);return;}
+      const ext=img.type==="image/png"?"png":img.type==="image/webp"?"webp":"jpg";
+      const path=`${crypto.randomUUID()}.${ext}`;
+      const{error}=await supabase.storage.from("exercise-images").upload(path,img,{contentType:img.type,cacheControl:"31536000"});
+      if(error){showToast("error","Upload fehlgeschlagen: "+error.message);return;}
+      const{data:pub}=supabase.storage.from("exercise-images").getPublicUrl(path);
+      setUrl(pub.publicUrl);
+      showToast("success","Bild hochgeladen");
+    }finally{setImageUploading(false);}
+  };
+
   const [videoUploading,setVideoUploading]=useState(false);
   const uploadExerciseVideo=async(file,setUrl)=>{
     if(!["video/mp4","video/quicktime","video/webm"].includes(file.type)){showToast("error","Nur MP4, MOV oder WebM erlaubt.");return;}
@@ -2041,6 +2125,39 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
   const verlaufWithData=verlaufWeeks.filter(w=>w.pct!==null);
   const verlaufAvgPct=verlaufWithData.length?Math.round(verlaufWithData.reduce((s,w)=>s+w.pct,0)/verlaufWithData.length):null;
 
+  // ── Auffälligkeiten für den Admin (seit 088) ──
+  const alertData=(()=>{
+    if(!isAdmin)return{pain:[],idle:[]};
+    const todayStr=todayLocalStr(),sinceStr=addDaysStr(todayStr,-ALERT_DAYS);
+    const fmt=(iso)=>parseLocalDate(iso).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"});
+    const patById=new Map(patients.map(p=>[p.id,p]));
+    const exById=new Map(exercises.map(e=>[e.id,e]));
+    // Schmerz: jüngste Meldung ab Schwelle je Patient (feedbacks ist absteigend sortiert)
+    const pain=[];const seen=new Set();
+    for(const f of feedbacks){
+      const day=localDateStr(new Date(f.created_at));
+      if(day<sinceStr)break;
+      if((f.pain_level||0)<ALERT_PAIN||seen.has(f.patient_id))continue;
+      const p=patById.get(f.patient_id);if(!p)continue;
+      seen.add(f.patient_id);
+      pain.push({patient:p,level:f.pain_level,dateStr:fmt(day),exTitle:exById.get(f.exercise_id)?.title||"Übung",comment:(f.comment||"").slice(0,80)});
+    }
+    // Inaktiv: Login vorhanden, aktive Übung seit mindestens ALERT_DAYS Tagen zugewiesen, seither kein Haken
+    const lastLog=new Map();
+    for(const l of historyLogs){const ex=exById.get(l.exercise_id);if(!ex)continue;const cur=lastLog.get(ex.patient_id);if(!cur||l.done_date>cur)lastLog.set(ex.patient_id,l.done_date);}
+    const idle=[];
+    for(const p of patients){
+      if(!p.user_id)continue; // ohne Login kann niemand abhaken
+      const due=exercises.filter(e=>e.patient_id===p.id&&exPhase(e)==="active"&&localDateStr(new Date(e.created_at))<=sinceStr&&(!e.active_from||e.active_from<=sinceStr));
+      if(due.length===0)continue;
+      const last=lastLog.get(p.id)||null;
+      if(last&&last>=sinceStr)continue;
+      idle.push({patient:p,last,lastStr:last?fmt(last):"",exCount:due.length});
+    }
+    idle.sort((a,b)=>(a.last||"")<(b.last||"")?-1:1);
+    return{pain,idle};
+  })();
+
   const filteredOwnerExs=ownerExs.filter(ex=>{
     const cOk=filterCats.length===0||(ex.categories||[]).some(c=>filterCats.includes(c));
     const rOk=filterRegions.length===0||(ex.target_regions||[]).some(r=>filterRegions.includes(r));
@@ -2474,6 +2591,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   <Icon name="plus" size={14} color="#102828"/> Neuer Patient
                 </button>
               </div>
+              <AlertsCard pain={alertData.pain} idle={alertData.idle} onOpen={openHistory}/>
               <SearchInput value={patientSearch} onChange={setPatientSearch} placeholder="Patient, Besitzer oder Rasse suchen..."/>
               <div onClick={()=>setFilterHasExercises(v=>!v)} style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED,userSelect:"none"}}>
                 <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${filterHasExercises?BRAND:BORDER}`,background:filterHasExercises?BRAND:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,transition:"background .15s,border-color .15s"}}>
@@ -3323,7 +3441,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   </div>
                 ))}
               </div>
-              <div><SL text="Bild-URL"/><input value={newTemplate.image_url} onChange={e=>setNewTemplate(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
+              <div><SL text="Bild"/><input value={newTemplate.image_url} onChange={e=>setNewTemplate(p=>({...p,image_url:e.target.value}))} placeholder="https://... oder hochladen" style={inp}/>
+                <ImageUploadField id="imgUpNew" value={newTemplate.image_url} uploading={imageUploading} onUpload={f=>uploadImage(f,(u)=>setNewTemplate(p=>({...p,image_url:u})))}/></div>
               <div><SL text="Video (optional)"/><input value={newTemplate.video_url} onChange={e=>setNewTemplate(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/... oder hochladen" style={inp}/>
                 <VideoUploadField id="vidUpNew" value={newTemplate.video_url} uploading={videoUploading}
                   onUpload={f=>uploadExerciseVideo(f,(u)=>setNewTemplate(p=>({...p,video_url:u})))}
@@ -3378,7 +3497,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   </div>
                 ))}
               </div>
-              <div><SL text="Bild-URL"/><input value={editTemplateData.image_url||""} onChange={e=>setEditTemplateData(p=>({...p,image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
+              <div><SL text="Bild"/><input value={editTemplateData.image_url||""} onChange={e=>setEditTemplateData(p=>({...p,image_url:e.target.value}))} placeholder="https://... oder hochladen" style={inp}/>
+                <ImageUploadField id="imgUpEdit" value={editTemplateData.image_url||""} uploading={imageUploading} onUpload={f=>uploadImage(f,(u)=>setEditTemplateData(p=>({...p,image_url:u})))}/></div>
               <div><SL text="Video"/><input value={editTemplateData.video_url||""} onChange={e=>setEditTemplateData(p=>({...p,video_url:e.target.value}))} placeholder="https://youtube.com/... oder hochladen" style={inp}/>
                 <VideoUploadField id="vidUpEdit" value={editTemplateData.video_url||""} uploading={videoUploading}
                   onUpload={f=>uploadExerciseVideo(f,(u)=>setEditTemplateData(p=>({...p,video_url:u})))}
@@ -3565,7 +3685,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 </div>
               </div>
               <div><SL text="Ausführlicher Text"/><textarea value={d.content} onChange={e=>setD(()=>({content:e.target.value}))} rows={9} placeholder="Erkläre die Erkrankung, warum die Übungen helfen, worauf im Alltag zu achten ist..." style={{...inp,resize:"vertical",lineHeight:1.55}}/></div>
-              <div><SL text="Bild-URL (optional)"/><input value={d.image_url||""} onChange={e=>setD(()=>({image_url:e.target.value}))} placeholder="https://..." style={inp}/></div>
+              <div><SL text="Bild (optional)"/><input value={d.image_url||""} onChange={e=>setD(()=>({image_url:e.target.value}))} placeholder="https://... oder hochladen" style={inp}/>
+                <ImageUploadField id="imgUpSheet" value={d.image_url||""} uploading={imageUploading} onUpload={f=>uploadImage(f,(u)=>setD(()=>({image_url:u})))}/></div>
               {isFFD&&(
                 <div onClick={()=>setD(p=>({is_global:!p.is_global}))} style={{display:"inline-flex",alignItems:"flex-start",gap:8,cursor:"pointer"}}>
                   <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${d.is_global?BRAND:BORDER}`,background:d.is_global?BRAND:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
