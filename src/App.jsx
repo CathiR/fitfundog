@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-11-088";
+const APP_VERSION = "2026-11-11-089";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -353,10 +353,14 @@ const PatientPicker = ({ patients, value, onSelect, filter }) => {
   const s = q.trim().toLowerCase();
   let list = filter ? patients.filter(filter) : patients;
   if (s) list = list.filter(p => (p.name||"").toLowerCase().includes(s) || (p.owner||"").toLowerCase().includes(s) || (p.breed||"").toLowerCase().includes(s));
+  // Ohne Suchbegriff die zuletzt angelegten zuerst (seit 089) – neue Patienten bekommen meist gleich etwas zugewiesen.
+  // Mit Suchbegriff bleibt die alphabetische Reihenfolge der Treffer.
+  if (!s) list = [...list].sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
   const shown = list.slice(0, s ? 12 : 6);
   return (
     <div>
       <SearchInput value={q} onChange={setQ} placeholder="Name, Besitzer oder Rasse..."/>
+      {!s&&shown.length>0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".6px",textTransform:"uppercase",margin:"2px 0 6px"}}>Zuletzt angelegt</div>}
       <div style={{display:"flex",flexDirection:"column",gap:6}}>
         {shown.map(p => (
           <button key={p.id} className="btn" onClick={()=>onSelect(p)} style={{display:"flex",alignItems:"center",gap:10,background:"white",borderRadius:12,padding:"10px 12px",textAlign:"left",boxShadow:`0 1px 8px ${BRAND}1A`,minHeight:48}}>
