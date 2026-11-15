@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-11-089";
+const APP_VERSION = "2026-11-15-090";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -48,7 +48,7 @@ const applyColors=(brand)=>{
 const ICON_BASE = "https://tkgwdmntglzfeulpgfpw.supabase.co/storage/v1/object/public/app-icons/";
 const CATEGORIES = ["Regeneration", "Balance", "Kräftigung", "Koordination", "Mobilisation"];
 const TARGET_REGIONS = ["Ganzer Körper", "Hinterhand", "Vorderhand", "Rumpf", "Vorderpfoten", "Rücken"];
-const EMPTY_PATIENT = { name: "", breed: "", age: "", owner: "", condition: "", avatar: "🐕", ownerEmail: "", ownerPassword: "" };
+const EMPTY_PATIENT = { name: "", breed: "", age: "", owner: "", condition: "", avatar: "🐕", ownerEmail: "", ownerPassword: "", owner_lang: "de" };
 const EMPTY_SHEET = { title:"", title_en:"", title_es:"", key_points:["","",""], content:"", content_en:"", content_es:"", image_url:"", is_global:false };
 const EMPTY_TEMPLATE = { title: "", categories: [], target_regions: [], difficulty: "Leicht", description: "", instructions: [""], image_url: "", video_url: "" };
 const getDifficultyColor=()=>({"Leicht":BRAND,"Mittel":MID,"Schwer":"#C0392B"});
@@ -429,6 +429,23 @@ const AlertsCard = ({ pain, idle, onOpen }) => {
     </div>
   );
 };
+
+// ── Mail-Vorlagen je Sprache (seit 090) ──
+// Deutsch bleibt unter dem bisherigen Schlüssel (nie umbenennen); EN/ES liegen unter eigenen Schlüsseln derselben Praxis.
+const MAIL_LANGS = [["de","Deutsch"],["en","English"],["es","Español"]];
+const mailKey = (l) => l==="de" ? "plan_mail_template" : `plan_mail_template_${l}`;
+const EMPTY_MAIL_TEMPLATES = { de:{subject:"",body:""}, en:{subject:"",body:""}, es:{subject:"",body:""} };
+// Sprachwahl für die Besitzerin (Bearbeiten/Anlegen eines Tiers)
+const OwnerLangField = ({ value, onChange }) => (
+  <div>
+    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,fontWeight:700,color:MUTED,letterSpacing:".7px",textTransform:"uppercase",marginBottom:7}}>Sprache der Besitzerin (für Mails)</div>
+    <div style={{display:"flex",gap:6}}>
+      {MAIL_LANGS.map(([l,label])=>(
+        <button key={l} className="mode-btn" onClick={()=>onChange(l)} style={{borderColor:(value||"de")===l?BRAND:BORDER,background:(value||"de")===l?BRAND:"white",color:(value||"de")===l?"#102828":MUTED,minHeight:40}}>{label}</button>
+      ))}
+    </div>
+  </div>
+);
 
 // ── Missing (seit 087): sagt unter einem grauen Speichern-Knopf, was noch fehlt ──
 const Missing = ({ items }) => {
@@ -863,7 +880,8 @@ export default function App() {
   const [planAssignStartDate,setPlanAssignStartDate]=useState(todayLocalStr()); // Startdatum für Phasen (seit 064)
   const [planAssignSearch,setPlanAssignSearch]=useState("");
   const [planAssignDone,setPlanAssignDone]=useState(null); // {patient, plan} nach erfolgreicher Zuweisung
-  const [mailTemplate,setMailTemplate]=useState({subject:"",body:""});
+  const [mailTemplates,setMailTemplates]=useState(EMPTY_MAIL_TEMPLATES); // je Sprache (seit 090)
+  const [mailTplLang,setMailTplLang]=useState("de");
 
   const [mailTemplateSaving,setMailTemplateSaving]=useState(false);
   const [mailTemplateLoaded,setMailTemplateLoaded]=useState(false);
@@ -1068,10 +1086,14 @@ export default function App() {
       setPlanTemplateExercises(pte||[]);
 
       // Mail-Vorlage laden
-      const{data:settingsDataFinal}=await supabase.from("settings").select("value").eq("key","plan_mail_template").eq("practice_id",practiceId).maybeSingle();
-      if(settingsDataFinal?.value){
-        try{const parsed=JSON.parse(settingsDataFinal.value);setMailTemplate(parsed);}catch(e){}
+      const{data:mailRows}=await supabase.from("settings").select("key,value").in("key",MAIL_LANGS.map(([l])=>mailKey(l))).eq("practice_id",practiceId);
+      const loadedTpl={de:{subject:"",body:""},en:{subject:"",body:""},es:{subject:"",body:""}};
+      for(const row of mailRows||[]){
+        const l=MAIL_LANGS.map(([x])=>x).find(x=>mailKey(x)===row.key);
+        if(!l||!row.value)continue;
+        try{const parsed=JSON.parse(row.value);loadedTpl[l]={subject:parsed.subject||"",body:parsed.body||""};}catch{/* defekter Eintrag – leer lassen */}
       }
+      setMailTemplates(loadedTpl);
       setMailTemplateLoaded(true);
 
       // Find owner's patient by userId
@@ -1548,6 +1570,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       p_user_id:userId, p_practice_id:practiceId
     });
     if(error){showToast("error","Fehler: "+error.message);setSaving(false);return;}
+    if(data&&newPatient.owner_lang&&newPatient.owner_lang!=="de"){
+      const{error:langErr}=await supabase.from("patients").update({owner_lang:newPatient.owner_lang}).eq("id",data);
+      if(langErr)showToast("error","Sprache konnte nicht gespeichert werden: "+langErr.message);
+    }
     await loadAll(adminUserId);
     showToast("success","Patient angelegt");
     setSaving(false);setNewPatient(EMPTY_PATIENT);closeSheet();
@@ -1999,31 +2025,37 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     setSaving(false);setPlanAssignState(null);setPlanAssignStartDate(todayLocalStr());
   };
 
-  // Mail-Vorlage je Praxis (seit 085): gezielt die Zeile der eigenen Praxis ändern oder anlegen.
-  // Kein upsert auf "key" – das traf immer die eine gemeinsame Zeile, und andere Praxen konnten nie speichern.
+  // Mail-Vorlage je Praxis (seit 085) und je Sprache (seit 090): gezielt die Zeile der eigenen Praxis ändern oder anlegen.
+  // Kein upsert auf "key" – das traf früher die eine gemeinsame Zeile, und andere Praxen konnten nie speichern.
   const saveMailTemplate=async()=>{
     setMailTemplateSaving(true);
-    const value=JSON.stringify(mailTemplate);
-    const{data:upd,error:uErr}=await supabase.from("settings").update({value}).eq("key","plan_mail_template").eq("practice_id",practice.id).select("key");
+    const key=mailKey(mailTplLang);
+    const value=JSON.stringify(mailTemplates[mailTplLang]);
+    const{data:upd,error:uErr}=await supabase.from("settings").update({value}).eq("key",key).eq("practice_id",practice.id).select("key");
     let error=uErr;
-    if(!error&&(upd||[]).length===0)({error}=await supabase.from("settings").insert({key:"plan_mail_template",value,practice_id:practice.id}));
+    if(!error&&(upd||[]).length===0)({error}=await supabase.from("settings").insert({key,value,practice_id:practice.id}));
     if(error)showToast("error","Vorlage konnte nicht gespeichert werden: "+error.message);
     else showToast("success","Vorlage gespeichert");
     setMailTemplateSaving(false);
   };
 
-  const openPlanMail=(patient,plan)=>{
-    const email=getUserEmail(patient.user_id)||"";
-    const subject=(mailTemplate.subject||"")
-      .replace(/\{\{patient\}\}/g,patient.name||"")
-      .replace(/\{\{besitzer\}\}/g,patient.owner||"")
-      .replace(/\{\{email\}\}/g,email);
-    const body=(mailTemplate.body||"")
-      .replace(/\{\{patient\}\}/g,patient.name||"")
-      .replace(/\{\{besitzer\}\}/g,patient.owner||"")
-      .replace(/\{\{email\}\}/g,email);
-    window.location.href=`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  // Welche Vorlage gilt für dieses Tier? Sprache der Besitzerin, sonst Deutsch (auch wenn EN/ES noch leer ist).
+  const mailLangFor=(patient)=>{
+    const l=patient?.owner_lang||"de";
+    const tpl=mailTemplates[l];
+    return tpl&&((tpl.subject||"").trim()||(tpl.body||"").trim())?l:"de";
   };
+  const buildMail=(patient)=>{
+    const email=getUserEmail(patient.user_id)||"";
+    const tpl=mailTemplates[mailLangFor(patient)]||mailTemplates.de;
+    const fill=(txt)=>(txt||"")
+      .replace(/\{\{patient\}\}/g,patient.name||"")
+      .replace(/\{\{besitzer\}\}/g,patient.owner||"")
+      .replace(/\{\{email\}\}/g,email);
+    return{email,subject:fill(tpl.subject),body:fill(tpl.body)};
+  };
+  const mailtoFor=(patient)=>{const m=buildMail(patient);return `mailto:${m.email}?subject=${encodeURIComponent(m.subject)}&body=${encodeURIComponent(m.body)}`;};
+  const openPlanMail=(patient)=>{window.location.href=mailtoFor(patient);};
 
   // Rückmeldungen (seit 084): jede Meldung ist ein eigener Eintrag mit Datum – so entsteht ein echter Schmerzverlauf.
   // Nur eine Meldung vom selben Tag wird korrigiert statt verdoppelt.
@@ -3051,13 +3083,24 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:14}}>
               Platzhalter: <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{patient}}"}</code>, <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{besitzer}}"}</code>, <code style={{background:LIGHT,borderRadius:4,padding:"1px 5px",fontSize:11,color:DARK}}>{"{{email}}"}</code>
             </div>
+            <div style={{display:"flex",gap:6,marginBottom:8}}>
+              {MAIL_LANGS.map(([l,label])=>(
+                <button key={l} className="mode-btn" onClick={()=>setMailTplLang(l)} style={{borderColor:mailTplLang===l?BRAND:BORDER,background:mailTplLang===l?BRAND:"white",color:mailTplLang===l?"#102828":MUTED,minHeight:40}}>{label}</button>
+              ))}
+            </div>
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:12}}>
+              {mailTplLang==="de"
+                ?"Diese Vorlage gilt für alle Tiere mit Sprache Deutsch – und als Ersatz, solange eine andere Sprache noch leer ist."
+                :"Gilt für Tiere, bei denen diese Sprache hinterlegt ist. Bleibt die Vorlage leer, wird die deutsche verwendet. Die Platzhalter bleiben in jeder Sprache gleich."}
+              {" "}Jede Sprache wird einzeln gespeichert.
+            </div>
             <div style={{marginBottom:10}}>
               <SL text="Betreff"/>
-              <input value={mailTemplate.subject} onChange={e=>setMailTemplate(p=>({...p,subject:e.target.value}))} style={{...inp,marginBottom:0}} placeholder="Betreff..."/>
+              <input value={mailTemplates[mailTplLang].subject} onChange={e=>setMailTemplates(p=>({...p,[mailTplLang]:{...p[mailTplLang],subject:e.target.value}}))} style={{...inp,marginBottom:0}} placeholder="Betreff..."/>
             </div>
             <div style={{marginBottom:14}}>
               <SL text="Mailtext"/>
-              <textarea value={mailTemplate.body} onChange={e=>setMailTemplate(p=>({...p,body:e.target.value}))} rows={8} style={{...inp,resize:"vertical"}} placeholder="Mailtext..."/>
+              <textarea value={mailTemplates[mailTplLang].body} onChange={e=>setMailTemplates(p=>({...p,[mailTplLang]:{...p[mailTplLang],body:e.target.value}}))} rows={8} style={{...inp,resize:"vertical"}} placeholder="Mailtext..."/>
             </div>
             <button className="btn" onClick={saveMailTemplate} disabled={mailTemplateSaving} style={{width:"100%",padding:"12px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
               <Icon name="check" size={16} color="#102828"/>{mailTemplateSaving?"Wird gespeichert...": "Vorlage speichern"}
@@ -3322,6 +3365,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 <div key={key}><SL text={label}/><input value={newPatient[key]||""} onChange={e=>setNewPatient(p=>({...p,[key]:e.target.value}))} placeholder={ph} style={inp}/></div>
               ))}
               <div><SL text="Diagnose"/><textarea value={newPatient.condition||""} onChange={e=>setNewPatient(p=>({...p,condition:e.target.value}))} rows={3} placeholder="z.B. Hüftdysplasie" style={{...inp,resize:"vertical"}}/></div>
+              <OwnerLangField value={newPatient.owner_lang} onChange={l=>setNewPatient(p=>({...p,owner_lang:l}))}/>
               <div><SL text="Emoji"/><input value={newPatient.avatar||""} onChange={e=>setNewPatient(p=>({...p,avatar:e.target.value}))} placeholder="🐕" style={{...inp,width:60,textAlign:"center"}}/></div>
               <div style={{background:LIGHT,borderRadius:12,padding:"14px"}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:DARK,marginBottom:12}}>Login-Konto</div>
@@ -3363,6 +3407,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 <div key={key}><SL text={label}/><input value={editPatientData[key]||""} onChange={e=>setEditPatientData(p=>({...p,[key]:e.target.value}))} style={inp}/></div>
               ))}
               <div><SL text="Diagnose"/><textarea value={editPatientData.condition||""} onChange={e=>setEditPatientData(p=>({...p,condition:e.target.value}))} rows={4} style={{...inp,resize:"vertical",lineHeight:1.5}}/></div>
+              <OwnerLangField value={editPatientData.owner_lang} onChange={l=>setEditPatientData(p=>({...p,owner_lang:l}))}/>
               <div><SL text="Emoji"/><input value={editPatientData.avatar||""} onChange={e=>setEditPatientData(p=>({...p,avatar:e.target.value}))} style={{...inp,width:60,textAlign:"center"}}/></div>
               <div onClick={()=>setEditPatientData(p=>({...p,survey_type:p.survey_type?null:"mobility"}))} style={{display:"inline-flex",alignItems:"flex-start",gap:8,cursor:"pointer"}}>
                 <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${editPatientData.survey_type?BRAND:BORDER}`,background:editPatientData.survey_type?BRAND:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
@@ -3825,10 +3870,10 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             {getUserEmail(planAssignDone.patient.user_id)?(
               <>
                 <div style={{background:PALE,borderRadius:10,padding:"10px 14px",marginBottom:14,border:`1.5px solid ${LIGHT}`}}>
-                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:3}}>Mail wird gesendet an</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:3}}>Mail wird gesendet an · Vorlage: {MAIL_LANGS.find(([l])=>l===mailLangFor(planAssignDone.patient))[1]}</div>
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,color:DARK}}>{getUserEmail(planAssignDone.patient.user_id)}</div>
                 </div>
-                <a href={`mailto:${getUserEmail(planAssignDone.patient.user_id)}?subject=${encodeURIComponent((mailTemplate.subject||"").replace(/\{\{patient\}\}/g,planAssignDone.patient.name||"").replace(/\{\{besitzer\}\}/g,planAssignDone.patient.owner||"").replace(/\{\{email\}\}/g,getUserEmail(planAssignDone.patient.user_id)||""))}&body=${encodeURIComponent((mailTemplate.body||"").replace(/\{\{patient\}\}/g,planAssignDone.patient.name||"").replace(/\{\{besitzer\}\}/g,planAssignDone.patient.owner||"").replace(/\{\{email\}\}/g,getUserEmail(planAssignDone.patient.user_id)||""))}`}
+                <a href={mailtoFor(planAssignDone.patient)}
                   onClick={()=>setTimeout(()=>{setPlanAssignDone(null);closeSheet();},500)}
                   style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:"14px",borderRadius:12,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15,textDecoration:"none",boxSizing:"border-box",marginBottom:10}}>
                   <Icon name="mail" size={17} color="#102828"/> Mail öffnen
