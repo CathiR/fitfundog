@@ -1,4 +1,4 @@
-const CACHE = "fitfundog-v4";
+const CACHE = "fitfundog-v5";
 
 self.addEventListener("install", e => {
   self.skipWaiting();
@@ -35,7 +35,7 @@ self.addEventListener("push", e => {
       body: data.body || "Du hast noch offene Uebungen!",
       icon: "/favicon.png",
       badge: "/favicon.png",
-      tag: "fitfundog-reminder",
+      tag: data.tag || "fitfundog-reminder",
       renotify: true,
       vibrate: [200, 100, 200],
       requireInteraction: false,

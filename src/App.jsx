@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-23-095";
+const APP_VERSION = "2026-11-23-096";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -584,7 +584,7 @@ const T = {
     alertPwMin:"Passwort muss mindestens 6 Zeichen haben.", alertAddHomescreen:"Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.", alertNoPush:"Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.", alertPushBlocked:"Benachrichtigungen sind blockiert. Bitte erlaube sie in den Geräte-Einstellungen (Android: Apps → FitFunDog → Benachrichtigungen | iPhone: Einstellungen → Mitteilungen → FitFunDog).", alertDeleteFail:"Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter info@fit-fun-dog.de zur manuellen Löschung.",
     noAccount:"Kein Konto? Bitte wende dich an deine Therapeutin.", forgotPw:"Passwort vergessen?", resetSent:"Reset-Email gesendet – bitte Postfach prüfen.", adminTitle:"Admin", adminSub:"Einstellungen & App-Verwaltung", legalTitle:"Rechtliches", feedbackAppTitle:"Feedback zur App", feedbackAppSub:"Direkt an die Entwicklerin senden.",
     thisWeek:"Diese Woche", ofExercises:(n)=>`von ${n} Übungen`, allDoneShort:"Alle erledigt!", streakLabel:"Wochen-Streak", streakDay:"Woche in Folge", streakDays:"Wochen in Folge", streakNone:"Noch kein Streak", last28:"Letzte 16 Wochen", thisWeekShort:"diese Woche",
-    reportSymptom:"Befund melden", reminders:"Erinnerungen", reminderTime:"Erinnerungszeit", reminderHint:"Die Erinnerung wird nur gesendet wenn noch Übungen offen sind.", reminderEnable:"Erinnerungen aktivieren", reminderDisable:"Erinnerungen deaktivieren", oclock:"Uhr",
+    reportSymptom:"Befund melden", reminders:"Erinnerungen", reminderTime:"Erinnerungszeit", reminderHint:"Die Erinnerung wird nur gesendet wenn noch Übungen offen sind.", reminderEnable:"Erinnerungen aktivieren", reminderDisable:"Erinnerungen deaktivieren", newsTitle:"Neuigkeiten", newsEmpty:"Noch keine Neuigkeiten.", newsPushActive:"Du wirst benachrichtigt, wenn es Neuigkeiten gibt.", newsPushInactive:"Keine Benachrichtigung bei Neuigkeiten.", newsPushEnable:"Benachrichtigung aktivieren", newsPushDisable:"Benachrichtigung deaktivieren", oclock:"Uhr",
     iosNotInstalled:"Noch nicht als App installiert", iosInstallHint:"Für Erinnerungen muss die App auf dem Home-Bildschirm installiert sein.", iosInstallStep:"Safari → Teilen-Symbol → Zum Home-Bildschirm", iosInstallAfter:"Danach die App über das Icon öffnen und hier Erinnerungen aktivieren.",
     greetMorning:"Guten Morgen", greetDay:"Guten Tag", greetEvening:"Guten Abend",
     privacyLink:"Datenschutz", imprintLink:"Impressum", adminPreviewHint:"Vorschau — so sehen Ihre Kunden die App", bookAppointment:"Termin buchen",
@@ -598,7 +598,7 @@ const T = {
     alertPwMin:"Password must be at least 6 characters.", alertAddHomescreen:"Please add the app to your home screen first (Safari → Share → Add to Home Screen). Then open the app via the home screen icon and activate reminders again.", alertNoPush:"Your browser does not support push notifications. Please use Safari on iOS 16.4+ or Chrome on Android.", alertPushBlocked:"Notifications are blocked. Please allow them in your device settings (Android: Apps → FitFunDog → Notifications | iPhone: Settings → Notifications → FitFunDog).", alertDeleteFail:"Your account cannot be deleted automatically. Please contact your therapist at info@fit-fun-dog.de for manual deletion.",
     noAccount:"No account? Please contact your therapist.", forgotPw:"Forgot password?", resetSent:"Reset email sent – please check your inbox.", adminTitle:"Admin", adminSub:"Settings & App management", legalTitle:"Legal", feedbackAppTitle:"App feedback", feedbackAppSub:"Send directly to the developer.",
     thisWeek:"This Week", ofExercises:(n)=>`of ${n} exercises`, allDoneShort:"All done!", streakLabel:"Weekly Streak", streakDay:"week in a row", streakDays:"weeks in a row", streakNone:"No streak yet", last28:"Last 16 weeks", thisWeekShort:"this week",
-    reportSymptom:"Report symptom", reminders:"Reminders", reminderTime:"Reminder time", reminderHint:"The reminder is only sent if exercises are still open.", reminderEnable:"Enable reminders", reminderDisable:"Disable reminders", oclock:"",
+    reportSymptom:"Report symptom", reminders:"Reminders", reminderTime:"Reminder time", reminderHint:"The reminder is only sent if exercises are still open.", reminderEnable:"Enable reminders", reminderDisable:"Disable reminders", newsTitle:"News", newsEmpty:"No news yet.", newsPushActive:"You will be notified when there is news.", newsPushInactive:"No notification for news.", newsPushEnable:"Enable notifications", newsPushDisable:"Disable notifications", oclock:"",
     iosNotInstalled:"Not installed as app yet", iosInstallHint:"For reminders the app must be installed on the home screen.", iosInstallStep:"Safari → Share → Add to Home Screen", iosInstallAfter:"Then open the app via the icon and enable reminders here.",
     greetMorning:"Good morning", greetDay:"Good afternoon", greetEvening:"Good evening",
     privacyLink:"Privacy", imprintLink:"Imprint", adminPreviewHint:"Preview — this is how your clients see the app", bookAppointment:"Book appointment",
@@ -612,7 +612,7 @@ const T = {
     alertPwMin:"La contraseña debe tener al menos 6 caracteres.", alertAddHomescreen:"Por favor añade primero la app a tu pantalla de inicio (Safari → Compartir → Añadir a pantalla de inicio). Luego abre la app desde el icono y activa los recordatorios.", alertNoPush:"Tu navegador no admite notificaciones push. Usa Safari en iOS 16.4+ o Chrome en Android.", alertPushBlocked:"Las notificaciones están bloqueadas. Actívalas en los ajustes del dispositivo (Android: Apps → FitFunDog → Notificaciones | iPhone: Ajustes → Notificaciones → FitFunDog).", alertDeleteFail:"Tu cuenta no puede eliminarse automáticamente. Contacta a tu terapeuta en info@fit-fun-dog.de para la eliminación manual.",
     noAccount:"¿Sin cuenta? Contacta a tu terapeuta.", forgotPw:"¿Olvidaste tu contraseña?", resetSent:"Email enviado – revisa tu bandeja de entrada.", adminTitle:"Admin", adminSub:"Ajustes y gestión de la app", legalTitle:"Legal", feedbackAppTitle:"Feedback de la app", feedbackAppSub:"Enviar directamente a la desarrolladora.",
     thisWeek:"Esta semana", ofExercises:(n)=>`de ${n} ejercicios`, allDoneShort:"¡Todo listo!", streakLabel:"Racha semanal", streakDay:"semana seguida", streakDays:"semanas seguidas", streakNone:"Sin racha aún", last28:"Últimas 16 semanas", thisWeekShort:"esta semana",
-    reportSymptom:"Reportar síntoma", reminders:"Recordatorios", reminderTime:"Hora del recordatorio", reminderHint:"El recordatorio solo se envía si aún hay ejercicios pendientes.", reminderEnable:"Activar recordatorios", reminderDisable:"Desactivar recordatorios", oclock:"",
+    reportSymptom:"Reportar síntoma", reminders:"Recordatorios", reminderTime:"Hora del recordatorio", reminderHint:"El recordatorio solo se envía si aún hay ejercicios pendientes.", reminderEnable:"Activar recordatorios", reminderDisable:"Desactivar recordatorios", newsTitle:"Novedades", newsEmpty:"Todavía no hay novedades.", newsPushActive:"Recibirás un aviso cuando haya novedades.", newsPushInactive:"Sin avisos de novedades.", newsPushEnable:"Activar avisos", newsPushDisable:"Desactivar avisos", oclock:"",
     iosNotInstalled:"Aún no instalada como app", iosInstallHint:"Para los recordatorios la app debe estar instalada en la pantalla de inicio.", iosInstallStep:"Safari → Compartir → Añadir a pantalla de inicio", iosInstallAfter:"Luego abre la app desde el icono y activa los recordatorios aquí.",
     greetMorning:"Buenos días", greetDay:"Buenas tardes", greetEvening:"Buenas noches",
     privacyLink:"Privacidad", imprintLink:"Aviso legal", adminPreviewHint:"Vista previa — así ven la app tus clientes", bookAppointment:"Reservar cita",
@@ -900,6 +900,15 @@ export default function App() {
   const [pushEnabled,setPushEnabled]=useState(false);
   const [pushTime,setPushTime]=useState("09:00");
   const [pushLoading,setPushLoading]=useState(false);
+  // Neuigkeiten der Praxis (seit 096)
+  const [newsPushEnabled,setNewsPushEnabled]=useState(false);
+  const [newsPushLoading,setNewsPushLoading]=useState(false);
+  const [news,setNews]=useState([]);
+  const [newsSeenAt,setNewsSeenAt]=useState(null);
+  const [newsLoaded,setNewsLoaded]=useState(false);
+  const [newsOpen,setNewsOpen]=useState(false);
+  const [newsDraft,setNewsDraft]=useState({title:"",body:"",push:true});
+  const [newsPosting,setNewsPosting]=useState(false);
   const [calendarOpen,setCalendarOpen]=useState(false);
 
   // Week boundaries (Monday–Sunday), lokale Zeit (seit 083)
@@ -1066,6 +1075,21 @@ export default function App() {
     });
     return()=>subscription.unsubscribe();
   },[]);
+
+  // ── Neuigkeiten laden (seit 096) ──
+  useEffect(()=>{if(session?.user?.id&&practice?.id)loadNews();else{setNews([]);setNewsSeenAt(null);setNewsLoaded(false);}},[session?.user?.id,practice?.id]);// eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(()=>{
+    if(!newsLoaded||isAdmin)return;
+    try{
+      const params=new URLSearchParams(window.location.search);
+      if(params.get("news")==="1"){
+        params.delete("news");
+        const q=params.toString();
+        window.history.replaceState(null,"",window.location.pathname+(q?"?"+q:"")+window.location.hash);
+        openNews();
+      }
+    }catch{/* ignorieren */}
+  },[newsLoaded,isAdmin]);// eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Automatischer Reload beim Wochenwechsel wenn App in Vordergrund kommt ──
   useEffect(()=>{
@@ -1516,15 +1540,33 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       const sub=await reg.pushManager.getSubscription();
       if(sub){
         // Aktiv nur, wenn dieses Gerät auch serverseitig angemeldet ist (seit 084) – sonst zeigte die App "aktiv", obwohl nichts ankommt
-        const{data,error}=await supabase.from("push_subscriptions").select("reminder_time").eq("endpoint",sub.endpoint).maybeSingle();
+        const{data,error}=await supabase.from("push_subscriptions").select("reminder_time,reminders_enabled,news_enabled").eq("endpoint",sub.endpoint).maybeSingle();
         if(error)return;
-        setPushEnabled(!!data);
+        setPushEnabled(!!data&&data.reminders_enabled!==false);
+        setNewsPushEnabled(!!data&&data.news_enabled!==false);
         if(data?.reminder_time)setPushTime(data.reminder_time.substring(0,5));
-      } else setPushEnabled(false);
+      } else {setPushEnabled(false);setNewsPushEnabled(false);}
     }catch(e){console.error("checkPushStatus error",e);}
   };
 
-  const enablePush=async()=>{
+  // kind: "reminders" (Uebungserinnerung) oder "news" (Neuigkeiten, seit 096). Ein Geraet hat genau eine Push-Anmeldung,
+  // die beiden Schalter sind Spalten darauf. Ist das Geraet schon angemeldet, wird nur der Schalter gesetzt.
+  const enablePush=async(kind="reminders")=>{
+    const col=kind==="news"?"news_enabled":"reminders_enabled";
+    const setOn=kind==="news"?setNewsPushEnabled:setPushEnabled;
+    const setBusy=kind==="news"?setNewsPushLoading:setPushLoading;
+    if((kind==="news"?pushEnabled:newsPushEnabled)&&("serviceWorker" in navigator)){
+      setBusy(true);
+      try{
+        const reg=await navigator.serviceWorker.ready;
+        const cur=await reg.pushManager.getSubscription();
+        if(cur){
+          const{data,error}=await supabase.from("push_subscriptions").update({[col]:true}).eq("user_id",session.user.id).eq("endpoint",cur.endpoint).select("id");
+          if(!error&&data?.length){setOn(true);setBusy(false);return;}
+        }
+      }catch(e){console.error("enablePush flag error",e);}
+      setBusy(false);
+    }
     // iOS: must be running as PWA (added to home screen)
     const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
     if(isIOS&&!isPWA()){
@@ -1535,7 +1577,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       showToast("error",t.pushUnsupported);
       return;
     }
-    setPushLoading(true);
+    setBusy(true);
     try{
       const reg=await navigator.serviceWorker.ready;
       // Ältere Android-Browser (Samsung Internet <11) nutzen Callback statt Promise
@@ -1545,12 +1587,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       });
       if(permission==="denied"){
         showToast("error",t.alertPushBlocked);
-        setPushLoading(false);
+        setBusy(false);
         return;
       }
       if(permission!=="granted"){
         showToast("error",t.pushNotAllowed);
-        setPushLoading(false);
+        setBusy(false);
         return;
       }
       // Nur die alte Anmeldung DIESES Geräts ersetzen – andere Geräte desselben Users bleiben angemeldet (seit 084)
@@ -1564,19 +1606,32 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       const{endpoint,keys}=sub.toJSON();
       const{error:subErr}=await supabase.from("push_subscriptions").upsert({
         user_id:session.user.id,endpoint,p256dh:keys.p256dh,auth:keys.auth,
-        reminder_time:pushTime,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone
+        reminder_time:pushTime,timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,
+        reminders_enabled:kind==="reminders",news_enabled:kind==="news"
       },{onConflict:"user_id,endpoint"});
       if(subErr){await sub.unsubscribe().catch(()=>{});throw subErr;}
-      setPushEnabled(true);
+      setPushEnabled(kind==="reminders");setNewsPushEnabled(kind==="news");
     }catch(e){
       console.error("enablePush error",e);
       showToast("error",t.pushEnableError+e.message);
     }
-    setPushLoading(false);
+    setBusy(false);
   };
 
-  const disablePush=async()=>{
-    setPushLoading(true);
+  const disablePush=async(kind="reminders")=>{
+    const setOff=kind==="news"?setNewsPushEnabled:setPushEnabled;
+    const setBusy=kind==="news"?setNewsPushLoading:setPushLoading;
+    // Anderer Schalter noch an: Anmeldung behalten, nur diesen Schalter ausschalten (seit 096)
+    if((kind==="news"?pushEnabled:newsPushEnabled)&&("serviceWorker" in navigator)){
+      setBusy(true);
+      try{
+        const reg=await navigator.serviceWorker.ready;
+        const cur=await reg.pushManager.getSubscription();
+        if(cur)await supabase.from("push_subscriptions").update({[kind==="news"?"news_enabled":"reminders_enabled"]:false}).eq("user_id",session.user.id).eq("endpoint",cur.endpoint);
+      }catch(e){console.error("disablePush flag error",e);}
+      setOff(false);setBusy(false);return;
+    }
+    setPushLoading(true);setNewsPushLoading(true);
     try{
       // Nur dieses Gerät abmelden – andere Geräte desselben Users behalten ihre Erinnerungen (seit 084)
       if("serviceWorker" in navigator){
@@ -1588,8 +1643,48 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         }
       }
     }catch(e){console.error("disablePush error",e);}
-    setPushEnabled(false);
-    setPushLoading(false);
+    setPushEnabled(false);setNewsPushEnabled(false);
+    setPushLoading(false);setNewsPushLoading(false);
+  };
+
+  // ── Neuigkeiten (seit 096): Beiträge der Praxis, Glocke für Besitzer, Push über Edge Function send-news ──
+  const loadNews=async()=>{
+    if(!session?.user?.id||!practice?.id)return;
+    const[{data:n},{data:seen}]=await Promise.all([
+      supabase.from("practice_news").select("*").eq("practice_id",practice.id).order("created_at",{ascending:false}).limit(50),
+      supabase.from("news_seen").select("seen_at").eq("user_id",session.user.id).maybeSingle()
+    ]);
+    setNews(n||[]);setNewsSeenAt(seen?.seen_at||null);setNewsLoaded(true);
+  };
+  const newsUnread=!isAdmin&&news.some(n=>!newsSeenAt||n.created_at>newsSeenAt);
+  const openNews=async()=>{
+    setNewsOpen(true);
+    if(isAdmin||!newsUnread)return;
+    const now=new Date().toISOString();
+    setNewsSeenAt(now);
+    await supabase.from("news_seen").upsert({user_id:session.user.id,seen_at:now},{onConflict:"user_id"});
+  };
+  const postNews=async()=>{
+    const title=newsDraft.title.trim(),body=newsDraft.body.trim();
+    if(!title||!body)return;
+    setNewsPosting(true);
+    const{data,error}=await supabase.from("practice_news").insert({practice_id:practice.id,title,body,push:newsDraft.push}).select().single();
+    if(error){showToast("error","Fehler: "+error.message);setNewsPosting(false);return;}
+    let row=data;
+    if(newsDraft.push){
+      const{data:res,error:fnErr}=await supabase.functions.invoke("send-news",{body:{news_id:data.id}});
+      if(fnErr||res?.error)showToast("error","Beitrag gespeichert, Push fehlgeschlagen: "+(res?.error||fnErr?.message||"unbekannt"));
+      else{row={...row,push_sent_count:res?.sent??0};showToast("success",`Veröffentlicht, Push an ${res?.sent??0} Gerät${(res?.sent??0)===1?"":"e"} gesendet`);}
+    } else showToast("success","Veröffentlicht (ohne Push)");
+    setNews(prev=>[row,...prev]);
+    setNewsDraft({title:"",body:"",push:true});
+    setNewsPosting(false);
+  };
+  const deleteNews=async(id)=>{
+    const{error}=await supabase.from("practice_news").delete().eq("id",id);
+    if(error){showToast("error","Fehler: "+error.message);return;}
+    setNews(prev=>prev.filter(n=>n.id!==id));
+    showToast("success","Beitrag gelöscht");
   };
 
   const updatePushTime=async(time)=>{
@@ -2383,6 +2478,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </div>
             </div>
             <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              {!isAdmin&&(
+                <button className="btn" aria-label={t.newsTitle} onClick={openNews} style={{position:"relative",background:NAV_BG,borderRadius:9,padding:"7px 9px",display:"flex"}}>
+                  <Icon name="bell" size={15} color={ACCENT}/>
+                  {newsUnread&&<span style={{position:"absolute",top:4,right:5,width:8,height:8,borderRadius:"50%",background:"#E53935",boxShadow:`0 0 0 2px ${NAV_BG}`}}/>}
+                </button>
+              )}
               <div style={{position:"relative"}} onClick={e=>e.stopPropagation()}>
                 <button className="btn" onClick={()=>setLangOpen(o=>!o)} style={{display:"flex",alignItems:"center",background:NAV_BG,borderRadius:9,padding:"7px 9px"}}>
                   <Icon name="lang" size={15} color={ACCENT}/>
@@ -2656,7 +2757,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </div>
             )}
 
-            <button className="btn" onClick={pushEnabled?disablePush:enablePush} disabled={pushLoading}
+            <button className="btn" onClick={()=>pushEnabled?disablePush("reminders"):enablePush("reminders")} disabled={pushLoading}
               style={{width:"100%",padding:"13px",borderRadius:12,background:pushEnabled?"#FFE8E8":BRAND,color:pushEnabled?"#C0392B":"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
               <Icon name={pushEnabled?"belloff":"bell"} size={16} color={pushEnabled?"#C0392B":"#102828"}/>
               {pushLoading?"...":(pushEnabled?t.reminderDisable:t.reminderEnable)}
@@ -2664,6 +2765,24 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           </div>
             );
           })()}
+
+          {/* Neuigkeiten-Benachrichtigung (seit 096) */}
+          <div className="card" style={{padding:"18px 20px",marginBottom:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+              <div style={{width:40,height:40,borderRadius:12,background:newsPushEnabled?BRAND+"18":LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <Icon name={newsPushEnabled?"bell":"belloff"} size={20} color={newsPushEnabled?BRAND:MUTED}/>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK}}>{t.newsTitle}</div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:1}}>{newsPushEnabled?t.newsPushActive:t.newsPushInactive}</div>
+              </div>
+            </div>
+            <button className="btn" onClick={()=>newsPushEnabled?disablePush("news"):enablePush("news")} disabled={newsPushLoading}
+              style={{width:"100%",padding:"13px",borderRadius:12,background:newsPushEnabled?"#FFE8E8":BRAND,color:newsPushEnabled?"#C0392B":"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+              <Icon name={newsPushEnabled?"belloff":"bell"} size={16} color={newsPushEnabled?"#C0392B":"#102828"}/>
+              {newsPushLoading?"...":(newsPushEnabled?t.newsPushDisable:t.newsPushEnable)}
+            </button>
+          </div>
         {/* Feedback + Delete Account */}
         <div style={{padding:"4px 0 8px",display:"flex",flexDirection:"column",gap:8}}>
           <button className="btn" onClick={()=>{setAppFeedbackText("");setShowAppFeedback(true);}}
@@ -3162,6 +3281,38 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             }} disabled={practiceSaving} style={{width:"100%",padding:"12px",borderRadius:12,background:practice.color_brand||BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
               <Icon name="check" size={16} color="#102828"/>{practiceSaving?"Wird gespeichert...": "Einstellungen speichern"}
             </button>
+          </ARow>
+          <ARow id="news" adminSection={adminSection} setAdminSection={setAdminSection} title="Neuigkeiten" subtitle="Beiträge für alle Besitzer, mit Glocke und Push" icon="bell">
+            <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:12}}>Beiträge sehen alle Besitzer der Praxis unter der Glocke oben rechts. Ungelesene Beiträge zeigt ein roter Punkt.</div>
+            <div style={{marginBottom:10}}><SL text="Überschrift"/><input value={newsDraft.title} onChange={e=>setNewsDraft(p=>({...p,title:e.target.value}))} placeholder="z.B. Praxis vom 23.12. bis 2.1. geschlossen" style={inp}/></div>
+            <div style={{marginBottom:10}}><SL text="Text"/><textarea value={newsDraft.body} onChange={e=>setNewsDraft(p=>({...p,body:e.target.value}))} rows={5} placeholder="Was sollen die Besitzer wissen?" style={{...inp,resize:"vertical",lineHeight:1.5}}/></div>
+            <div onClick={()=>setNewsDraft(p=>({...p,push:!p.push}))} style={{display:"flex",alignItems:"flex-start",gap:8,cursor:"pointer",marginBottom:14}}>
+              <div style={{width:18,height:18,borderRadius:5,border:`1.5px solid ${newsDraft.push?BRAND:BORDER}`,background:newsDraft.push?BRAND:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
+                {newsDraft.push&&<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#102828" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+              </div>
+              <div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,color:"#102828"}}>Push-Nachricht senden</div>
+                <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>An alle Besitzer, die Benachrichtigungen für Neuigkeiten aktiviert haben.</div>
+              </div>
+            </div>
+            <button className="btn" onClick={postNews} disabled={newsPosting||!newsDraft.title.trim()||!newsDraft.body.trim()} style={{width:"100%",padding:"12px",borderRadius:12,background:newsDraft.title.trim()&&newsDraft.body.trim()?BRAND:BORDER,color:newsDraft.title.trim()&&newsDraft.body.trim()?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:14,display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:18}}>
+              <Icon name="bell" size={16} color="#102828"/>{newsPosting?"Wird veröffentlicht...":"Veröffentlichen"}
+            </button>
+            <SL text="Bisherige Beiträge"/>
+            {news.length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,color:MUTED}}>Noch keine Beiträge.</div>}
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {news.map(n=>(
+                <div key={n.id} style={{background:LIGHT,borderRadius:10,padding:"10px 12px",display:"flex",gap:10,alignItems:"flex-start"}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#102828"}}>{n.title}</div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginTop:2}}>
+                      {new Date(n.created_at).toLocaleDateString("de-DE")} · {n.push?(n.push_sent_count!=null?`Push an ${n.push_sent_count} Gerät${n.push_sent_count===1?"":"e"}`:"Push"):"ohne Push"}
+                    </div>
+                  </div>
+                  <button className="iBtn" onClick={()=>{if(window.confirm(`Beitrag "${n.title}" löschen?`))deleteNews(n.id);}} style={{background:"#FFE8E8"}}><Icon name="trash" size={14} color="#C0392B"/></button>
+                </div>
+              ))}
+            </div>
           </ARow>
           <ARow id="mail" adminSection={adminSection} setAdminSection={setAdminSection} title="Plan-Mail Vorlage" subtitle="E-Mail nach Planzuweisung" icon="mail">
             <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:14}}>
@@ -3885,6 +4036,25 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       )}
 
       {/* SHEET: MERKBLATT-DETAIL (Owner, seit 069) */}
+      {/* SHEET: NEUIGKEITEN (Besitzer, seit 096) */}
+      {newsOpen&&(
+        <div className="overlay" onClick={()=>setNewsOpen(false)}>
+          <div className="sheet" onClick={e=>e.stopPropagation()}>
+            <SheetHeader title={t.newsTitle} onClose={()=>setNewsOpen(false)}/>
+            {news.length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,textAlign:"center",padding:"20px 0"}}>{t.newsEmpty}</div>}
+            <div style={{display:"flex",flexDirection:"column",gap:12}}>
+              {news.map(n=>(
+                <div key={n.id} className="card" style={{padding:"14px 16px"}}>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:4}}>{new Date(n.created_at).toLocaleDateString(lang==="en"?"en-GB":lang==="es"?"es-ES":"de-DE",{day:"numeric",month:"long",year:"numeric"})}</div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:DARK,marginBottom:6}}>{n.title}</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#102828",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{n.body}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {selectedSheet&&(
         <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
