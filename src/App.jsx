@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-23-093";
+const APP_VERSION = "2026-11-23-094";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -49,7 +49,7 @@ const ICON_BASE = "https://tkgwdmntglzfeulpgfpw.supabase.co/storage/v1/object/pu
 const CATEGORIES = ["Regeneration", "Balance", "Kräftigung", "Koordination", "Mobilisation"];
 const TARGET_REGIONS = ["Ganzer Körper", "Hinterhand", "Vorderhand", "Rumpf", "Vorderpfoten", "Rücken"];
 const EMPTY_PATIENT = { name: "", breed: "", age: "", birth_date: "", owner: "", condition: "", avatar: "🐕", ownerEmail: "", ownerPassword: "", owner_lang: "de" };
-const EMPTY_SHEET = { title:"", title_en:"", title_es:"", key_points:["","",""], content:"", content_en:"", content_es:"", image_url:"", is_global:false };
+const EMPTY_SHEET = { title:"", title_en:"", title_es:"", key_points:["","",""], content:"", content_en:"", content_es:"", image_url:"", is_global:false, reviewed_at:null };
 const EMPTY_TEMPLATE = { title: "", categories: [], target_regions: [], difficulty: "Leicht", description: "", instructions: [""], image_url: "", video_url: "" };
 const getDifficultyColor=()=>({"Leicht":BRAND,"Mittel":MID,"Schwer":"#C0392B"});
 let difficultyColor=getDifficultyColor();
@@ -935,6 +935,7 @@ export default function App() {
   const [eduOnlyWithSheets,setEduOnlyWithSheets]=useState(false);
   const [newSheet,setNewSheet]=useState(EMPTY_SHEET);
   const [editSheetData,setEditSheetData]=useState(null);
+  const [sheetReviewPrompt,setSheetReviewPrompt]=useState(false); // Pruefung nach Inhaltsaenderung zuruecksetzen? (seit 094)
   const [selectedSheet,setSelectedSheet]=useState(null);   // Besitzer-Detailansicht
   const [surveySheet,setSurveySheet]=useState(false);
   const [surveyAnswers,setSurveyAnswers]=useState({});
@@ -1403,7 +1404,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     setNewAccountMode("new");setSelectedExistingUserId("");
     setResetEmailSent(false);setUserSearch("");
     setNewPassword("");setShowPasswordChange(false);
-    setNewSheet(EMPTY_SHEET);setEditSheetData(null);
+    setNewSheet(EMPTY_SHEET);setEditSheetData(null);setSheetReviewPrompt(false);
   };
 
   const exForPatient=(pid)=>exercises.filter(e=>e.patient_id===pid);
@@ -1771,21 +1772,34 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       content:newSheet.content.trim(),content_en:newSheet.content_en?.trim()||null,content_es:newSheet.content_es?.trim()||null,
       image_url:newSheet.image_url?.trim()||null
     };
+    if(allowGlobal)payload.reviewed_at=newSheet.reviewed_at||null; // fachlich geprueft, nur intern bei Fit Fun Dog (seit 094)
     const{data,error}=await supabase.from("education_sheets").insert(payload).select().single();
     if(error){showToast("error","Fehler: "+error.message);}
     else{setEduSheets(prev=>[...prev,data].sort((a,b)=>(b.is_global-a.is_global)||a.title.localeCompare(b.title)));showToast("success","Merkblatt gespeichert.");setNewSheet(EMPTY_SHEET);closeSheet();}
     setSaving(false);
   };
 
-  const updateSheet=async()=>{
+  // resetReview: undefined = noch nicht gefragt, true = Pruefung zuruecksetzen, false = Haken behalten (seit 094)
+  const updateSheet=async(resetReview)=>{
     if(!editSheetData.title.trim()||!editSheetData.content.trim())return;
-    setSaving(true);
     const fields={
       title:editSheetData.title.trim(),title_en:editSheetData.title_en?.trim()||null,title_es:editSheetData.title_es?.trim()||null,
       key_points:(editSheetData.key_points||[]).map(x=>(x||"").trim()).filter(Boolean),
       content:editSheetData.content.trim(),content_en:editSheetData.content_en?.trim()||null,content_es:editSheetData.content_es?.trim()||null,
       image_url:editSheetData.image_url?.trim()||null
     };
+    if(practice?.slug==="fitfundog"){
+      const orig=eduSheets.find(x=>x.id===editSheetData.id)||{};
+      const contentChanged=fields.title!==(orig.title||"")||fields.content!==(orig.content||"")||(fields.image_url||"")!==(orig.image_url||"")
+        ||JSON.stringify(fields.key_points)!==JSON.stringify(orig.key_points||[]);
+      fields.reviewed_at=editSheetData.reviewed_at||null;
+      if(orig.reviewed_at&&fields.reviewed_at&&contentChanged){
+        if(resetReview===undefined){setSheetReviewPrompt(true);return;}
+        if(resetReview)fields.reviewed_at=null;
+      }
+    }
+    setSheetReviewPrompt(false);
+    setSaving(true);
     const{data,error}=await supabase.from("education_sheets").update(fields).eq("id",editSheetData.id).select().single();
     if(error){showToast("error","Fehler: "+error.message);}
     else{setEduSheets(prev=>prev.map(x=>x.id===data.id?data:x));showToast("success","Merkblatt aktualisiert.");closeSheet();}
@@ -2980,7 +2994,12 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                     :<div onClick={()=>setSelectedSheet(sh)} style={{width:38,height:38,borderRadius:9,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}}><Icon name="info" size={17} color={ACCENT}/></div>}
                   <div onClick={()=>setSelectedSheet(sh)} style={{flex:1,minWidth:0,cursor:"pointer"}}>
                     <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600,color:"#102828"}}>{sh.title}</div>
-                    {sh.is_global&&<span className="tag" style={{background:"#F0F0F0",color:"#888",marginTop:3,display:"inline-block"}}>Zentral</span>}
+                    <div style={{display:"flex",gap:5,flexWrap:"wrap",marginTop:3}}>
+                      {sh.is_global&&<span className="tag" style={{background:"#F0F0F0",color:"#888"}}>Zentral</span>}
+                      {isFFD&&(sh.reviewed_at
+                        ?<span className="tag" title={`Fachlich geprüft am ${new Date(sh.reviewed_at).toLocaleDateString("de-DE")}`} style={{background:"#E8F5E9",color:"#2E7D32",display:"inline-flex",alignItems:"center",gap:3}}><Icon name="check" size={11} color="#2E7D32"/>Geprüft</span>
+                        :<span className="tag" style={{background:"#FFF4E5",color:"#B26A00"}}>Ungeprüft</span>)}
+                    </div>
                   </div>
                   {assignable
                     ?<button className="btn" onClick={()=>toggleSheetAssignment(eduAssignPatient.id,sh.id)} style={{width:30,height:30,borderRadius:8,border:`1.5px solid ${assigned?BRAND:BORDER}`,background:assigned?BRAND:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -3781,11 +3800,32 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                   </div>
                 </div>
               )}
+              {isFFD&&(
+                <div onClick={()=>{setSheetReviewPrompt(false);setD(p=>({reviewed_at:p.reviewed_at?null:new Date().toISOString()}));}} style={{display:"flex",alignItems:"flex-start",gap:8,cursor:"pointer",background:d.reviewed_at?"#E8F5E9":LIGHT,borderRadius:10,padding:"10px 12px"}}>
+                  <div style={{width:18,height:18,borderRadius:5,border:`1.5px solid ${d.reviewed_at?"#2E7D32":BORDER}`,background:d.reviewed_at?"#2E7D32":"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
+                    {d.reviewed_at&&<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
+                  </div>
+                  <div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:600,color:"#102828"}}>Fachlich geprüft</div>
+                    <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>{d.reviewed_at?`Geprüft am ${new Date(d.reviewed_at).toLocaleDateString("de-DE")}. `:""}Nur intern bei Fit Fun Dog sichtbar.</div>
+                  </div>
+                </div>
+              )}
               {isEdit&&(d.title_en||d.title_es)&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED}}>Übersetzungen (EN/ES) sind hinterlegt und bleiben beim Speichern erhalten.</div>}
               <Missing items={[!d.title.trim()&&"Titel",!d.content.trim()&&"Ausführlicher Text"]}/>
-              <button className="btn" onClick={isEdit?updateSheet:addSheet} disabled={saving||!valid} style={{width:"100%",padding:"14px",borderRadius:12,background:valid?BRAND:BORDER,color:valid?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
+              {isEdit&&sheetReviewPrompt&&(
+                <div style={{background:"#FFF4E5",borderRadius:12,padding:"12px 14px"}}>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#102828",marginBottom:4}}>Inhalt wurde geändert</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:10}}>Dieses Merkblatt war fachlich geprüft. Soll die Prüfung zurückgesetzt werden?</div>
+                  <div style={{display:"flex",gap:8}}>
+                    <button className="btn" onClick={()=>updateSheet(true)} disabled={saving} style={{flex:1,padding:"10px",borderRadius:10,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13}}>Zurücksetzen</button>
+                    <button className="btn" onClick={()=>updateSheet(false)} disabled={saving} style={{flex:1,padding:"10px",borderRadius:10,background:"white",border:`1.5px solid ${BORDER}`,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13}}>Haken behalten</button>
+                  </div>
+                </div>
+              )}
+              {!(isEdit&&sheetReviewPrompt)&&<button className="btn" onClick={isEdit?()=>updateSheet():addSheet} disabled={saving||!valid} style={{width:"100%",padding:"14px",borderRadius:12,background:valid?BRAND:BORDER,color:valid?"#102828":DISABLED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:15}}>
                 {saving?t.saving:(isEdit?"Speichern":"Anlegen")}
-              </button>
+              </button>}
             </div>
           </div>
         </div>
