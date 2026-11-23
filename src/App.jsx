@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-23-098";
+const APP_VERSION = "2026-11-23-099";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -584,7 +584,7 @@ const T = {
     alertPwMin:"Passwort muss mindestens 6 Zeichen haben.", alertAddHomescreen:"Bitte füge die App zuerst zum Home-Bildschirm hinzu (Safari → Teilen → Zum Home-Bildschirm). Danach öffne die App über das Home-Bildschirm-Icon und aktiviere die Erinnerungen erneut.", alertNoPush:"Dein Browser unterstützt keine Push-Benachrichtigungen. Bitte nutze Safari auf iOS 16.4+ oder Chrome auf Android.", alertPushBlocked:"Benachrichtigungen sind blockiert. Bitte erlaube sie in den Geräte-Einstellungen (Android: Apps → FitFunDog → Benachrichtigungen | iPhone: Einstellungen → Mitteilungen → FitFunDog).", alertDeleteFail:"Dein Konto kann nicht automatisch gelöscht werden. Bitte kontaktiere deine Therapeutin unter info@fit-fun-dog.de zur manuellen Löschung.",
     noAccount:"Kein Konto? Bitte wende dich an deine Therapeutin.", forgotPw:"Passwort vergessen?", resetSent:"Reset-Email gesendet – bitte Postfach prüfen.", adminTitle:"Admin", adminSub:"Einstellungen & App-Verwaltung", legalTitle:"Rechtliches", feedbackAppTitle:"Feedback zur App", feedbackAppSub:"Direkt an die Entwicklerin senden.",
     thisWeek:"Diese Woche", ofExercises:(n)=>`von ${n} Übungen`, allDoneShort:"Alle erledigt!", streakLabel:"Wochen-Streak", streakDay:"Woche in Folge", streakDays:"Wochen in Folge", streakNone:"Noch kein Streak", last28:"Letzte 16 Wochen", thisWeekShort:"diese Woche",
-    reportSymptom:"Befund melden", reminders:"Erinnerungen", reminderTime:"Erinnerungszeit", reminderHint:"Die Erinnerung wird nur gesendet wenn noch Übungen offen sind.", reminderEnable:"Erinnerungen aktivieren", reminderDisable:"Erinnerungen deaktivieren", newsTitle:"Neuigkeiten", newsEmpty:"Noch keine Neuigkeiten.", newsPushActive:"Du wirst benachrichtigt, wenn es Neuigkeiten gibt.", newsPushInactive:"Keine Benachrichtigung bei Neuigkeiten.", newsPushEnable:"Benachrichtigung aktivieren", newsPushDisable:"Benachrichtigung deaktivieren", oclock:"Uhr",
+    reportSymptom:"Befund melden", reminders:"Erinnerungen", reminderTime:"Erinnerungszeit", reminderHint:"Die Erinnerung wird nur gesendet wenn noch Übungen offen sind.", reminderEnable:"Erinnerungen aktivieren", reminderDisable:"Erinnerungen deaktivieren", newsTitle:"Neuigkeiten", newsEmpty:"Noch keine Neuigkeiten.", newsPushActive:"Du wirst benachrichtigt, wenn es Neuigkeiten gibt.", newsPushInactive:"Keine Benachrichtigung bei Neuigkeiten.", newsPushEnable:"Benachrichtigung aktivieren", newsPushDisable:"Benachrichtigung deaktivieren", newsPromptTitle:"Neuigkeiten nicht verpassen?", newsPromptText:"Lass dich benachrichtigen, wenn es Neuigkeiten aus der Praxis gibt, z. B. Urlaub oder geänderte Zeiten.", newsPromptYes:"Ja, aktivieren", newsPromptLater:"Später", oclock:"Uhr",
     iosNotInstalled:"Noch nicht als App installiert", iosInstallHint:"Für Erinnerungen muss die App auf dem Home-Bildschirm installiert sein.", iosInstallStep:"Safari → Teilen-Symbol → Zum Home-Bildschirm", iosInstallAfter:"Danach die App über das Icon öffnen und hier Erinnerungen aktivieren.",
     greetMorning:"Guten Morgen", greetDay:"Guten Tag", greetEvening:"Guten Abend",
     privacyLink:"Datenschutz", imprintLink:"Impressum", adminPreviewHint:"Vorschau — so sehen Ihre Kunden die App", bookAppointment:"Termin buchen",
@@ -598,7 +598,7 @@ const T = {
     alertPwMin:"Password must be at least 6 characters.", alertAddHomescreen:"Please add the app to your home screen first (Safari → Share → Add to Home Screen). Then open the app via the home screen icon and activate reminders again.", alertNoPush:"Your browser does not support push notifications. Please use Safari on iOS 16.4+ or Chrome on Android.", alertPushBlocked:"Notifications are blocked. Please allow them in your device settings (Android: Apps → FitFunDog → Notifications | iPhone: Settings → Notifications → FitFunDog).", alertDeleteFail:"Your account cannot be deleted automatically. Please contact your therapist at info@fit-fun-dog.de for manual deletion.",
     noAccount:"No account? Please contact your therapist.", forgotPw:"Forgot password?", resetSent:"Reset email sent – please check your inbox.", adminTitle:"Admin", adminSub:"Settings & App management", legalTitle:"Legal", feedbackAppTitle:"App feedback", feedbackAppSub:"Send directly to the developer.",
     thisWeek:"This Week", ofExercises:(n)=>`of ${n} exercises`, allDoneShort:"All done!", streakLabel:"Weekly Streak", streakDay:"week in a row", streakDays:"weeks in a row", streakNone:"No streak yet", last28:"Last 16 weeks", thisWeekShort:"this week",
-    reportSymptom:"Report symptom", reminders:"Reminders", reminderTime:"Reminder time", reminderHint:"The reminder is only sent if exercises are still open.", reminderEnable:"Enable reminders", reminderDisable:"Disable reminders", newsTitle:"News", newsEmpty:"No news yet.", newsPushActive:"You will be notified when there is news.", newsPushInactive:"No notification for news.", newsPushEnable:"Enable notifications", newsPushDisable:"Disable notifications", oclock:"",
+    reportSymptom:"Report symptom", reminders:"Reminders", reminderTime:"Reminder time", reminderHint:"The reminder is only sent if exercises are still open.", reminderEnable:"Enable reminders", reminderDisable:"Disable reminders", newsTitle:"News", newsEmpty:"No news yet.", newsPushActive:"You will be notified when there is news.", newsPushInactive:"No notification for news.", newsPushEnable:"Enable notifications", newsPushDisable:"Disable notifications", newsPromptTitle:"Don't miss any news?", newsPromptText:"Get notified when there is news from the practice, e.g. holidays or changed hours.", newsPromptYes:"Yes, enable", newsPromptLater:"Later", oclock:"",
     iosNotInstalled:"Not installed as app yet", iosInstallHint:"For reminders the app must be installed on the home screen.", iosInstallStep:"Safari → Share → Add to Home Screen", iosInstallAfter:"Then open the app via the icon and enable reminders here.",
     greetMorning:"Good morning", greetDay:"Good afternoon", greetEvening:"Good evening",
     privacyLink:"Privacy", imprintLink:"Imprint", adminPreviewHint:"Preview — this is how your clients see the app", bookAppointment:"Book appointment",
@@ -612,7 +612,7 @@ const T = {
     alertPwMin:"La contraseña debe tener al menos 6 caracteres.", alertAddHomescreen:"Por favor añade primero la app a tu pantalla de inicio (Safari → Compartir → Añadir a pantalla de inicio). Luego abre la app desde el icono y activa los recordatorios.", alertNoPush:"Tu navegador no admite notificaciones push. Usa Safari en iOS 16.4+ o Chrome en Android.", alertPushBlocked:"Las notificaciones están bloqueadas. Actívalas en los ajustes del dispositivo (Android: Apps → FitFunDog → Notificaciones | iPhone: Ajustes → Notificaciones → FitFunDog).", alertDeleteFail:"Tu cuenta no puede eliminarse automáticamente. Contacta a tu terapeuta en info@fit-fun-dog.de para la eliminación manual.",
     noAccount:"¿Sin cuenta? Contacta a tu terapeuta.", forgotPw:"¿Olvidaste tu contraseña?", resetSent:"Email enviado – revisa tu bandeja de entrada.", adminTitle:"Admin", adminSub:"Ajustes y gestión de la app", legalTitle:"Legal", feedbackAppTitle:"Feedback de la app", feedbackAppSub:"Enviar directamente a la desarrolladora.",
     thisWeek:"Esta semana", ofExercises:(n)=>`de ${n} ejercicios`, allDoneShort:"¡Todo listo!", streakLabel:"Racha semanal", streakDay:"semana seguida", streakDays:"semanas seguidas", streakNone:"Sin racha aún", last28:"Últimas 16 semanas", thisWeekShort:"esta semana",
-    reportSymptom:"Reportar síntoma", reminders:"Recordatorios", reminderTime:"Hora del recordatorio", reminderHint:"El recordatorio solo se envía si aún hay ejercicios pendientes.", reminderEnable:"Activar recordatorios", reminderDisable:"Desactivar recordatorios", newsTitle:"Novedades", newsEmpty:"Todavía no hay novedades.", newsPushActive:"Recibirás un aviso cuando haya novedades.", newsPushInactive:"Sin avisos de novedades.", newsPushEnable:"Activar avisos", newsPushDisable:"Desactivar avisos", oclock:"",
+    reportSymptom:"Reportar síntoma", reminders:"Recordatorios", reminderTime:"Hora del recordatorio", reminderHint:"El recordatorio solo se envía si aún hay ejercicios pendientes.", reminderEnable:"Activar recordatorios", reminderDisable:"Desactivar recordatorios", newsTitle:"Novedades", newsEmpty:"Todavía no hay novedades.", newsPushActive:"Recibirás un aviso cuando haya novedades.", newsPushInactive:"Sin avisos de novedades.", newsPushEnable:"Activar avisos", newsPushDisable:"Desactivar avisos", newsPromptTitle:"¿No quieres perderte ninguna novedad?", newsPromptText:"Recibe un aviso cuando haya novedades de la consulta, p. ej. vacaciones o cambios de horario.", newsPromptYes:"Sí, activar", newsPromptLater:"Más tarde", oclock:"",
     iosNotInstalled:"Aún no instalada como app", iosInstallHint:"Para los recordatorios la app debe estar instalada en la pantalla de inicio.", iosInstallStep:"Safari → Compartir → Añadir a pantalla de inicio", iosInstallAfter:"Luego abre la app desde el icono y activa los recordatorios aquí.",
     greetMorning:"Buenos días", greetDay:"Buenas tardes", greetEvening:"Buenas noches",
     privacyLink:"Privacidad", imprintLink:"Aviso legal", adminPreviewHint:"Vista previa — así ven la app tus clientes", bookAppointment:"Reservar cita",
@@ -910,6 +910,10 @@ export default function App() {
   const [newsDraft,setNewsDraft]=useState({title:"",body:"",push:true});
   const [newsPosting,setNewsPosting]=useState(false);
   const [newsEdit,setNewsEdit]=useState(null); // Admin korrigiert Beitrag in der Glocke (seit 097)
+  // Hinweis "Neuigkeiten-Push aktivieren?" fuer Besitzer ohne Push (seit 099); "Spaeter" pausiert 14 Tage
+  const [pushChecked,setPushChecked]=useState(false);
+  const [newsPromptSnoozed,setNewsPromptSnoozed]=useState(()=>{try{return Date.now()<Number(localStorage.getItem("news_prompt_until")||0);}catch{return false;}});
+  const snoozeNewsPrompt=()=>{setNewsPromptSnoozed(true);try{localStorage.setItem("news_prompt_until",String(Date.now()+14*24*3600*1000));}catch{/* Speicher gesperrt */}};
   const [calendarOpen,setCalendarOpen]=useState(false);
 
   // Week boundaries (Monday–Sunday), lokale Zeit (seit 083)
@@ -1553,6 +1557,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         setNewsPushEnabled(!!data&&data.news_enabled!==false);
         if(data?.reminder_time)setPushTime(data.reminder_time.substring(0,5));
       } else {setPushEnabled(false);setNewsPushEnabled(false);}
+      setPushChecked(true);
     }catch(e){console.error("checkPushStatus error",e);}
   };
 
@@ -2532,6 +2537,21 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       {/* OWNER VIEW */}
       {view==="owner"&&(
         <div style={{maxWidth:480,margin:"0 auto",padding:"16px 14px 80px"}}>
+          {!isAdmin&&pushChecked&&!newsPushEnabled&&!newsPromptSnoozed&&(typeof Notification==="undefined"||Notification.permission!=="denied")&&(
+            <div className="card" style={{padding:"14px 16px",marginBottom:12,border:`1.5px solid ${BRAND}`}}>
+              <div style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:12}}>
+                <div style={{width:36,height:36,borderRadius:10,background:BRAND+"18",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="bell" size={18} color={BRAND}/></div>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:3}}>{t.newsPromptTitle}</div>
+                  <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12.5,color:MUTED,lineHeight:1.5}}>{t.newsPromptText}</div>
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button className="btn" onClick={async()=>{await enablePush("news");}} disabled={newsPushLoading} style={{flex:1,padding:"11px",borderRadius:10,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13}}>{newsPushLoading?"...":t.newsPromptYes}</button>
+                <button className="btn" onClick={snoozeNewsPrompt} style={{flex:1,padding:"11px",borderRadius:10,background:"white",border:`1.5px solid ${BORDER}`,color:MUTED,fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13}}>{t.newsPromptLater}</button>
+              </div>
+            </div>
+          )}
           {isAdmin&&(
             <>
               <div style={{background:BRAND+"18",border:`1.5px solid ${BRAND}`,borderRadius:12,padding:"10px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8}}>
