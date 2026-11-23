@@ -54,6 +54,8 @@ Deno.serve(async (_req) => {
 
   for (const sub of subs) {
     try {
+      // Geraet nur fuer Neuigkeiten angemeldet -> keine Uebungserinnerung (seit App 096)
+      if (sub.reminders_enabled === false) continue;
       // Aktuelle Zeit in der Zeitzone des Users
       const userNow = new Date(nowUtc.toLocaleString("en-US", { timeZone: sub.timezone || "Europe/Berlin" }));
       const [remHour, remMin] = (sub.reminder_time || "09:00").split(":").map(Number);
