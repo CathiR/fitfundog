@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-23-091";
+const APP_VERSION = "2026-11-23-092";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -266,7 +266,7 @@ const BirthDateField = ({ value, onChange, legacyAge, inp, SL }) => {
   const age = ageFromBirthDate(value);
   return (<div>
     <SL text="Geburtsdatum"/>
-    <input type="date" value={value||""} max={todayLocalStr()} onChange={e=>onChange(e.target.value)} style={inp}/>
+    <input type="date" className="date-field" value={value||""} max={todayLocalStr()} onChange={e=>onChange(e.target.value)} style={{...inp,display:"block",minWidth:0,maxWidth:"100%",minHeight:48,WebkitAppearance:"none",appearance:"none"}}/>
     {age
       ? <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:5}}>Alter: {age}</div>
       : (!value && legacyAge ? <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:5}}>Bisher erfasstes Alter: {legacyAge}</div> : null)}
@@ -2282,6 +2282,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         *{box-sizing:border-box;margin:0;padding:0;}
         body{-webkit-text-size-adjust:100%;}
         .btn{cursor:pointer;border:none;transition:all .18s;background:none;}
+        .date-field::-webkit-date-and-time-value{text-align:left;}
         .btn:hover{opacity:.85;}
         .card{background:white;border-radius:16px;box-shadow:0 2px 16px ${BRAND}1A;text-align:left;}
         .ex-card{transition:all .18s;cursor:pointer;}
