@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-23-096";
+const APP_VERSION = "2026-11-23-097";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -909,6 +909,7 @@ export default function App() {
   const [newsOpen,setNewsOpen]=useState(false);
   const [newsDraft,setNewsDraft]=useState({title:"",body:"",push:true});
   const [newsPosting,setNewsPosting]=useState(false);
+  const [newsEdit,setNewsEdit]=useState(null); // Admin korrigiert Beitrag in der Glocke (seit 097)
   const [calendarOpen,setCalendarOpen]=useState(false);
 
   // Week boundaries (Monday–Sunday), lokale Zeit (seit 083)
@@ -1679,6 +1680,18 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     setNews(prev=>[row,...prev]);
     setNewsDraft({title:"",body:"",push:true});
     setNewsPosting(false);
+  };
+  // Korrektur ohne erneute Push-Nachricht (seit 097)
+  const saveNewsEdit=async()=>{
+    const title=newsEdit?.title.trim(),body=newsEdit?.body.trim();
+    if(!title||!body)return;
+    setNewsPosting(true);
+    const{data,error}=await supabase.from("practice_news").update({title,body}).eq("id",newsEdit.id).select().single();
+    setNewsPosting(false);
+    if(error){showToast("error","Fehler: "+error.message);return;}
+    setNews(prev=>prev.map(n=>n.id===data.id?data:n));
+    setNewsEdit(null);
+    showToast("success","Beitrag korrigiert");
   };
   const deleteNews=async(id)=>{
     const{error}=await supabase.from("practice_news").delete().eq("id",id);
@@ -2478,7 +2491,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               </div>
             </div>
             <div style={{display:"flex",gap:6,alignItems:"center"}}>
-              {!isAdmin&&(
+              {(
                 <button className="btn" aria-label={t.newsTitle} onClick={openNews} style={{position:"relative",background:NAV_BG,borderRadius:9,padding:"7px 9px",display:"flex"}}>
                   <Icon name="bell" size={15} color={ACCENT}/>
                   {newsUnread&&<span style={{position:"absolute",top:4,right:5,width:8,height:8,borderRadius:"50%",background:"#E53935",boxShadow:`0 0 0 2px ${NAV_BG}`}}/>}
@@ -4038,15 +4051,26 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       {/* SHEET: MERKBLATT-DETAIL (Owner, seit 069) */}
       {/* SHEET: NEUIGKEITEN (Besitzer, seit 096) */}
       {newsOpen&&(
-        <div className="overlay" onClick={()=>setNewsOpen(false)}>
+        <div className="overlay" onClick={()=>{setNewsOpen(false);setNewsEdit(null);}}>
           <div className="sheet" onClick={e=>e.stopPropagation()}>
-            <SheetHeader title={t.newsTitle} onClose={()=>setNewsOpen(false)}/>
+            <SheetHeader title={t.newsTitle} onClose={()=>{setNewsOpen(false);setNewsEdit(null);}}/>
+            {isAdmin&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginBottom:12}}>So sehen die Besitzer die Beiträge. Mit dem Stift korrigierst du einen Beitrag, ohne dass eine neue Push-Nachricht verschickt wird.</div>}
             {news.length===0&&<div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:MUTED,textAlign:"center",padding:"20px 0"}}>{t.newsEmpty}</div>}
             <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              {news.map(n=>(
-                <div key={n.id} className="card" style={{padding:"14px 16px"}}>
+              {news.map(n=>newsEdit?.id===n.id?(
+                <div key={n.id} className="card" style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
+                  <div><SL text="Überschrift"/><input value={newsEdit.title} onChange={e=>setNewsEdit(p=>({...p,title:e.target.value}))} style={inp}/></div>
+                  <div><SL text="Text"/><textarea value={newsEdit.body} onChange={e=>setNewsEdit(p=>({...p,body:e.target.value}))} rows={7} style={{...inp,resize:"vertical",lineHeight:1.5}}/></div>
+                  <div style={{display:"flex",gap:8}}>
+                    <button className="btn" onClick={saveNewsEdit} disabled={newsPosting||!newsEdit.title.trim()||!newsEdit.body.trim()} style={{flex:1,padding:"11px",borderRadius:10,background:BRAND,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13}}>{newsPosting?"Wird gespeichert...":"Speichern"}</button>
+                    <button className="btn" onClick={()=>setNewsEdit(null)} style={{flex:1,padding:"11px",borderRadius:10,background:"white",border:`1.5px solid ${BORDER}`,color:"#102828",fontFamily:"'DM Sans',sans-serif",fontWeight:700,fontSize:13}}>Abbrechen</button>
+                  </div>
+                </div>
+              ):(
+                <div key={n.id} className="card" style={{padding:"14px 16px",position:"relative"}}>
+                  {isAdmin&&<button className="iBtn" aria-label="Beitrag bearbeiten" onClick={()=>setNewsEdit({id:n.id,title:n.title,body:n.body})} style={{position:"absolute",top:10,right:10,background:BRAND+"20"}}><Icon name="edit" size={14} color={MID}/></button>}
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:4}}>{new Date(n.created_at).toLocaleDateString(lang==="en"?"en-GB":lang==="es"?"es-ES":"de-DE",{day:"numeric",month:"long",year:"numeric"})}</div>
-                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:DARK,marginBottom:6}}>{n.title}</div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,fontWeight:700,color:DARK,marginBottom:6,paddingRight:isAdmin?36:0}}>{n.title}</div>
                   <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:14,color:"#102828",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{n.body}</div>
                 </div>
               ))}
