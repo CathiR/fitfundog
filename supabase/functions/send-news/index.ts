@@ -66,13 +66,24 @@ Deno.serve(async (req) => {
       return json({ sent: 0 });
     }
 
+    // Ungelesene Beitraege je Besitzer fuer die Zahl am App-Symbol (seit App 098)
+    const [{ data: allNews }, { data: seenRows }] = await Promise.all([
+      supabase.from("practice_news").select("created_at").eq("practice_id", news.practice_id),
+      supabase.from("news_seen").select("user_id,seen_at").in("user_id", ownerIds),
+    ]);
+    const seenBy: Record<string, string> = {};
+    for (const r of seenRows || []) seenBy[r.user_id] = r.seen_at;
+    const unreadFor = (uid: string) =>
+      (allNews || []).filter((n) => !seenBy[uid] || new Date(n.created_at) > new Date(seenBy[uid])).length;
+
     const appServer = await webpush.ApplicationServer.new({ contactInformation: VAPID_SUBJECT, vapidKeys: await buildVapidKeys() });
     const body = news.body.length > 140 ? news.body.slice(0, 137) + "..." : news.body;
-    const payload = JSON.stringify({
+    const payloadFor = (uid: string) => JSON.stringify({
       title: `${practice.practice_name || "Fit Fun Dog"}: ${news.title}`,
       body,
       url: "/?news=1",
       tag: `news-${news.id}`,
+      badge_count: Math.max(1, unreadFor(uid)),
     });
 
     let sent = 0;
@@ -80,7 +91,7 @@ Deno.serve(async (req) => {
     for (const sub of subs) {
       try {
         await appServer.subscribe({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } })
-          .pushTextMessage(payload, { ttl: 3 * 86400, urgency: webpush.Urgency.Normal });
+          .pushTextMessage(payloadFor(sub.user_id), { ttl: 3 * 86400, urgency: webpush.Urgency.Normal });
         sent++;
       } catch (pushErr) {
         const status = pushErr?.response?.status;
