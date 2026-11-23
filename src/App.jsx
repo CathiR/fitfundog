@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-15-090";
+const APP_VERSION = "2026-11-23-091";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -48,7 +48,7 @@ const applyColors=(brand)=>{
 const ICON_BASE = "https://tkgwdmntglzfeulpgfpw.supabase.co/storage/v1/object/public/app-icons/";
 const CATEGORIES = ["Regeneration", "Balance", "Kräftigung", "Koordination", "Mobilisation"];
 const TARGET_REGIONS = ["Ganzer Körper", "Hinterhand", "Vorderhand", "Rumpf", "Vorderpfoten", "Rücken"];
-const EMPTY_PATIENT = { name: "", breed: "", age: "", owner: "", condition: "", avatar: "🐕", ownerEmail: "", ownerPassword: "", owner_lang: "de" };
+const EMPTY_PATIENT = { name: "", breed: "", age: "", birth_date: "", owner: "", condition: "", avatar: "🐕", ownerEmail: "", ownerPassword: "", owner_lang: "de" };
 const EMPTY_SHEET = { title:"", title_en:"", title_es:"", key_points:["","",""], content:"", content_en:"", content_es:"", image_url:"", is_global:false };
 const EMPTY_TEMPLATE = { title: "", categories: [], target_regions: [], difficulty: "Leicht", description: "", instructions: [""], image_url: "", video_url: "" };
 const getDifficultyColor=()=>({"Leicht":BRAND,"Mittel":MID,"Schwer":"#C0392B"});
@@ -242,6 +242,35 @@ const exPhase = (ex) => {
   if (ex.active_from && t < ex.active_from) return "upcoming";
   if (ex.active_until && t > ex.active_until) return "ended";
   return "active";
+};
+// ── Geburtsdatum statt Alter (seit 091): Alter wird aus birth_date berechnet, altes Freitext-Alter bleibt Fallback ──
+const AGE_UNITS = { de:["Jahr","Jahre","Monat","Monate"], en:["year","years","month","months"], es:["año","años","mes","meses"] };
+const ageFromBirthDate = (iso, lang="de") => {
+  if (!iso) return "";
+  const b = parseLocalDate(iso), n = new Date();
+  if (isNaN(b) || b > n) return "";
+  let months = (n.getFullYear()-b.getFullYear())*12 + (n.getMonth()-b.getMonth());
+  if (n.getDate() < b.getDate()) months--;
+  const u = AGE_UNITS[lang] || AGE_UNITS.de;
+  if (months < 12) return `${months} ${months===1?u[2]:u[3]}`;
+  const y = Math.floor(months/12);
+  return `${y} ${y===1?u[0]:u[1]}`;
+};
+const patientAgeLabel = (p, lang="de") => {
+  if (p?.birth_date) return ageFromBirthDate(p.birth_date, lang);
+  const a = (p?.age||"").trim();
+  if (!a) return "";
+  return /^\d+([.,]\d+)?$/.test(a) ? `${a} ${(AGE_UNITS[lang]||AGE_UNITS.de)[1]}` : a;
+};
+const BirthDateField = ({ value, onChange, legacyAge, inp, SL }) => {
+  const age = ageFromBirthDate(value);
+  return (<div>
+    <SL text="Geburtsdatum"/>
+    <input type="date" value={value||""} max={todayLocalStr()} onChange={e=>onChange(e.target.value)} style={inp}/>
+    {age
+      ? <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:5}}>Alter: {age}</div>
+      : (!value && legacyAge ? <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:12,color:MUTED,marginTop:5}}>Bisher erfasstes Alter: {legacyAge}</div> : null)}
+  </div>);
 };
 const fmtShortDate = (iso) => { const [y,m,d] = iso.split("-"); return `${d}.${m}.`; };
 
@@ -1239,7 +1268,7 @@ export default function App() {
     <div class="patient-label">P&nbsp;A&nbsp;T&nbsp;I&nbsp;E&nbsp;N&nbsp;T</div>
     <div class="patient-name">${patient.avatar||""} ${patient.name}</div>
     <div class="patient-meta">
-      ${[patient.breed, patient.age ? patient.age+" Jahre":"", patient.owner].filter(Boolean).join(" · ")}
+      ${[patient.breed, patientAgeLabel(patient, lang), patient.owner].filter(Boolean).join(" · ")}
     </div>
     ${patient.condition ? `<div class="patient-condition">${patient.condition}</div>` : ""}
     <div class="plan-date">${lang==="en"?"E X E R C I S E &nbsp; P L A N":lang==="es"?"P L A N &nbsp; D E &nbsp; E J E R C I C I O S":"Ü B U N G S P L A N"} &nbsp;·&nbsp; ${date}</div>
@@ -1565,7 +1594,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       }
     }
     const{data,error}=await supabase.rpc("insert_patient_for_practice",{
-      p_name:newPatient.name, p_breed:newPatient.breed, p_age:newPatient.age,
+      p_name:newPatient.name, p_breed:newPatient.breed, p_age:"", p_birth_date:newPatient.birth_date||null,
       p_owner:newPatient.owner, p_condition:newPatient.condition, p_avatar:newPatient.avatar,
       p_user_id:userId, p_practice_id:practiceId
     });
@@ -3361,9 +3390,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title="Neuer Patient" onClose={closeSheet}/>
             <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              {[["Name des Hundes *","name","Bello"],["Rasse","breed","Labrador Retriever"],["Alter","age","7 Jahre"],["Besitzer","owner","Familie Müller"]].map(([label,key,ph])=>(
+              {[["Name des Hundes *","name","Bello"],["Rasse","breed","Labrador Retriever"]].map(([label,key,ph])=>(
                 <div key={key}><SL text={label}/><input value={newPatient[key]||""} onChange={e=>setNewPatient(p=>({...p,[key]:e.target.value}))} placeholder={ph} style={inp}/></div>
               ))}
+              <BirthDateField inp={inp} SL={SL} value={newPatient.birth_date} onChange={v=>setNewPatient(p=>({...p,birth_date:v}))}/>
+              <div><SL text="Besitzer"/><input value={newPatient.owner||""} onChange={e=>setNewPatient(p=>({...p,owner:e.target.value}))} placeholder="Familie Müller" style={inp}/></div>
               <div><SL text="Diagnose"/><textarea value={newPatient.condition||""} onChange={e=>setNewPatient(p=>({...p,condition:e.target.value}))} rows={3} placeholder="z.B. Hüftdysplasie" style={{...inp,resize:"vertical"}}/></div>
               <OwnerLangField value={newPatient.owner_lang} onChange={l=>setNewPatient(p=>({...p,owner_lang:l}))}/>
               <div><SL text="Emoji"/><input value={newPatient.avatar||""} onChange={e=>setNewPatient(p=>({...p,avatar:e.target.value}))} placeholder="🐕" style={{...inp,width:60,textAlign:"center"}}/></div>
@@ -3403,9 +3434,11 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title="Patient bearbeiten" onClose={closeSheet}/>
             <div style={{display:"flex",flexDirection:"column",gap:12}}>
-              {[["Name *","name"],["Rasse","breed"],["Alter","age"],["Besitzer","owner"]].map(([label,key])=>(
+              {[["Name *","name"],["Rasse","breed"]].map(([label,key])=>(
                 <div key={key}><SL text={label}/><input value={editPatientData[key]||""} onChange={e=>setEditPatientData(p=>({...p,[key]:e.target.value}))} style={inp}/></div>
               ))}
+              <BirthDateField inp={inp} SL={SL} value={editPatientData.birth_date} legacyAge={editPatientData.age} onChange={v=>setEditPatientData(p=>({...p,birth_date:v||null}))}/>
+              <div><SL text="Besitzer"/><input value={editPatientData.owner||""} onChange={e=>setEditPatientData(p=>({...p,owner:e.target.value}))} style={inp}/></div>
               <div><SL text="Diagnose"/><textarea value={editPatientData.condition||""} onChange={e=>setEditPatientData(p=>({...p,condition:e.target.value}))} rows={4} style={{...inp,resize:"vertical",lineHeight:1.5}}/></div>
               <OwnerLangField value={editPatientData.owner_lang} onChange={l=>setEditPatientData(p=>({...p,owner_lang:l}))}/>
               <div><SL text="Emoji"/><input value={editPatientData.avatar||""} onChange={e=>setEditPatientData(p=>({...p,avatar:e.target.value}))} style={{...inp,width:60,textAlign:"center"}}/></div>
