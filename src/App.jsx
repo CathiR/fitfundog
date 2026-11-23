@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-23-094";
+const APP_VERSION = "2026-11-23-095";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -49,7 +49,7 @@ const ICON_BASE = "https://tkgwdmntglzfeulpgfpw.supabase.co/storage/v1/object/pu
 const CATEGORIES = ["Regeneration", "Balance", "Kräftigung", "Koordination", "Mobilisation"];
 const TARGET_REGIONS = ["Ganzer Körper", "Hinterhand", "Vorderhand", "Rumpf", "Vorderpfoten", "Rücken"];
 const EMPTY_PATIENT = { name: "", breed: "", age: "", birth_date: "", owner: "", condition: "", avatar: "🐕", ownerEmail: "", ownerPassword: "", owner_lang: "de" };
-const EMPTY_SHEET = { title:"", title_en:"", title_es:"", key_points:["","",""], content:"", content_en:"", content_es:"", image_url:"", is_global:false, reviewed_at:null };
+const EMPTY_SHEET = { title:"", title_en:"", title_es:"", key_points:["","",""], content:"", content_en:"", content_es:"", image_url:"", image_focus:null, is_global:false, reviewed_at:null };
 const EMPTY_TEMPLATE = { title: "", categories: [], target_regions: [], difficulty: "Leicht", description: "", instructions: [""], image_url: "", video_url: "" };
 const getDifficultyColor=()=>({"Leicht":BRAND,"Mittel":MID,"Schwer":"#C0392B"});
 let difficultyColor=getDifficultyColor();
@@ -420,6 +420,41 @@ const ImageUploadField = ({ id, value, uploading, onUpload }) => (
     <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,flexBasis:"100%"}}>JPG, PNG oder WebP – große Fotos werden automatisch verkleinert</div>
   </div>
 );
+
+// ── Bild-Fokuspunkt fuer Merkblaetter (seit 095): Antippen legt fest, welcher Bildteil beim Beschneiden sichtbar bleibt ──
+const focusPos = (f) => f || "50% 50%";
+const ImageFocusPicker = ({ url, value, onChange }) => {
+  const [x, y] = focusPos(value).split(" ").map(v => parseFloat(v));
+  const pick = (e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const px = Math.round(Math.min(100, Math.max(0, (e.clientX - r.left) / r.width * 100)));
+    const py = Math.round(Math.min(100, Math.max(0, (e.clientY - r.top) / r.height * 100)));
+    onChange(`${px}% ${py}%`);
+  };
+  const lbl = {fontFamily:"'DM Sans',sans-serif",fontSize:11,color:MUTED,marginBottom:5};
+  return (
+    <div style={{marginTop:10,background:LIGHT,borderRadius:12,padding:12}}>
+      <div style={{fontFamily:"'DM Sans',sans-serif",fontSize:13,fontWeight:700,color:"#102828",marginBottom:3}}>Bildausschnitt</div>
+      <div style={{...lbl,marginBottom:8}}>Tippe auf die wichtigste Stelle im Bild, z. B. den Kopf. Sie bleibt beim Zuschneiden immer sichtbar.</div>
+      <div style={{display:"flex",justifyContent:"center"}}>
+        <div onClick={pick} style={{position:"relative",display:"inline-block",cursor:"crosshair",lineHeight:0}}>
+          <img src={url} alt="" draggable={false} style={{maxWidth:"100%",maxHeight:260,borderRadius:8,display:"block",userSelect:"none"}}/>
+          <div style={{position:"absolute",left:`${x}%`,top:`${y}%`,width:26,height:26,marginLeft:-13,marginTop:-13,borderRadius:"50%",border:"3px solid white",boxShadow:"0 0 0 2px #102828, 0 2px 6px rgba(0,0,0,.4)",pointerEvents:"none"}}/>
+        </div>
+      </div>
+      <div style={{display:"flex",gap:10,marginTop:12,alignItems:"flex-end"}}>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={lbl}>Vorschau Besitzer</div>
+          <img src={url} alt="" style={{width:"100%",height:110,objectFit:"cover",objectPosition:focusPos(value),borderRadius:8,display:"block"}}/>
+        </div>
+        <div>
+          <div style={lbl}>Liste</div>
+          <img src={url} alt="" style={{width:46,height:46,objectFit:"cover",objectPosition:focusPos(value),borderRadius:10,display:"block"}}/>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // ── Auffälligkeiten (seit 088): Schmerzmeldungen und Inaktivität auf einen Blick ──
 const ALERT_DAYS = 14, ALERT_PAIN = 4;
@@ -1770,7 +1805,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       title:newSheet.title.trim(),title_en:newSheet.title_en?.trim()||null,title_es:newSheet.title_es?.trim()||null,
       key_points:(newSheet.key_points||[]).map(x=>(x||"").trim()).filter(Boolean),
       content:newSheet.content.trim(),content_en:newSheet.content_en?.trim()||null,content_es:newSheet.content_es?.trim()||null,
-      image_url:newSheet.image_url?.trim()||null
+      image_url:newSheet.image_url?.trim()||null,image_focus:newSheet.image_url?.trim()?(newSheet.image_focus||null):null
     };
     if(allowGlobal)payload.reviewed_at=newSheet.reviewed_at||null; // fachlich geprueft, nur intern bei Fit Fun Dog (seit 094)
     const{data,error}=await supabase.from("education_sheets").insert(payload).select().single();
@@ -1786,7 +1821,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
       title:editSheetData.title.trim(),title_en:editSheetData.title_en?.trim()||null,title_es:editSheetData.title_es?.trim()||null,
       key_points:(editSheetData.key_points||[]).map(x=>(x||"").trim()).filter(Boolean),
       content:editSheetData.content.trim(),content_en:editSheetData.content_en?.trim()||null,content_es:editSheetData.content_es?.trim()||null,
-      image_url:editSheetData.image_url?.trim()||null
+      image_url:editSheetData.image_url?.trim()||null,image_focus:editSheetData.image_url?.trim()?(editSheetData.image_focus||null):null
     };
     if(practice?.slug==="fitfundog"){
       const orig=eduSheets.find(x=>x.id===editSheetData.id)||{};
@@ -2990,7 +3025,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
               return(
                 <div className="card" style={{padding:"12px 14px",display:"flex",gap:10,alignItems:"center"}}>
                   {sh.image_url
-                    ?<img src={sh.image_url} alt={sh.title} onClick={()=>setSelectedSheet(sh)} style={{width:38,height:38,borderRadius:9,objectFit:"cover",flexShrink:0,background:LIGHT,cursor:"pointer"}}/>
+                    ?<img src={sh.image_url} alt={sh.title} onClick={()=>setSelectedSheet(sh)} style={{width:38,height:38,borderRadius:9,objectFit:"cover",objectPosition:focusPos(sh.image_focus),flexShrink:0,background:LIGHT,cursor:"pointer"}}/>
                     :<div onClick={()=>setSelectedSheet(sh)} style={{width:38,height:38,borderRadius:9,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}}><Icon name="info" size={17} color={ACCENT}/></div>}
                   <div onClick={()=>setSelectedSheet(sh)} style={{flex:1,minWidth:0,cursor:"pointer"}}>
                     <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:600,color:"#102828"}}>{sh.title}</div>
@@ -3191,7 +3226,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
             {infoTab==="knowledge"&&myEduSheets.map(sh=>(
               <div key={sh.id} className="card" onClick={()=>setSelectedSheet(sh)} style={{padding:"14px 16px",display:"flex",gap:12,alignItems:"center",cursor:"pointer"}}>
                 {sh.image_url
-                  ?<img src={sh.image_url} alt={exT(sh,"title")} style={{width:46,height:46,borderRadius:10,objectFit:"cover",flexShrink:0,background:LIGHT}}/>
+                  ?<img src={sh.image_url} alt={exT(sh,"title")} style={{width:46,height:46,borderRadius:10,objectFit:"cover",objectPosition:focusPos(sh.image_focus),flexShrink:0,background:LIGHT}}/>
                   :<div style={{width:46,height:46,borderRadius:10,background:LIGHT,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon name="info" size={20} color={BRAND}/></div>}
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,fontWeight:700,color:DARK,marginBottom:2}}>{exT(sh,"title")}</div>
@@ -3787,8 +3822,9 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
                 </div>
               </div>
               <div><SL text="Ausführlicher Text"/><textarea value={d.content} onChange={e=>setD(()=>({content:e.target.value}))} rows={9} placeholder="Erkläre die Erkrankung, warum die Übungen helfen, worauf im Alltag zu achten ist..." style={{...inp,resize:"vertical",lineHeight:1.55}}/></div>
-              <div><SL text="Bild (optional)"/><input value={d.image_url||""} onChange={e=>setD(()=>({image_url:e.target.value}))} placeholder="https://... oder hochladen" style={inp}/>
-                <ImageUploadField id="imgUpSheet" value={d.image_url||""} uploading={imageUploading} onUpload={f=>uploadImage(f,(u)=>setD(()=>({image_url:u})))}/></div>
+              <div><SL text="Bild (optional)"/><input value={d.image_url||""} onChange={e=>setD(()=>({image_url:e.target.value,image_focus:null}))} placeholder="https://... oder hochladen" style={inp}/>
+                <ImageUploadField id="imgUpSheet" value={d.image_url||""} uploading={imageUploading} onUpload={f=>uploadImage(f,(u)=>setD(()=>({image_url:u,image_focus:null})))}/>
+                {d.image_url?.trim()&&<ImageFocusPicker url={d.image_url.trim()} value={d.image_focus} onChange={v=>setD(()=>({image_focus:v}))}/>}</div>
               {isFFD&&(
                 <div onClick={()=>setD(p=>({is_global:!p.is_global}))} style={{display:"inline-flex",alignItems:"flex-start",gap:8,cursor:"pointer"}}>
                   <div style={{width:16,height:16,borderRadius:4,border:`1.5px solid ${d.is_global?BRAND:BORDER}`,background:d.is_global?BRAND:"white",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>
@@ -3853,7 +3889,7 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
         <div className="overlay">
           <div className="sheet" onClick={e=>e.stopPropagation()}>
             <SheetHeader title={exT(selectedSheet,"title")} onClose={()=>setSelectedSheet(null)}/>
-            {selectedSheet.image_url&&<div style={{width:"100%",borderRadius:14,overflow:"hidden",marginBottom:16,background:LIGHT}}><img src={selectedSheet.image_url} alt={exT(selectedSheet,"title")} style={{width:"100%",height:"auto",maxHeight:240,objectFit:"cover",display:"block"}}/></div>}
+            {selectedSheet.image_url&&<div style={{width:"100%",borderRadius:14,overflow:"hidden",marginBottom:16,background:LIGHT}}><img src={selectedSheet.image_url} alt={exT(selectedSheet,"title")} style={{width:"100%",height:"auto",maxHeight:240,objectFit:"cover",objectPosition:focusPos(selectedSheet.image_focus),display:"block"}}/></div>}
             {(()=>{const kp=exT(selectedSheet,"key_points")||[];return kp.length>0?(
               <div style={{background:LIGHT,borderRadius:14,padding:"14px 16px",marginBottom:16}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,color:DARK,marginBottom:10}}>{t.keyPointsTitle}</div>
