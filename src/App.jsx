@@ -3,7 +3,7 @@ import { supabase } from "./supabase";
 
 // Praxis-Slug wird automatisch anhand der Domain erkannt
 const PRACTICE_SLUG = window.location.hostname.includes("animalbalance") ? "animalbalance" : "fitfundog";
-const APP_VERSION = "2026-11-23-097";
+const APP_VERSION = "2026-11-23-098";
 
 // Zeitlimit für Supabase-Anfragen beim Start (seit 081) — ohne hängt die App bei Server-Störungen endlos auf dem Ladebildschirm
 const LOAD_TIMEOUT_MS = 15000;
@@ -1092,6 +1092,12 @@ export default function App() {
     }catch{/* ignorieren */}
   },[newsLoaded,isAdmin]);// eslint-disable-line react-hooks/exhaustive-deps
 
+  // Zahl am App-Symbol an die ungelesenen Neuigkeiten angleichen (seit 098); still ignorieren, wo nicht unterstuetzt
+  useEffect(()=>{
+    if(!newsLoaded||!("setAppBadge" in navigator))return;
+    (newsUnreadCount>0?navigator.setAppBadge(newsUnreadCount):navigator.clearAppBadge()).catch(()=>{});
+  },[newsLoaded,newsUnreadCount]);
+
   // ── Automatischer Reload beim Wochenwechsel wenn App in Vordergrund kommt ──
   useEffect(()=>{
     let lastWeekStart=getWeekStart();
@@ -1657,7 +1663,8 @@ ${tmpl.video_url?`<div class="video-row"><img style="width:44px;height:44px;flex
     ]);
     setNews(n||[]);setNewsSeenAt(seen?.seen_at||null);setNewsLoaded(true);
   };
-  const newsUnread=!isAdmin&&news.some(n=>!newsSeenAt||n.created_at>newsSeenAt);
+  const newsUnreadCount=isAdmin?0:news.filter(n=>!newsSeenAt||new Date(n.created_at)>new Date(newsSeenAt)).length;
+  const newsUnread=newsUnreadCount>0;
   const openNews=async()=>{
     setNewsOpen(true);
     if(isAdmin||!newsUnread)return;

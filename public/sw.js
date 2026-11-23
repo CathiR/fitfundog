@@ -1,4 +1,4 @@
-const CACHE = "fitfundog-v5";
+const CACHE = "fitfundog-v6";
 
 self.addEventListener("install", e => {
   self.skipWaiting();
@@ -30,7 +30,14 @@ self.addEventListener("push", e => {
     catch { data = {}; }
   }
 
-  e.waitUntil(
+  // Zahl am App-Symbol fuer ungelesene Neuigkeiten (seit App 098); nicht jeder Browser kann das
+  let badge = Promise.resolve();
+  try {
+    if (typeof data.badge_count === "number" && self.navigator && "setAppBadge" in self.navigator)
+      badge = self.navigator.setAppBadge(data.badge_count).catch(() => {});
+  } catch { /* Notification muss trotzdem kommen */ }
+
+  e.waitUntil(badge.then(() =>
     self.registration.showNotification(data.title || "Fit Fun Dog", {
       body: data.body || "Du hast noch offene Uebungen!",
       icon: "/favicon.png",
@@ -41,7 +48,7 @@ self.addEventListener("push", e => {
       requireInteraction: false,
       data: { url: data.url || "/" }
     })
-  );
+  ));
 });
 
 // ── Notification click → open app ──
